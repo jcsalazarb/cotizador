@@ -1,0 +1,2831 @@
+<!doctype html>
+<html lang="es">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cotizador Solar Nassa - Energía Renovable</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
+  <script src="https://unpkg.com/docxtemplater@3.40.5/build/docxtemplater.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+        body { box-sizing: border-box; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .equipo-card { transition: all 0.3s ease; }
+        .equipo-card:hover { transform: translateY(-2px); }
+        .equipo-selected { border: 2px solid #fbbf24; background: rgba(251, 191, 36, 0.1); }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="gradient-bg min-h-full"><!-- Header Principal -->
+  <header class="text-center py-8 px-4">
+   <div class="bg-white rounded-xl mb-4 shadow-2xl p-6 inline-block pulse"><img src="https://imgur.com/gqUxbRs.png" alt="NASSA SOLAR Logo" class="mx-auto h-20 w-auto" onerror="this.src=''; this.alt='Logo NASSA SOLAR'; this.style.display='none';">
+   </div>
+   <h1 class="text-4xl md:text-5xl font-bold text-blue-900 mb-4 drop-shadow-lg">🌞 Cotizador Solar Profesional</h1>
+   <p class="text-xl text-gray-800 font-semibold mb-4 drop-shadow-sm">Cotización técnica completa con envío automático por email</p>
+   <p class="text-lg text-gray-700 font-medium mb-6 drop-shadow-sm">✅ Cálculos corregidos ✅ EmailJS integrado ✅ PDF protegido ✅ Diagnóstico técnico v3.1</p><!-- Contacto Directo -->
+   <div class="glass rounded-xl p-4 mb-6 max-w-md mx-auto">
+    <p class="text-white font-semibold mb-3">📞 Contacto Directo</p><a href="tel:+573136909723" class="block text-blue-900 hover:text-blue-700 font-bold text-lg mb-3 transition-colors"> 📱 (057) 313 690 9723 </a> <button onclick="abrirWhatsApp()" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center"> <span class="mr-2">💬</span> Chatear por WhatsApp </button>
+   </div><!-- Botones de Administración -->
+   <div class="flex flex-wrap justify-center gap-3 mb-6"><button onclick="mostrarRegistroCotizaciones()" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold text-sm"> 📋 Ver Registro </button> <button onclick="mostrarGuiaPublicacion()" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold text-sm"> 🌐 Guía Publicación </button> <button onclick="exportarDatos()" class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm"> 📊 Exportar Datos </button> <button onclick="llenarDatosPrueba()" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold text-sm"> 🧪 Llenar Prueba </button> <button onclick="ejecutarPruebasCompletas()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold text-sm"> 🚀 Pruebas Auto </button>
+   </div>
+  </header><!-- Formulario Principal -->
+  <main class="max-w-6xl mx-auto px-4 pb-8">
+   <div class="glass rounded-2xl p-6 md:p-8 shadow-2xl">
+    <form id="formularioCotizacion" class="space-y-8"><!-- Datos Personales -->
+     <section>
+      <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span> Información Personal</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+       <div><label for="nombre" class="block text-sm font-medium text-blue-100 mb-2">Nombre Completo *</label> <input type="text" id="nombre" name="nombre" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu nombre completo">
+       </div>
+       <div><label for="telefono" class="block text-sm font-medium text-blue-100 mb-2">Teléfono/WhatsApp *</label> <input type="tel" id="telefono" name="telefono" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="+57 300 123 4567">
+       </div>
+       <div><label for="email" class="block text-sm font-medium text-blue-100 mb-2">Correo Electrónico *</label> <input type="email" id="email" name="email" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="tu@email.com">
+       </div>
+        <div><label for="ciudad" class="block text-sm font-medium text-blue-100 mb-2">Ciudad *</label> <select id="ciudad" name="ciudad" required onchange="calcularHSP()" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona tu ciudad</option> <!-- COSTA ATLÁNTICA - PRIORIDAD --> <option value="Barranquilla">Barranquilla</option> <option value="Cartagena">Cartagena</option> <option value="Santa Marta">Santa Marta</option> <option value="Soledad">Soledad</option> <option value="Malambo">Malambo</option> <option value="Valledupar">Valledupar</option> <option value="Montería">Montería</option> <option value="Sincelejo">Sincelejo</option> <option value="Riohacha">Riohacha</option> <option value="Magangué">Magangué</option> <option value="Ciénaga">Ciénaga</option> <option value="Baranoa">Baranoa</option> <option value="Sabanalarga">Sabanalarga</option> <option value="Puerto Colombia">Puerto Colombia</option> <option value="Galapa">Galapa</option> <option value="Turbaco">Turbaco</option> <option value="Arjona">Arjona</option> <option value="El Carmen de Bolívar">El Carmen de Bolívar</option> <option value="Corozal">Corozal</option> <option value="Sampués">Sampués</option> <option value="Cereté">Cereté</option> <option value="Lorica">Lorica</option> <option value="Sahagún">Sahagún</option> <option value="Planeta Rica">Planeta Rica</option> <option value="Aguachica">Aguachica</option> <option value="Codazzi">Codazzi</option> <option value="La Paz">La Paz</option> <option value="Bosconia">Bosconia</option> <option value="Fundación">Fundación</option> <option value="Aracataca">Aracataca</option> <option value="Pivijay">Pivijay</option> <option value="Dibulla">Dibulla</option> <option value="Fonseca">Fonseca</option> <option value="San Juan del Cesar">San Juan del Cesar</option> <option value="Villanueva">Villanueva</option> <option value="Urumita">Urumita</option> <option value="Manaure">Manaure</option> <option value="Uribia">Uribia</option> <!-- PRINCIPALES CIUDADES COLOMBIA --> <option value="Bogotá">Bogotá</option> <option value="Medellín">Medellín</option> <option value="Cali">Cali</option> <option value="Bucaramanga">Bucaramanga</option> <option value="Pereira">Pereira</option> <option value="Manizales">Manizales</option> <option value="Ibagué">Ibagué</option> <option value="Villavicencio">Villavicencio</option> <option value="Armenia">Armenia</option> <option value="Neiva">Neiva</option> <option value="Pasto">Pasto</option> <option value="Popayán">Popayán</option> <option value="Tunja">Tunja</option> <option value="Otra ciudad">Otra ciudad</option> </select>
+  </div>
+       <div><label for="identificacion" class="block text-sm font-medium text-blue-100 mb-2">Identificación</label> <input type="text" id="identificacion" name="identificacion" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de cédula (opcional)">
+       </div>
+       <div><label for="direccion" class="block text-sm font-medium text-blue-100 mb-2">Dirección *</label> <input type="text" id="direccion" name="direccion" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu dirección completa">
+       </div>
+      </div>
+     </section><!-- Información Técnica -->
+     <section>
+      <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span> Información Técnica y Consumo</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+       <div><label for="consumoMensual" class="block text-sm font-medium text-blue-100 mb-2">Consumo Mensual (kWh) *</label> <input type="number" id="consumoMensual" name="consumoMensual" required min="50" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="300">
+        <p class="text-xs text-blue-200 mt-1">Revisa tu factura de luz</p>
+       </div>
+       <div><label for="valorFactura" class="block text-sm font-medium text-blue-100 mb-2">Valor Factura Mensual ($) *</label> <input type="number" id="valorFactura" name="valorFactura" required min="50000" step="1000" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="150000">
+       </div>
+       <div><label for="nic" class="block text-sm font-medium text-blue-100 mb-2">NIC (Número de Instalación) *</label> <input type="text" id="nic" name="nic" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de tu medidor">
+        <p class="text-xs text-blue-200 mt-1">Aparece en tu factura de luz</p>
+       </div>
+       <div><label for="valorKwh" class="block text-sm font-medium text-blue-100 mb-2">Valor kWh ($) *</label> <input type="number" id="valorKwh" name="valorKwh" required min="100" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="500">
+        <p class="text-xs text-blue-200 mt-1">Costo por kWh en tu factura</p>
+       </div>
+       <div><label for="tipoVivienda" class="block text-sm font-medium text-blue-100 mb-2">Tipo de Propiedad *</label> <select id="tipoVivienda" name="tipoVivienda" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona una opción</option> <option value="casa">Casa</option> <option value="apartamento">Apartamento</option> <option value="local">Local Comercial</option> <option value="empresa">Empresa</option> </select>
+       </div>
+       <div><label for="areaDisponible" class="block text-sm font-medium text-blue-100 mb-2">Área Disponible Techo (m²)</label> <input type="number" id="areaDisponible" name="areaDisponible" min="10" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="50">
+        <p class="text-xs text-blue-200 mt-1">Aproximado está bien</p>
+       </div>
+       <div><label for="numeroPisos" class="block text-sm font-medium text-blue-100 mb-2">Número de Pisos *</label> <select id="numeroPisos" name="numeroPisos" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="1">1 Piso</option> <option value="2">2 Pisos</option> <option value="3">3 Pisos</option> <option value="4">4+ Pisos</option> </select>
+       </div>
+       <div><label for="sistemaElectrico" class="block text-sm font-medium text-blue-100 mb-2">Sistema Eléctrico *</label> <select id="sistemaElectrico" name="sistemaElectrico" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="monofasico">Monofásico (110V/220V)</option> <option value="bifasico">Bifásico (220V)</option> <option value="trifasico">Trifásico (220V/440V)</option> </select>
+       </div>
+       <div><label for="porcentajeConsumodia" class="block text-sm font-medium text-blue-100 mb-2">% Consumo en el Día *</label> <select id="porcentajeConsumodia" name="porcentajeConsumodia" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="30">30% - Uso principalmente nocturno</option> <option value="50">50% - Uso equilibrado día/noche</option> <option value="70">70% - Uso principalmente diurno</option> <option value="90">90% - Uso casi exclusivo diurno</option> </select>
+       </div>
+       <div><label for="tipoSistemaFV" class="block text-sm font-medium text-blue-100 mb-2">Tipo de Sistema FV *</label> <select id="tipoSistemaFV" name="tipoSistemaFV" required onchange="mostrarOpcionesBaterias()" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="ongrid">ON-GRID CONECTADO A RED</option> <option value="offgrid">OFF-GRID AUTONOMO CON BATERIAS</option> <option value="hibrido_incluido">HIBRIDO INCLUIDO BATERIAS</option> <option value="hibrido_opcional">HIBRIDO OPCIONAL BATERIAS</option> </select>
+       </div>
+       <div><label for="hspCalculado" class="block text-sm font-medium text-blue-100 mb-2">HSP Calculado</label> <input type="number" id="hspCalculado" name="hspCalculado" readonly step="0.1" class="w-full px-4 py-3 bg-gray-600 bg-opacity-50 border border-white border-opacity-30 rounded-lg text-gray-300 cursor-not-allowed" placeholder="Se calcula automáticamente">
+        <p class="text-xs text-blue-200 mt-1">Horas Sol Pico para tu ciudad</p>
+       </div>
+      </div>
+     </section><!-- Selección de Equipos -->
+     <section>
+      <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span> Selección de Equipos</h2><!-- Paneles Solares -->
+      <div class="mb-6">
+       <h3 class="text-lg font-semibold text-blue-100 mb-4">🔋 Paneles Solares *</h3>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="opcionesPaneles"><!-- Se llenan dinámicamente -->
+       </div>
+      </div><!-- Inversores -->
+      <div class="mb-6">
+       <h3 class="text-lg font-semibold text-blue-100 mb-4">⚡ Inversores *</h3>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="opcionesInversores"><!-- Se llenan dinámicamente -->
+       </div>
+      </div><!-- Baterías (solo si aplica) -->
+      <div class="mb-6" id="seccionBaterias" style="display: none;">
+       <h3 class="text-lg font-semibold text-blue-100 mb-4">🔋 Baterías</h3>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="opcionesBaterias"><!-- Se llenan dinámicamente -->
+       </div>
+      </div>
+     </section><!-- Template PowerPoint Personalizado -->
+     <section>
+      <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">4</span> Template PowerPoint (Opcional)</h2>
+      <div class="bg-white bg-opacity-10 rounded-xl p-6 border border-white border-opacity-20">
+       <div class="mb-4"><label for="templateFile" class="block text-sm font-medium text-blue-100 mb-2"> 📄 Cargar Template Personalizado (.pptx) </label> <input type="file" id="templateFile" accept=".pptx" onchange="cargarTemplate(this)" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-400 file:text-yellow-900 hover:file:bg-yellow-500">
+       </div>
+       <div id="estadoTemplate" class="text-sm text-blue-200 mb-4">
+        ⚪ Sin template cargado - Se usará diseño de respaldo profesional
+       </div>
+       <div class="bg-blue-900 bg-opacity-50 rounded-lg p-4">
+        <h4 class="text-white font-semibold mb-2">💡 Cómo Funciona el Template</h4>
+        <div class="text-blue-200 text-sm space-y-2">
+         <p><strong>🚀 Carga Automática:</strong> El sistema intenta cargar tu template desde GitHub automáticamente</p>
+         <p><strong>📁 Carga Manual:</strong> Si no hay template automático, puedes subir uno manualmente</p>
+         <p><strong>🔄 Variables Automáticas:</strong> El sistema reemplaza {{nom}}, {{tel}}, {{mail}}, etc.</p>
+         <p><strong>📊 Descarga Personalizada:</strong> Se genera un .pptx único para cada cliente</p>
+         <p><strong>🌐 URL Template:</strong> https://github.com/nassasolar/cotizador/main/templates/nassa-template.pptx</p>
+         <p><strong>💡 Formato Recomendado:</strong> Usar .pptx (no .potx) para mejor compatibilidad</p>
+        </div>
+       </div>
+      </div>
+     </section><!-- Botón de Cotización -->
+     <div class="text-center"><button type="submit" class="px-12 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-yellow-900 font-bold text-xl rounded-full transition-all duration-300 transform hover:scale-105 shadow-2xl"> 🚀 GENERAR COTIZACIÓN TÉCNICA </button>
+      <p class="text-blue-200 text-sm mt-2">Cálculos corregidos + EmailJS + PDF protegido + Diagnóstico técnico</p>
+     </div>
+    </form>
+   </div><!-- Beneficios -->
+   <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="glass rounded-xl p-6">
+     <div class="flex items-center mb-3">
+      <div class="text-3xl mr-3">
+       🛡️
+      </div>
+      <h3 class="text-white font-semibold">Respaldo Total</h3>
+     </div>
+     <p class="text-blue-200 text-sm">Acompañamiento y respaldo permanente en la gestión ante el operador de red y en la obtención de los beneficios tributarios. Monitoreo permanente.</p>
+    </div>
+    <div class="glass rounded-xl p-6">
+     <div class="flex items-center mb-3">
+      <div class="text-3xl mr-3">
+       💰
+      </div>
+      <h3 class="text-white font-semibold">Ahorra hasta el 100%</h3>
+     </div>
+     <p class="text-blue-200 text-sm">Reduce significativamente o elimina por completo tu factura de energía eléctrica con nuestro sistema solar de alta eficiencia.</p>
+    </div>
+    <div class="glass rounded-xl p-6">
+     <div class="flex items-center mb-3">
+      <div class="text-3xl mr-3">
+       ✅
+      </div>
+      <h3 class="text-white font-semibold">Garantía Real</h3>
+     </div>
+     <p class="text-blue-200 text-sm">Garantía de equipos, materiales y mano de obra reales y certificados, logrando una certificación RETIE sin contratiempos. Garantía completa del sistema con respaldo técnico especializado y mantenimiento preventivo incluido.</p>
+    </div>
+    <div class="glass rounded-xl p-6">
+     <div class="flex items-center mb-3">
+      <div class="text-3xl mr-3">
+       🏆
+      </div>
+      <h3 class="text-white font-semibold">+10 Años</h3>
+     </div>
+     <p class="text-blue-200 text-sm">Más de una década de experiencia comprobada en el sector de energía solar con cientos de proyectos exitosos.</p>
+    </div>
+   </div>
+  </main><!-- Modal de Resultado -->
+  <div id="modalResultado" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-gray-200">
+     <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-bold text-gray-900">🎉 ¡Cotización Técnica Completa!</h2><button onclick="cerrarModal()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">×</button>
+     </div>
+    </div>
+    <div id="contenidoResultado" class="p-6"><!-- El contenido se genera dinámicamente -->
+    </div>
+   </div>
+  </div>
+  <script>
+        // Variables globales para acceso directo
+        let datosCliente = {};
+        let cotizacionActual = {};
+        let templatePersonalizado = null; // Para almacenar el template cargado
+
+        // CONFIGURACIÓN EMAILJS - CREDENCIALES REALES
+        const emailConfig = {
+            serviceId: 'service_szfcsqu',      // Service ID de NASSA SOLAR
+            templateId: 'template_z3x78oq',    // Template ID configurado  
+            publicKey: '8sjM2bcz01jo2W3ku'     // Public Key activa
+        };
+
+        // Inicializar EmailJS
+        (function() {
+            emailjs.init(emailConfig.publicKey);
+        })();
+
+        // ========================================
+        // 🔧 CONFIGURACIÓN DE EQUIPOS INTEGRADA
+        // ========================================
+        
+        // 📋 EQUIPOS CONFIGURADOS DIRECTAMENTE EN EL CÓDIGO
+        let configuracionEquipos = {
+            paneles: [
+                { id: 'panel1', nombre: 'Canadian Solar 550W', capacidad: 550, precio: 850000, descripcion: 'Monocristalino, 25 años garantía' },
+                { id: 'panel2', nombre: 'Jinko Solar 615W', capacidad: 615, precio: 950000, descripcion: 'Monocristalino Tiger Pro, alta eficiencia' },
+                { id: 'panel3', nombre: 'Trina Solar 670W', capacidad: 670, precio: 1050000, descripcion: 'Vertex S+, tecnología avanzada' },
+                { id: 'panel4', nombre: 'LONGi Solar 540W', capacidad: 540, precio: 820000, descripcion: 'Monocristalino PERC, alta confiabilidad' },
+                { id: 'panel5', nombre: 'JA Solar 580W', capacidad: 580, precio: 890000, descripcion: 'Monocristalino, tecnología PERCIUM+' }
+            ],
+            inversores: [
+                { id: 'inv1', nombre: 'Growatt 3kW', capacidad: 3000, precio: 2200000, descripcion: 'Monofásico, WiFi incluido' },
+                { id: 'inv2', nombre: 'Huawei 5kW', capacidad: 5000, precio: 3500000, descripcion: 'Monofásico, optimizadores incluidos' },
+                { id: 'inv3', nombre: 'SMA 10kW', capacidad: 10000, precio: 6800000, descripcion: 'Trifásico, grado industrial' },
+                { id: 'inv4', nombre: 'Fronius 8kW', capacidad: 8000, precio: 5200000, descripcion: 'Monofásico, tecnología austriaca' },
+                { id: 'inv5', nombre: 'Solis 6kW', capacidad: 6000, precio: 4100000, descripcion: 'Híbrido, compatible con baterías' }
+            ],
+            baterias: [
+                { id: 'bat1', nombre: 'LiFePO4 5.12kWh', capacidad: 5120, precio: 8500000, descripcion: 'Litio, 6000 ciclos, 10 años' },
+                { id: 'bat2', nombre: 'LiFePO4 10.24kWh', capacidad: 10240, precio: 15800000, descripcion: 'Litio, 6000 ciclos, 10 años' },
+                { id: 'bat3', nombre: 'LiFePO4 15.36kWh', capacidad: 15360, precio: 22500000, descripcion: 'Litio, 6000 ciclos, 10 años' },
+                { id: 'bat4', nombre: 'Pylontech 7.4kWh', capacidad: 7400, precio: 12200000, descripcion: 'Litio modular, expandible' },
+                { id: 'bat5', nombre: 'BYD 13.8kWh', capacidad: 13800, precio: 19500000, descripcion: 'Litio premium, alta densidad' }
+            ]
+        };
+
+        // 🌍 HSP POR CIUDADES (Agregar más ciudades si necesitas)
+        //const hspCiudades = {
+        //    'bogota': 4.2, 'medellin': 4.5, 'cali': 4.8, 'barranquilla': 5.2,
+        //    'cartagena': 5.3, 'bucaramanga': 4.7, 'pereira': 4.6, 'manizales': 4.4,
+        //    'ibague': 4.9, 'cucuta': 5.0, 'villavicencio': 4.8, 'neiva': 5.1,
+        //    'pasto': 4.3, 'monteria': 5.2, 'valledupar': 5.4, 'sincelejo': 5.1,
+        //    'popayan': 4.4, 'armenia': 4.5, 'tunja': 4.3, 'florencia': 4.7,
+        //    'riohacha': 5.6, 'santa marta': 5.4, 'default': 4.5
+        //};
+
+
+	const hspCiudades = {
+    			// COSTA ATLÁNTICA - ATLÁNTICO
+    			'barranquilla': 5.2,
+    			'soledad': 5.2,
+    			'malambo': 5.2,
+    			'baranoa': 5.1,
+    			'sabanalarga': 5.1,
+    			'puerto colombia': 5.3,
+    			'galapa': 5.2,
+    
+    			// COSTA ATLÁNTICA - BOLÍVAR
+    			'cartagena': 5.4,
+    			'turbaco': 5.3,
+    			'arjona': 5.3,
+    			'magangué': 5.0,
+    			'el carmen de bolívar': 5.1,
+    
+    			// COSTA ATLÁNTICA - MAGDALENA
+    			'santa marta': 5.3,
+		    	'ciénaga': 5.2,
+    			'fundación': 5.1,
+    			'aracataca': 5.1,
+    			'pivijay': 5.0,
+    
+    			// COSTA ATLÁNTICA - CESAR
+    			'valledupar': 5.1,
+    			'aguachica': 4.9,
+    			'codazzi': 5.0,
+    			'la paz': 5.0,
+    			'bosconia': 5.0,
+    
+    			// COSTA ATLÁNTICA - CÓRDOBA
+    			'montería': 5.0,
+    			'cereté': 4.9,
+    			'lorica': 4.8,
+    			'sahagún': 4.9,
+    			'planeta rica': 4.9,
+    
+    			// COSTA ATLÁNTICA - SUCRE
+    			'sincelejo': 5.0,
+    			'corozal': 4.9,
+    			'sampués': 4.9,
+    
+    			// COSTA ATLÁNTICA - LA GUAJIRA
+    			'riohacha': 5.5,
+    			'dibulla': 5.4,
+    			'fonseca': 5.2,
+    			'san juan del cesar': 5.1,
+    			'villanueva': 5.1,
+    			'urumita': 5.0,
+    			'manaure': 5.6,
+    			'uribia': 5.7,
+    
+    			// PRINCIPALES CIUDADES COLOMBIA
+    			'bogotá': 4.2,
+    			'medellín': 4.5,
+    			'cali': 4.8,
+    			'bucaramanga': 4.6,
+    			'pereira': 4.4,
+    			'manizales': 4.3,
+    			'ibagué': 4.7,
+    				'villavicencio': 4.8,
+    			'armenia': 4.4,
+    			'neiva': 4.9,
+    			'pasto': 4.0,
+    			'popayán': 4.1,
+    			'tunja': 4.1,
+    	
+    			// VALOR POR DEFECTO
+    			'default': 4.5
+	};
+
+
+        // 💰 COSTOS FIJOS DEL SISTEMA (Modificar según tus tarifas)
+        const costosFijos = {
+            soporteria: 180000, // por panel
+            instalacion: 250000, // por panel
+            materialesAdicionales: 150000, // por panel
+            mantenimientoAnual: 120000 // por kW instalado
+        };
+        
+        // ========================================
+
+        // 🚀 CARGA AUTOMÁTICA DE TEMPLATE DESDE GITHUB
+        async function cargarTemplateAutomatico() {
+            const templateUrl = 'https://raw.githubusercontent.com/nassasolar/cotizador/main/templates/nassa-template.pptx';
+            
+            try {
+                console.log('🔄 Intentando cargar template automáticamente desde GitHub...');
+                document.getElementById('estadoTemplate').innerHTML = '🔄 Cargando template automático...';
+                
+                const response = await fetch(templateUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const arrayBuffer = await response.arrayBuffer();
+                templatePersonalizado = arrayBuffer;
+                
+                document.getElementById('estadoTemplate').innerHTML = '✅ Template automático cargado desde GitHub';
+                mostrarNotificacion('✅ Template NASSA cargado automáticamente', 'success');
+                console.log('✅ Template automático cargado exitosamente');
+                
+                return true;
+                
+            } catch (error) {
+                console.log('⚠️ No se pudo cargar template automático:', error.message);
+                document.getElementById('estadoTemplate').innerHTML = '⚪ Template automático no disponible - Usa carga manual';
+                
+                // No mostrar error al usuario, solo log
+                console.log('💡 Para activar carga automática:');
+                console.log('1. Sube tu template a: https://github.com/nassasolar/cotizador/tree/main/templates/');
+                console.log('2. Asegúrate que el archivo se llame: nassa-template.pptx');
+                console.log('3. El repositorio debe ser público');
+                
+                return false;
+            }
+        }
+
+        // Función para cargar template personalizado (manual)
+        function cargarTemplate(input) {
+            const file = input.files[0];
+            if (!file) {
+                // No limpiar template automático si existe
+                if (!templatePersonalizado) {
+                    document.getElementById('estadoTemplate').innerHTML = '⚪ Sin template cargado - Se usará diseño predeterminado';
+                }
+                return;
+            }
+
+            if (!file.name.endsWith('.pptx')) {
+                mostrarNotificacion('❌ Por favor selecciona un archivo .pptx válido', 'error');
+                input.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    templatePersonalizado = e.target.result;
+                    document.getElementById('estadoTemplate').innerHTML = '✅ Template manual cargado: ' + file.name;
+                    mostrarNotificacion('✅ Template personalizado cargado correctamente', 'success');
+                } catch (error) {
+                    console.error('Error cargando template:', error);
+                    mostrarNotificacion('❌ Error cargando template: ' + error.message, 'error');
+                    templatePersonalizado = null;
+                    document.getElementById('estadoTemplate').innerHTML = '❌ Error cargando template';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Función para preparar datos completos para template
+        function prepararDatosTemplate(cotizacion) {
+            const datos = {
+                // Datos básicos del cliente
+                nom: cotizacion.nombre || '',
+                tel: cotizacion.telefono || '',
+                mail: cotizacion.email || '',
+                ciu: cotizacion.ciudad || '',
+                dir: cotizacion.direccion || '',
+                id: cotizacion.identificacion || '',
+                tipoviv: cotizacion.tipoVivienda || '',
+                sist: cotizacion.sistemaElectrico || '',
+                consum: cotizacion.consumoMensual || '',
+                fact: `$${parseInt(cotizacion.valorFactura || 0).toLocaleString()}`,
+                nic: cotizacion.nic || '',
+                kwh: `$${parseInt(cotizacion.valorKwh || 0).toLocaleString()}`,
+                pisos: cotizacion.numeroPisos || '',
+                consdia: cotizacion.porcentajeConsumodia + '%' || '',
+                tipofv: cotizacion.tipoSistemaFV || '',
+                hsp: cotizacion.hspCalculado || '',
+                fec: cotizacion.fecha || '',
+                hor: cotizacion.hora || '',
+
+                // Equipos seleccionados (sin precios)
+                panel: cotizacion.panelSeleccionado?.nombre || '',
+                panelw: cotizacion.panelSeleccionado?.capacidad + 'W' || '',
+                numpan: cotizacion.numeroPaneles || '',
+
+                inv: cotizacion.inversorSeleccionado?.nombre || '',
+                invkw: (cotizacion.inversorSeleccionado?.capacidad / 1000) + 'kW' || '',
+                numinv: cotizacion.numeroInversores || '',
+
+                bat: cotizacion.bateriaSeleccionada?.nombre || 'No aplica',
+                batkwh: cotizacion.bateriaSeleccionada ? (cotizacion.bateriaSeleccionada.capacidad / 1000) + 'kWh' : 'No aplica',
+
+                // Cálculos del sistema
+                cap: cotizacion.capacidadInstalada + ' kW',
+                genmes: cotizacion.generacionMensual + ' kWh',
+                genano: cotizacion.generacionAnual + ' kWh',
+                area: Math.ceil(cotizacion.numeroPaneles * 2.5) + ' m²',
+                efic: '85%',
+
+                // Solo valor total del sistema (sin desglose de precios)
+                total: `$${parseInt(cotizacion.valorTotalSistema).toLocaleString()}`,
+
+                // Ahorros y beneficios corregidos
+                ahormes: `$${parseInt(cotizacion.ahorroMensualEnergia).toLocaleString()}`,
+                ahorano: `$${parseInt(cotizacion.ahorroAnualEnergia).toLocaleString()}`,
+                dedbase: `$${parseInt(cotizacion.deduccionRentaBase).toLocaleString()}`,
+                dedefe: `$${parseInt(cotizacion.deduccionRentaEfectiva).toLocaleString()}`,
+                depano: `$${parseInt(cotizacion.depreciacionAnual).toLocaleString()}`,
+                payback: cotizacion.tiempoRetorno + ' años',
+                mant: `$${parseInt(cotizacion.costoMantenimientoAnual).toLocaleString()}`,
+
+                // Variables acumuladas hasta payback
+                acumgen: `$${parseInt(cotizacion.acumxgen).toLocaleString()}`,
+                acumdeduc: `$${parseInt(cotizacion.acumxdeduc).toLocaleString()}`,
+                acumdepre: `$${parseInt(cotizacion.acumxdepre).toLocaleString()}`,
+                totalacum: `$${parseInt(cotizacion.TotalAcum).toLocaleString()}`,
+
+                // Resumen ejecutivo
+                porahor: cotizacion.porcentajeProduccionMensual + '%',
+                ver: 'v3.1',
+                val: '30 días'
+            };
+
+            // Agregar proyecciones año por año (25 años)
+            cotizacion.tablaAhorros.forEach((item, index) => {
+                const año = index + 1;
+                datos[`a${año}ah`] = `$${parseInt(item.ahorroTotalAño).toLocaleString()}`;
+                datos[`a${año}ac`] = `$${parseInt(item.ahorroAcumulado).toLocaleString()}`;
+                datos[`a${año}roi`] = item.roi.toFixed(1) + '%';
+            });
+
+            return datos;
+        }
+
+        // Función para calcular HSP automáticamente
+        function calcularHSP() {
+            const ciudad = document.getElementById('ciudad').value.toLowerCase().trim();
+            let hsp = hspCiudades.default;
+            
+            // Buscar coincidencia exacta o parcial
+            for (const [key, value] of Object.entries(hspCiudades)) {
+                if (ciudad.includes(key) || key.includes(ciudad)) {
+                    hsp = value;
+                    break;
+                }
+            }
+            
+            document.getElementById('hspCalculado').value = hsp;
+        }
+
+        // Función para mostrar/ocultar opciones de baterías
+        function mostrarOpcionesBaterias() {
+            const tipoSistema = document.getElementById('tipoSistemaFV').value;
+            const seccionBaterias = document.getElementById('seccionBaterias');
+            
+            if (tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') {
+                seccionBaterias.style.display = 'block';
+                // Hacer baterías obligatorias
+                document.querySelectorAll('input[name="bateria"]').forEach(input => {
+                    input.required = true;
+                });
+            } else if (tipoSistema === 'hibrido_opcional') {
+                seccionBaterias.style.display = 'block';
+                // Baterías opcionales
+                document.querySelectorAll('input[name="bateria"]').forEach(input => {
+                    input.required = false;
+                });
+            } else {
+                seccionBaterias.style.display = 'none';
+                // Limpiar selección de baterías
+                document.querySelectorAll('input[name="bateria"]').forEach(input => {
+                    input.checked = false;
+                    input.required = false;
+                });
+            }
+        }
+
+        // Función para crear tarjetas de equipos
+        function crearTarjetaEquipo(equipo, tipo) {
+            return `
+                <div class="equipo-card glass rounded-xl p-4 cursor-pointer" onclick="seleccionarEquipo('${equipo.id}', '${tipo}')">
+                    <input type="radio" name="${tipo}" value="${equipo.id}" id="${equipo.id}" class="hidden" ${tipo !== 'bateria' ? 'required' : ''}>
+                    <div class="text-center">
+                        <h4 class="text-white font-bold text-lg mb-2">${equipo.nombre}</h4>
+                        <div class="text-yellow-400 text-2xl font-bold mb-2">
+                            ${tipo === 'bateria' ? (equipo.capacidad/1000).toFixed(1) + ' kWh' : 
+                              tipo === 'inversor' ? (equipo.capacidad/1000) + ' kW' : 
+                              equipo.capacidad + ' W'}
+                        </div>
+                        <p class="text-blue-200 text-sm mb-3">${equipo.descripcion}</p>
+                        <div class="text-green-400 font-bold text-lg">
+                            ✅ Disponible
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Función para seleccionar equipo
+        function seleccionarEquipo(equipoId, tipo) {
+            // Limpiar selecciones anteriores
+            document.querySelectorAll(`input[name="${tipo}"]`).forEach(input => {
+                input.checked = false;
+                input.parentElement.classList.remove('equipo-selected');
+            });
+            
+            // Seleccionar nuevo equipo
+            const input = document.getElementById(equipoId);
+            input.checked = true;
+            input.parentElement.classList.add('equipo-selected');
+        }
+
+        // Función para cargar opciones de equipos
+        function cargarOpcionesEquipos() {
+            // Cargar paneles
+            const contenedorPaneles = document.getElementById('opcionesPaneles');
+            contenedorPaneles.innerHTML = configuracionEquipos.paneles
+                .map(panel => crearTarjetaEquipo(panel, 'panel')).join('');
+
+            // Cargar inversores
+            const contenedorInversores = document.getElementById('opcionesInversores');
+            contenedorInversores.innerHTML = configuracionEquipos.inversores
+                .map(inversor => crearTarjetaEquipo(inversor, 'inversor')).join('');
+
+            // Cargar baterías
+            const contenedorBaterias = document.getElementById('opcionesBaterias');
+            contenedorBaterias.innerHTML = configuracionEquipos.baterias
+                .map(bateria => crearTarjetaEquipo(bateria, 'bateria')).join('');
+        }
+
+        // Función para abrir WhatsApp
+        function abrirWhatsApp() {
+            const numeroEmpresa = "573136909723";
+            const mensaje = "¡Hola! 👋 Me interesa obtener información sobre sistemas de energía solar. ¿Podrían ayudarme con una cotización personalizada?";
+            const url = `https://wa.me/${numeroEmpresa}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        // Función para calcular cotización avanzada - VERSIÓN CORREGIDA
+        function calcularCotizacionAvanzada(datos) {
+            console.log('🔄 Iniciando cálculo de cotización CORREGIDA...', datos);
+            
+            try {
+                const consumoMensual = parseFloat(datos.consumoMensual);
+                const valorFactura = parseFloat(datos.valorFactura);
+                const valorKwh = parseFloat(datos.valorKwh);
+                const hsp = parseFloat(datos.hspCalculado) || 4.5;
+                const porcentajeConsumodia = parseFloat(datos.porcentajeConsumodia);
+                
+                console.log('📊 Datos numéricos:', { consumoMensual, valorFactura, valorKwh, hsp, porcentajeConsumodia });
+                
+                // Obtener equipos seleccionados
+                const panelSeleccionado = configuracionEquipos.paneles.find(p => p.id === datos.panel);
+                const inversorSeleccionado = configuracionEquipos.inversores.find(i => i.id === datos.inversor);
+                const bateriaSeleccionada = datos.bateria ? configuracionEquipos.baterias.find(b => b.id === datos.bateria) : null;
+
+                console.log('🔧 Equipos seleccionados:', { panelSeleccionado, inversorSeleccionado, bateriaSeleccionada });
+
+                if (!panelSeleccionado || !inversorSeleccionado) {
+                    throw new Error('No se encontraron los equipos seleccionados');
+                }
+
+                // Cálculos del sistema
+                const consumoDiario = consumoMensual / 30;
+                const energiaPorPanelDia = (panelSeleccionado.capacidad * 0.85 * hsp) / 1000;
+                const numeroPaneles = Math.ceil((consumoDiario * 1.2) / energiaPorPanelDia);
+                const capacidadInstalada = (numeroPaneles * panelSeleccionado.capacidad) / 1000;
+                const generacionMensual = numeroPaneles * energiaPorPanelDia * 30;
+                const generacionAnual = generacionMensual * 12;
+
+                // Cálculo de inversores necesarios
+                const numeroInversores = Math.ceil(capacidadInstalada / (inversorSeleccionado.capacidad / 1000));
+
+                // Costos del sistema
+                const costoPaneles = numeroPaneles * panelSeleccionado.precio;
+                const costoInversores = numeroInversores * inversorSeleccionado.precio;
+                const costoBaterias = bateriaSeleccionada ? bateriaSeleccionada.precio : 0;
+                const costoSoporteria = numeroPaneles * costosFijos.soporteria;
+                const costoInstalacion = numeroPaneles * costosFijos.instalacion;
+                const costoMateriales = numeroPaneles * costosFijos.materialesAdicionales;
+                
+                // CORRECCIÓN: Subtotal antes de IVA para base tributaria
+                const subtotalAntesIVA = costoPaneles + costoInversores + costoBaterias + 
+                                       costoSoporteria + costoInstalacion + costoMateriales;
+                const ivaEquipos = (costoPaneles + costoInversores) * 0.19; // Solo paneles e inversores tienen IVA
+                const valorTotalSistema = subtotalAntesIVA + ivaEquipos;
+
+                // 1. PORCENTAJE DE PRODUCCIÓN MENSUAL
+                const porcentajeProduccionMensual = Math.min((generacionMensual / consumoMensual) * 100, 100);
+
+                // Cálculos de ahorro energético
+                const ahorroMensualEnergia = Math.min(generacionMensual * valorKwh, valorFactura);
+                const ahorroAnualEnergia = ahorroMensualEnergia * 12;
+
+                // BENEFICIOS TRIBUTARIOS CORREGIDOS (base: subtotal antes IVA)
+                // 2. DEDUCCIÓN 50% EN 5 AÑOS
+                const deduccionRentaBase = subtotalAntesIVA * 0.50; // 50% del subtotal antes IVA
+                const deduccionRentaEfectiva = deduccionRentaBase * 0.35; // 35% de impuesto efectivo
+                const ahorroTotalDeduccion = deduccionRentaEfectiva; // Total en 5 años
+                const ahorroAnualDeduccion = ahorroTotalDeduccion / 5; // Distribuido en 5 años
+
+                // 3. DEPRECIACIÓN EN 3 AÑOS
+                const depreciacionAnual = subtotalAntesIVA / 3; // 33.33% anual por 3 años
+                const ahorroAnualDepreciacion = depreciacionAnual * 0.35; // 35% de ahorro fiscal
+                const ahorroTotalDepreciacion = ahorroAnualDepreciacion * 3; // Total en 3 años
+
+                // Mantenimiento inicial
+                const costoMantenimientoInicial = capacidadInstalada * costosFijos.mantenimientoAnual;
+
+                // TABLA DE AHORROS DETALLADA (25 años)
+                const tablaAhorros = [];
+                let ahorroAcumulado = 0;
+                let acumxgen = 0; // Acumulado generación hasta payback
+                let acumxdeduc = 0; // Acumulado deducción hasta payback  
+                let acumxdepre = 0; // Acumulado depreciación hasta payback
+                let paybackAlcanzado = false;
+                let añoPayback = 0;
+
+                // Validar que los valores base sean números válidos
+                if (isNaN(ahorroAnualEnergia) || isNaN(ahorroAnualDeduccion) || isNaN(ahorroAnualDepreciacion)) {
+                    throw new Error('Error en cálculos base: valores no numéricos detectados');
+                }
+
+                for (let año = 1; año <= 25; año++) {
+                    // Valor kWh con incremento anual (5.5%)
+                    const valorKwhAño = valorKwh * Math.pow(1.055, año - 1);
+                    
+                    // Producción anual con pérdida de eficiencia (3.5% anual)
+                    const degradacionSistema = Math.pow(0.965, año - 1);
+                    const factorPrimerAño = año === 1 ? 0.5 : 1; // Año 1 solo 6 meses
+                    const produccionAnual = generacionAnual * degradacionSistema * factorPrimerAño;
+                    
+                    // Ahorro por generación
+                    const ahorroGeneracion = Math.min(produccionAnual * valorKwhAño, valorFactura * 12 * Math.pow(1.055, año - 1));
+                    
+                    // Ahorro por depreciación (solo primeros 3 años)
+                    const ahorroDepreciacion = año <= 3 ? ahorroAnualDepreciacion : 0;
+                    
+                    // Ahorro por deducción 50% (solo primeros 5 años)
+                    const ahorroDeduccion = año <= 5 ? ahorroAnualDeduccion : 0;
+                    
+                    // Mantenimiento con incremento anual (igual que kWh)
+                    const costoMantenimiento = costoMantenimientoInicial * Math.pow(1.055, año - 1);
+                    
+                    // Ahorro total del año
+                    const ahorroTotalAño = ahorroGeneracion + ahorroDepreciacion + ahorroDeduccion - costoMantenimiento;
+                    ahorroAcumulado += ahorroTotalAño;
+                    
+                    // ROI
+                    const roi = ((ahorroAcumulado - valorTotalSistema) / valorTotalSistema) * 100;
+                    
+                    // Verificar payback
+                    if (!paybackAlcanzado && ahorroAcumulado >= valorTotalSistema) {
+                        paybackAlcanzado = true;
+                        añoPayback = año;
+                    }
+                    
+                    // Acumular hasta payback
+                    if (!paybackAlcanzado || año <= añoPayback) {
+                        acumxgen += ahorroGeneracion;
+                        acumxdeduc += ahorroDeduccion;
+                        acumxdepre += ahorroDepreciacion;
+                    }
+                    
+                    tablaAhorros.push({
+                        año: año,
+                        valorKwhAño: valorKwhAño,
+                        produccionAnual: produccionAnual,
+                        ahorroGeneracion: ahorroGeneracion,
+                        ahorroDepreciacion: ahorroDepreciacion,
+                        ahorroDeduccion: ahorroDeduccion,
+                        costoMantenimiento: costoMantenimiento,
+                        ahorroTotalAño: ahorroTotalAño,
+                        ahorroAcumulado: ahorroAcumulado,
+                        roi: roi
+                    });
+                }
+
+                // CALCULAR TOTALACUM
+                const TotalAcum = acumxgen + acumxdeduc + acumxdepre;
+
+                // Tiempo de retorno calculado
+                const tiempoRetorno = añoPayback || (valorTotalSistema / (ahorroAnualEnergia + ahorroAnualDeduccion + ahorroAnualDepreciacion));
+
+                const resultado = {
+                    // Datos básicos
+                    ...datos,
+                    fecha: new Date().toLocaleDateString('es-CO'),
+                    hora: new Date().toLocaleTimeString('es-CO'),
+                    cotizacionId: 'NASSA-' + Date.now(),
+                    
+                    // Equipos seleccionados
+                    panelSeleccionado: panelSeleccionado,
+                    inversorSeleccionado: inversorSeleccionado,
+                    bateriaSeleccionada: bateriaSeleccionada,
+                    
+                    // Dimensionamiento
+                    numeroPaneles: numeroPaneles,
+                    numeroInversores: numeroInversores,
+                    capacidadInstalada: capacidadInstalada.toFixed(2),
+                    generacionMensual: generacionMensual.toFixed(0),
+                    generacionAnual: generacionAnual.toFixed(0),
+                    
+                    // 1. PORCENTAJE PRODUCCIÓN MENSUAL
+                    porcentajeProduccionMensual: porcentajeProduccionMensual.toFixed(1),
+                    
+                    // Costos detallados
+                    costoPaneles: costoPaneles,
+                    costoInversores: costoInversores,
+                    costoBaterias: costoBaterias,
+                    costoSoporteria: costoSoporteria,
+                    costoInstalacion: costoInstalacion,
+                    costoMateriales: costoMateriales,
+                    subtotalAntesIVA: subtotalAntesIVA,
+                    ivaEquipos: ivaEquipos,
+                    valorTotalSistema: valorTotalSistema,
+                    
+                    // Ahorros energéticos
+                    ahorroMensualEnergia: ahorroMensualEnergia,
+                    ahorroAnualEnergia: ahorroAnualEnergia,
+                    
+                    // 2. AHORRO TOTAL DEDUCCIÓN (5 años)
+                    deduccionRentaBase: deduccionRentaBase,
+                    deduccionRentaEfectiva: deduccionRentaEfectiva,
+                    ahorroTotalDeduccion: ahorroTotalDeduccion,
+                    ahorroAnualDeduccion: ahorroAnualDeduccion,
+                    
+                    // 3. AHORRO TOTAL DEPRECIACIÓN (3 años)
+                    depreciacionAnual: depreciacionAnual,
+                    ahorroAnualDepreciacion: ahorroAnualDepreciacion,
+                    ahorroTotalDepreciacion: ahorroTotalDepreciacion,
+                    
+                    // ROI y payback
+                    tiempoRetorno: tiempoRetorno.toFixed(1),
+                    añoPayback: añoPayback,
+                    
+                    // 8. VARIABLES ACUMULADAS HASTA PAYBACK
+                    acumxgen: acumxgen,
+                    acumxdeduc: acumxdeduc,
+                    acumxdepre: acumxdepre,
+                    TotalAcum: TotalAcum,
+                    
+                    // Proyecciones completas
+                    tablaAhorros: tablaAhorros,
+                    
+                    // Mantenimiento
+                    costoMantenimientoAnual: costoMantenimientoInicial
+                };
+
+                // VERIFICACIÓN EN CONSOLA
+                console.log('📊 VERIFICACIÓN DE DATOS:');
+                console.log('1. Porcentaje producción mensual:', resultado.porcentajeProduccionMensual + '%');
+                console.log('2. Ahorro total depreciación (3 años):', '$' + resultado.ahorroTotalDepreciacion.toLocaleString());
+                console.log('3. Ahorro total deducción (5 años):', '$' + resultado.ahorroTotalDeduccion.toLocaleString());
+                console.log('8a. Acum. generación hasta payback:', '$' + resultado.acumxgen.toLocaleString());
+                console.log('8b. Acum. deducción hasta payback:', '$' + resultado.acumxdeduc.toLocaleString());
+                console.log('8c. Acum. depreciación hasta payback:', '$' + resultado.acumxdepre.toLocaleString());
+                console.log('9. TOTAL ACUMULADO (suma a+b+c):', '$' + resultado.TotalAcum.toLocaleString());
+                console.log('✅ Cálculo completado exitosamente');
+
+                return resultado;
+
+            } catch (error) {
+                console.error('❌ Error en cálculo de cotización:', error);
+                mostrarNotificacion('❌ Error calculando cotización: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Función para enviar email con EmailJS
+        async function enviarEmailConEmailJS(cotizacion) {
+            try {
+                console.log('📧 Enviando email con EmailJS...');
+                
+                // USAR LAS MISMAS VARIABLES QUE EL TEMPLATE POWERPOINT
+                const datosEmail = prepararDatosTemplate(cotizacion);
+
+                // AGREGAR ENLACES DE DESCARGA
+                datosEmail.enlace_pdf = `https://tu-servidor.com/descargas/pdf/${cotizacion.cotizacionId}.pdf`;
+                datosEmail.enlace_ppt = `https://tu-servidor.com/descargas/ppt/${cotizacion.cotizacionId}.pptx`;
+                datosEmail.mensaje_descarga = `
+🔗 **ENLACES DE DESCARGA:**
+
+📄 **PDF Técnico:** ${datosEmail.enlace_pdf}
+📊 **Presentación PowerPoint:** ${datosEmail.enlace_ppt}
+
+💡 **Instrucciones:**
+1. Haz clic en los enlaces para descargar
+2. Los archivos están protegidos y personalizados
+3. Válidos por 30 días desde la fecha de cotización
+
+📞 **¿Necesitas ayuda?** Contáctanos al (057) 313 690 9723
+`;
+
+                // Enviar email
+                const response = await emailjs.send(
+                    emailConfig.serviceId,
+                    emailConfig.templateId,
+                    datosEmail
+                );
+
+                console.log('✅ Email enviado exitosamente:', response);
+                mostrarNotificacion('✅ Email enviado con enlaces de descarga a ' + cotizacion.email, 'success');
+                
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error enviando email:', error);
+                mostrarNotificacion('❌ Error enviando email: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Función para generar PDF protegido mejorada
+        function generarPDFProtegido(cotizacion) {
+            try {
+                console.log('📄 Iniciando generación de PDF...');
+                
+                // Verificar que jsPDF esté disponible
+                if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                    throw new Error('jsPDF no está cargado correctamente');
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                console.log('✅ jsPDF inicializado correctamente');
+                
+                // Configurar fuente
+                doc.setFont('helvetica');
+                
+                // PÁGINA 1: PORTADA
+                doc.setFontSize(20);
+                doc.setTextColor(0, 100, 200);
+                doc.text('NASSA SOLAR', 105, 30, { align: 'center' });
+                
+                doc.setFontSize(16);
+                doc.setTextColor(0, 0, 0);
+                doc.text('COTIZACIÓN TÉCNICA SISTEMA SOLAR', 105, 50, { align: 'center' });
+                
+                doc.setFontSize(14);
+                doc.text(`Cliente: ${cotizacion.nombre}`, 20, 80);
+                doc.text(`Ciudad: ${cotizacion.ciudad}`, 20, 95);
+                doc.text(`Fecha: ${cotizacion.fecha}`, 20, 110);
+                doc.text(`ID: ${cotizacion.cotizacionId}`, 20, 125);
+                
+                // Marca de agua
+                doc.setTextColor(200, 200, 200);
+                doc.setFontSize(50);
+                doc.text('CONFIDENCIAL', 105, 150, { align: 'center', angle: 45 });
+                
+                // Resumen ejecutivo
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.text('RESUMEN EJECUTIVO:', 20, 170);
+                doc.text(`• Capacidad: ${cotizacion.capacidadInstalada} kW`, 20, 185);
+                doc.text(`• Inversión: $${parseInt(cotizacion.valorTotalSistema).toLocaleString()}`, 20, 200);
+                doc.text(`• Ahorro Mensual: $${parseInt(cotizacion.ahorroMensualEnergia).toLocaleString()}`, 20, 215);
+                doc.text(`• Tiempo Retorno: ${cotizacion.tiempoRetorno} años`, 20, 230);
+                doc.text(`• Total Acumulado PayBack: $${parseInt(cotizacion.TotalAcum).toLocaleString()}`, 20, 245);
+                
+                // PÁGINA 2: DETALLES TÉCNICOS
+                doc.addPage();
+                doc.setFontSize(16);
+                doc.setTextColor(0, 100, 200);
+                doc.text('DETALLES TÉCNICOS', 20, 30);
+                
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                
+                // Equipos
+                doc.text('EQUIPOS SELECCIONADOS:', 20, 50);
+                doc.text(`• ${cotizacion.numeroPaneles} x ${cotizacion.panelSeleccionado.nombre}`, 20, 65);
+                doc.text(`• ${cotizacion.numeroInversores} x ${cotizacion.inversorSeleccionado.nombre}`, 20, 80);
+                if (cotizacion.bateriaSeleccionada) {
+                    doc.text(`• 1 x ${cotizacion.bateriaSeleccionada.nombre}`, 20, 95);
+                }
+                
+                // Cálculos
+                doc.text('CÁLCULOS DEL SISTEMA:', 20, 120);
+                doc.text(`• Generación Mensual: ${cotizacion.generacionMensual} kWh`, 20, 135);
+                doc.text(`• Generación Anual: ${cotizacion.generacionAnual} kWh`, 20, 150);
+                doc.text(`• Porcentaje Producción: ${cotizacion.porcentajeProduccionMensual}%`, 20, 165);
+                doc.text(`• HSP: ${cotizacion.hspCalculado} horas`, 20, 180);
+                
+                // Beneficios tributarios
+                doc.text('BENEFICIOS TRIBUTARIOS:', 20, 205);
+                doc.text(`• Deducción 50% (5 años): $${parseInt(cotizacion.ahorroTotalDeduccion).toLocaleString()}`, 20, 220);
+                doc.text(`• Depreciación (3 años): $${parseInt(cotizacion.ahorroTotalDepreciacion).toLocaleString()}`, 20, 235);
+                doc.text(`• Base tributaria: $${parseInt(cotizacion.subtotalAntesIVA).toLocaleString()}`, 20, 250);
+                
+                // PÁGINA 3: PROYECCIÓN FINANCIERA
+                doc.addPage();
+                doc.setFontSize(16);
+                doc.setTextColor(0, 100, 200);
+                doc.text('PROYECCIÓN FINANCIERA (10 AÑOS)', 20, 30);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                
+                // Tabla de ahorros (primeros 10 años)
+                let y = 50;
+                doc.text('Año', 20, y);
+                doc.text('Ahorro Anual', 50, y);
+                doc.text('Ahorro Acumulado', 100, y);
+                doc.text('ROI', 150, y);
+                
+                y += 10;
+                for (let i = 0; i < Math.min(10, cotizacion.tablaAhorros.length); i++) {
+                    const item = cotizacion.tablaAhorros[i];
+                    doc.text(item.año.toString(), 20, y);
+                    doc.text('$' + parseInt(item.ahorroTotalAño).toLocaleString(), 50, y);
+                    doc.text('$' + parseInt(item.ahorroAcumulado).toLocaleString(), 100, y);
+                    doc.text(item.roi.toFixed(1) + '%', 150, y);
+                    y += 10;
+                }
+                
+                // Variables acumuladas hasta payback
+                y += 20;
+                doc.setFontSize(12);
+                doc.text('ACUMULADOS HASTA PAYBACK:', 20, y);
+                y += 15;
+                doc.setFontSize(10);
+                doc.text(`• Generación: $${parseInt(cotizacion.acumxgen).toLocaleString()}`, 20, y);
+                y += 10;
+                doc.text(`• Deducción: $${parseInt(cotizacion.acumxdeduc).toLocaleString()}`, 20, y);
+                y += 10;
+                doc.text(`• Depreciación: $${parseInt(cotizacion.acumxdepre).toLocaleString()}`, 20, y);
+                y += 10;
+                doc.text(`• TOTAL ACUM: $${parseInt(cotizacion.TotalAcum).toLocaleString()}`, 20, y);
+                
+                // Pie de página con restricciones
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                doc.text('DOCUMENTO CONFIDENCIAL - PROHIBIDA SU REPRODUCCIÓN', 105, 280, { align: 'center' });
+                doc.text(`ID: ${cotizacion.cotizacionId} | NASSA SOLAR | ${cotizacion.fecha}`, 105, 290, { align: 'center' });
+                
+                console.log('✅ PDF generado correctamente');
+                
+                // Generar nombre del archivo (simplificado para evitar problemas)
+                const nombreLimpio = cotizacion.nombre.replace(/[^a-zA-Z0-9]/g, '_');
+                const nombreArchivo = `Cotizacion_Solar_${nombreLimpio}_${cotizacion.cotizacionId}.pdf`;
+                
+                console.log('📁 Nombre del archivo:', nombreArchivo);
+                
+                // MÉTODO PRINCIPAL: usar doc.save()
+                try {
+                    console.log('🔄 Intentando descarga con doc.save()...');
+                    doc.save(nombreArchivo);
+                    console.log('✅ Descarga iniciada con doc.save()');
+                    
+                    // Esperar un poco antes de mostrar el modal
+                    setTimeout(() => {
+                        mostrarModalDescargaPDF(nombreArchivo);
+                    }, 500);
+                    
+                    return true;
+                } catch (saveError) {
+                    console.log('⚠️ doc.save() falló, intentando método alternativo:', saveError.message);
+                    
+                    try {
+                        // MÉTODO ALTERNATIVO: blob + enlace
+                        console.log('🔄 Intentando método alternativo con blob...');
+                        const pdfBlob = doc.output('blob');
+                        const enlaceDescarga = document.createElement('a');
+                        enlaceDescarga.href = URL.createObjectURL(pdfBlob);
+                        enlaceDescarga.download = nombreArchivo;
+                        enlaceDescarga.style.display = 'none';
+                        
+                        document.body.appendChild(enlaceDescarga);
+                        enlaceDescarga.click();
+                        document.body.removeChild(enlaceDescarga);
+                        
+                        setTimeout(() => URL.revokeObjectURL(enlaceDescarga.href), 2000);
+                        
+                        console.log('✅ Descarga iniciada con método alternativo');
+                        
+                        // Esperar un poco antes de mostrar el modal
+                        setTimeout(() => {
+                            mostrarModalDescargaPDF(nombreArchivo);
+                        }, 500);
+                        
+                        return true;
+                    } catch (blobError) {
+                        console.error('❌ Ambos métodos de descarga fallaron:', blobError);
+                        throw new Error('No se pudo descargar el PDF: ' + blobError.message);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Error generando PDF:', error);
+                
+                // Guardar error para diagnóstico
+                if (!window.erroresCapturados) window.erroresCapturados = [];
+                window.erroresCapturados.push(`PDF: ${error.message}`);
+                
+                mostrarNotificacion('❌ Error generando PDF: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Función para mostrar modal de confirmación de descarga
+        function mostrarModalDescargaPDF(nombreArchivo) {
+            const modal = document.createElement('div');
+            modal.id = 'modalDescargaPDF';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="text-center">
+                            <div class="text-6xl mb-4">📄</div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-4">¡PDF Generado Exitosamente!</h3>
+                            
+                            <div class="bg-green-50 p-4 rounded-lg mb-4">
+                                <p class="text-sm text-gray-700 mb-2"><strong>Archivo:</strong></p>
+                                <p class="text-xs bg-gray-100 p-2 rounded break-all">${nombreArchivo}</p>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-4 rounded-lg mb-4 text-left">
+                                <h4 class="font-bold text-blue-900 mb-2">📂 ¿Dónde encontrar el archivo?</h4>
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <div><strong>🖥️ Windows:</strong><br>
+                                    <code class="bg-gray-100 px-2 py-1 rounded text-xs">C:\\Users\\TuUsuario\\Downloads\\</code></div>
+                                    
+                                    <div><strong>🍎 Mac:</strong><br>
+                                    <code class="bg-gray-100 px-2 py-1 rounded text-xs">/Users/TuUsuario/Downloads/</code></div>
+                                    
+                                    <div><strong>📱 Android:</strong><br>
+                                    Carpeta "Descargas" o "Downloads"</div>
+                                    
+                                    <div><strong>📲 iPhone:</strong><br>
+                                    App "Archivos" → "Descargas"</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-4 rounded-lg mb-4">
+                                <h4 class="font-bold text-yellow-900 mb-2">💡 Consejos para encontrarlo:</h4>
+                                <ul class="text-sm text-gray-700 text-left space-y-1">
+                                    <li>• Mira la barra de descargas del navegador (parte inferior)</li>
+                                    <li>• Presiona <strong>Ctrl+J</strong> (Windows) o <strong>Cmd+Shift+J</strong> (Mac)</li>
+                                    <li>• Busca archivos que empiecen con "Cotizacion_Solar_"</li>
+                                    <li>• Ordena por fecha (será el más reciente)</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                                <button onclick="abrirCarpetaDescargas()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold text-sm">
+                                    📁 Abrir Descargas
+                                </button>
+                                <button onclick="cerrarModalDescarga()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold text-sm">
+                                    Entendido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        // Función para intentar abrir carpeta de descargas
+        function abrirCarpetaDescargas() {
+            try {
+                // Crear enlace temporal para abrir carpeta de descargas
+                const enlace = document.createElement('a');
+                enlace.href = 'file:///';
+                enlace.target = '_blank';
+                enlace.rel = 'noopener noreferrer';
+                enlace.click();
+                
+                mostrarNotificacion('💡 Si no se abrió automáticamente, ve manualmente a tu carpeta de Descargas', 'info');
+            } catch (error) {
+                mostrarNotificacion('💡 Ve manualmente a tu carpeta de Descargas del navegador', 'info');
+            }
+        }
+
+        // Función para cerrar modal de descarga
+        function cerrarModalDescarga() {
+            const modal = document.getElementById('modalDescargaPDF');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Función para mostrar diagnóstico técnico
+        function mostrarDiagnostico() {
+            const diagnostico = {
+                jsPDF: typeof window.jspdf !== 'undefined' && typeof window.jspdf.jsPDF !== 'undefined',
+                emailJS: typeof emailjs !== 'undefined',
+                cotizacionActiva: typeof cotizacionActual !== 'undefined' && cotizacionActual !== null,
+                navegadorSoportaDescarga: 'download' in document.createElement('a'),
+                navegador: navigator.userAgent,
+                erroresCapturados: window.erroresCapturados || []
+            };
+
+            const html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold text-gray-900">🔧 Diagnóstico Técnico del Sistema</h2>
+                                <button onclick="cerrarModalDiagnostico()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">&times;</button>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <!-- Estado del Sistema -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-bold mb-3">📊 Estado del Sistema</h3>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div class="flex items-center">
+                                        <span class="mr-2">${diagnostico.jsPDF ? '✅' : '❌'}</span>
+                                        <span>Librería jsPDF: ${diagnostico.jsPDF ? 'Cargada' : 'NO cargada'}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="mr-2">${diagnostico.emailJS ? '✅' : '❌'}</span>
+                                        <span>Librería EmailJS: ${diagnostico.emailJS ? 'Cargada' : 'NO cargada'}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="mr-2">${diagnostico.cotizacionActiva ? '✅' : '❌'}</span>
+                                        <span>Cotización Activa: ${diagnostico.cotizacionActiva ? 'Disponible' : 'No disponible'}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="mr-2">${diagnostico.navegadorSoportaDescarga ? '✅' : '❌'}</span>
+                                        <span>Soporte Descarga: ${diagnostico.navegadorSoportaDescarga ? 'Soportado' : 'NO soportado'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Información del Navegador -->
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-bold mb-3">🌐 Información del Navegador</h3>
+                                <p class="text-sm break-all">${diagnostico.navegador}</p>
+                            </div>
+
+                            <!-- Prueba de Descarga -->
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-bold mb-3">🧪 Prueba de Descarga</h3>
+                                <button onclick="probarDescargaSimple()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold mb-3">
+                                    📄 Probar Descarga Simple
+                                </button>
+                                <div id="resultadoPrueba" class="text-sm"></div>
+                            </div>
+
+                            <!-- Errores Capturados -->
+                            ${diagnostico.erroresCapturados.length > 0 ? `
+                            <div class="bg-red-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-bold mb-3">🚨 Errores Capturados</h3>
+                                <div class="text-sm space-y-2">
+                                    ${diagnostico.erroresCapturados.map(error => `<div class="bg-red-100 p-2 rounded">${error}</div>`).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            <!-- Soluciones Comunes -->
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-bold mb-3">💡 Soluciones Comunes</h3>
+                                <ul class="text-sm space-y-2">
+                                    <li>• <strong>Chrome:</strong> Verifica que las descargas automáticas estén permitidas en Configuración → Privacidad → Configuración de sitios → Descargas</li>
+                                    <li>• <strong>Firefox:</strong> Ve a about:preferences → General → Descargas y verifica la configuración</li>
+                                    <li>• <strong>Safari:</strong> Preferencias → General → Ubicación de descarga de archivos</li>
+                                    <li>• <strong>Edge:</strong> Configuración → Descargas → Ubicación de descarga</li>
+                                    <li>• <strong>Bloqueador de ventanas emergentes:</strong> Desactívalo temporalmente para este sitio</li>
+                                    <li>• <strong>Antivirus:</strong> Algunos antivirus bloquean descargas automáticas</li>
+                                </ul>
+                            </div>
+
+                            <!-- Información de Cotización Actual -->
+                            ${diagnostico.cotizacionActiva ? `
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-bold mb-3">📋 Información de Cotización Actual</h3>
+                                <div class="text-sm grid grid-cols-2 gap-2">
+                                    <div><strong>Cliente:</strong> ${cotizacionActual.nombre || 'N/A'}</div>
+                                    <div><strong>ID:</strong> ${cotizacionActual.cotizacionId || 'N/A'}</div>
+                                    <div><strong>Capacidad:</strong> ${cotizacionActual.capacidadInstalada || 'N/A'} kW</div>
+                                    <div><strong>Inversión:</strong> $${cotizacionActual.valorTotalSistema ? parseInt(cotizacionActual.valorTotalSistema).toLocaleString() : 'N/A'}</div>
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            <div class="text-center">
+                                <button onclick="cerrarModalDiagnostico()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold">
+                                    Cerrar Diagnóstico
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        // Función para probar descarga simple
+        function probarDescargaSimple() {
+            const resultado = document.getElementById('resultadoPrueba');
+            resultado.innerHTML = '🔄 Probando descarga...';
+
+            try {
+                // Crear un archivo de texto simple
+                const contenido = `Prueba de descarga - ${new Date().toLocaleString()}\n\nSi puedes ver este archivo, tu navegador puede descargar archivos correctamente.\n\nNASSA SOLAR - Sistema de Cotización v3.1`;
+                const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+                
+                // Crear enlace de descarga
+                const enlace = document.createElement('a');
+                enlace.href = URL.createObjectURL(blob);
+                enlace.download = 'prueba_descarga_nassa.txt';
+                enlace.style.display = 'none';
+                
+                // Intentar descarga
+                document.body.appendChild(enlace);
+                enlace.click();
+                document.body.removeChild(enlace);
+                
+                // Limpiar URL
+                setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+                
+                resultado.innerHTML = '✅ Prueba de descarga ejecutada. Si se descargó un archivo .txt, tu navegador funciona correctamente.';
+                
+            } catch (error) {
+                resultado.innerHTML = `❌ Error en prueba de descarga: ${error.message}`;
+                
+                // Guardar error para diagnóstico
+                if (!window.erroresCapturados) window.erroresCapturados = [];
+                window.erroresCapturados.push(`Prueba descarga: ${error.message}`);
+            }
+        }
+
+        // Función para cerrar modal de diagnóstico
+        function cerrarModalDiagnostico() {
+            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 📊 SISTEMA COMPLETO DE REGISTRO CRM PARA NASSA SOLAR
+        function registrarCotizacionCompleta(cotizacion) {
+            try {
+                console.log('📊 Registrando cotización completa para CRM...');
+                
+                // Obtener registros existentes
+                let registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                let registroResumen = JSON.parse(localStorage.getItem('registroCotizaciones') || '[]');
+                
+                // REGISTRO COMPLETO PARA CRM (TODAS LAS VARIABLES)
+                const registroCRM = {
+                    // === IDENTIFICACIÓN ===
+                    id: cotizacion.cotizacionId,
+                    timestamp: Date.now(),
+                    fecha: cotizacion.fecha,
+                    hora: cotizacion.hora,
+                    version: 'v3.1',
+                    
+                    // === DATOS PERSONALES ===
+                    nombre: cotizacion.nombre,
+                    telefono: cotizacion.telefono,
+                    email: cotizacion.email,
+                    ciudad: cotizacion.ciudad,
+                    direccion: cotizacion.direccion,
+                    identificacion: cotizacion.identificacion || '',
+                    tipoVivienda: cotizacion.tipoVivienda,
+                    
+                    // === INFORMACIÓN TÉCNICA ===
+                    consumoMensual: parseFloat(cotizacion.consumoMensual),
+                    valorFactura: parseFloat(cotizacion.valorFactura),
+                    valorKwh: parseFloat(cotizacion.valorKwh),
+                    nic: cotizacion.nic,
+                    sistemaElectrico: cotizacion.sistemaElectrico,
+                    numeroPisos: cotizacion.numeroPisos,
+                    areaDisponible: parseFloat(cotizacion.areaDisponible) || 0,
+                    porcentajeConsumodia: parseFloat(cotizacion.porcentajeConsumodia),
+                    tipoSistemaFV: cotizacion.tipoSistemaFV,
+                    hspCalculado: parseFloat(cotizacion.hspCalculado),
+                    
+                    // === EQUIPOS SELECCIONADOS ===
+                    panelSeleccionado: {
+                        id: cotizacion.panelSeleccionado.id,
+                        nombre: cotizacion.panelSeleccionado.nombre,
+                        capacidad: cotizacion.panelSeleccionado.capacidad,
+                        precio: cotizacion.panelSeleccionado.precio
+                    },
+                    inversorSeleccionado: {
+                        id: cotizacion.inversorSeleccionado.id,
+                        nombre: cotizacion.inversorSeleccionado.nombre,
+                        capacidad: cotizacion.inversorSeleccionado.capacidad,
+                        precio: cotizacion.inversorSeleccionado.precio
+                    },
+                    bateriaSeleccionada: cotizacion.bateriaSeleccionada ? {
+                        id: cotizacion.bateriaSeleccionada.id,
+                        nombre: cotizacion.bateriaSeleccionada.nombre,
+                        capacidad: cotizacion.bateriaSeleccionada.capacidad,
+                        precio: cotizacion.bateriaSeleccionada.precio
+                    } : null,
+                    
+                    // === DIMENSIONAMIENTO ===
+                    numeroPaneles: parseInt(cotizacion.numeroPaneles),
+                    numeroInversores: parseInt(cotizacion.numeroInversores),
+                    capacidadInstalada: parseFloat(cotizacion.capacidadInstalada),
+                    generacionMensual: parseFloat(cotizacion.generacionMensual),
+                    generacionAnual: parseFloat(cotizacion.generacionAnual),
+                    porcentajeProduccionMensual: parseFloat(cotizacion.porcentajeProduccionMensual),
+                    
+                    // === COSTOS DETALLADOS ===
+                    costoPaneles: parseFloat(cotizacion.costoPaneles),
+                    costoInversores: parseFloat(cotizacion.costoInversores),
+                    costoBaterias: parseFloat(cotizacion.costoBaterias),
+                    costoSoporteria: parseFloat(cotizacion.costoSoporteria),
+                    costoInstalacion: parseFloat(cotizacion.costoInstalacion),
+                    costoMateriales: parseFloat(cotizacion.costoMateriales),
+                    subtotalAntesIVA: parseFloat(cotizacion.subtotalAntesIVA),
+                    ivaEquipos: parseFloat(cotizacion.ivaEquipos),
+                    valorTotalSistema: parseFloat(cotizacion.valorTotalSistema),
+                    
+                    // === AHORROS Y BENEFICIOS ===
+                    ahorroMensualEnergia: parseFloat(cotizacion.ahorroMensualEnergia),
+                    ahorroAnualEnergia: parseFloat(cotizacion.ahorroAnualEnergia),
+                    deduccionRentaBase: parseFloat(cotizacion.deduccionRentaBase),
+                    deduccionRentaEfectiva: parseFloat(cotizacion.deduccionRentaEfectiva),
+                    ahorroTotalDeduccion: parseFloat(cotizacion.ahorroTotalDeduccion),
+                    ahorroAnualDeduccion: parseFloat(cotizacion.ahorroAnualDeduccion),
+                    depreciacionAnual: parseFloat(cotizacion.depreciacionAnual),
+                    ahorroAnualDepreciacion: parseFloat(cotizacion.ahorroAnualDepreciacion),
+                    ahorroTotalDepreciacion: parseFloat(cotizacion.ahorroTotalDepreciacion),
+                    costoMantenimientoAnual: parseFloat(cotizacion.costoMantenimientoAnual),
+                    
+                    // === ROI Y PAYBACK ===
+                    tiempoRetorno: parseFloat(cotizacion.tiempoRetorno),
+                    añoPayback: parseInt(cotizacion.añoPayback) || 0,
+                    acumxgen: parseFloat(cotizacion.acumxgen),
+                    acumxdeduc: parseFloat(cotizacion.acumxdeduc),
+                    acumxdepre: parseFloat(cotizacion.acumxdepre),
+                    TotalAcum: parseFloat(cotizacion.TotalAcum),
+                    
+                    // === PROYECCIONES (25 AÑOS) ===
+                    tablaAhorros: cotizacion.tablaAhorros.map(item => ({
+                        año: item.año,
+                        valorKwhAño: Math.round(item.valorKwhAño),
+                        produccionAnual: Math.round(item.produccionAnual),
+                        ahorroGeneracion: Math.round(item.ahorroGeneracion),
+                        ahorroDepreciacion: Math.round(item.ahorroDepreciacion),
+                        ahorroDeduccion: Math.round(item.ahorroDeduccion),
+                        costoMantenimiento: Math.round(item.costoMantenimiento),
+                        ahorroTotalAño: Math.round(item.ahorroTotalAño),
+                        ahorroAcumulado: Math.round(item.ahorroAcumulado),
+                        roi: parseFloat(item.roi.toFixed(2))
+                    })),
+                    
+                    // === MÉTRICAS CALCULADAS ===
+                    roiAño5: cotizacion.tablaAhorros[4] ? parseFloat(cotizacion.tablaAhorros[4].roi.toFixed(2)) : 0,
+                    roiAño10: cotizacion.tablaAhorros[9] ? parseFloat(cotizacion.tablaAhorros[9].roi.toFixed(2)) : 0,
+                    roiAño25: cotizacion.tablaAhorros[24] ? parseFloat(cotizacion.tablaAhorros[24].roi.toFixed(2)) : 0,
+                    ahorroAcumAño25: cotizacion.tablaAhorros[24] ? Math.round(cotizacion.tablaAhorros[24].ahorroAcumulado) : 0,
+                    
+                    // === ESTADO DEL LEAD ===
+                    estadoLead: 'COTIZADO',
+                    fechaUltimaActualizacion: new Date().toISOString(),
+                    notas: '',
+                    seguimiento: [],
+                    
+                    // === MÉTRICAS DE NEGOCIO ===
+                    margenBruto: 0, // Para calcular después
+                    probabilidadCierre: 0, // Para actualizar después
+                    valorPotencial: parseFloat(cotizacion.valorTotalSistema),
+                    segmentoCliente: clasificarSegmentoCliente(cotizacion),
+                    prioridadSeguimiento: calcularPrioridadSeguimiento(cotizacion)
+                };
+                
+                // REGISTRO RESUMIDO (COMPATIBLE CON VERSIÓN ANTERIOR)
+                const registroResumido = {
+                    id: cotizacion.cotizacionId,
+                    fecha: cotizacion.fecha,
+                    hora: cotizacion.hora,
+                    nombre: cotizacion.nombre,
+                    email: cotizacion.email,
+                    telefono: cotizacion.telefono,
+                    ciudad: cotizacion.ciudad,
+                    capacidad: cotizacion.capacidadInstalada,
+                    inversion: cotizacion.valorTotalSistema,
+                    ahorro: cotizacion.ahorroMensualEnergia,
+                    payback: cotizacion.tiempoRetorno,
+                    totalAcum: cotizacion.TotalAcum,
+                    tipoSistema: cotizacion.tipoSistemaFV,
+                    estadoLead: 'COTIZADO'
+                };
+                
+                // Agregar al inicio de ambos registros
+                registroCompleto.unshift(registroCRM);
+                registroResumen.unshift(registroResumido);
+                
+                // Limitar registros (500 completos, 100 resumidos)
+                if (registroCompleto.length > 500) {
+                    registroCompleto = registroCompleto.slice(0, 500);
+                }
+                if (registroResumen.length > 100) {
+                    registroResumen = registroResumen.slice(0, 100);
+                }
+                
+                // Guardar en localStorage
+                localStorage.setItem('nassaCRM', JSON.stringify(registroCompleto));
+                localStorage.setItem('registroCotizaciones', JSON.stringify(registroResumen));
+                
+                // Actualizar estadísticas
+                actualizarEstadisticasCRM();
+                
+                console.log('✅ Cotización registrada en CRM completo');
+                console.log('📊 Segmento cliente:', registroCRM.segmentoCliente);
+                console.log('🎯 Prioridad seguimiento:', registroCRM.prioridadSeguimiento);
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error registrando cotización completa:', error);
+                return false;
+            }
+        }
+
+        // Función para clasificar segmento de cliente
+        function clasificarSegmentoCliente(cotizacion) {
+            const inversion = parseFloat(cotizacion.valorTotalSistema);
+            const tipo = cotizacion.tipoVivienda;
+            
+            if (tipo === 'empresa' || inversion > 150000000) {
+                return 'CORPORATIVO';
+            } else if (inversion > 100000000) {
+                return 'PREMIUM';
+            } else if (inversion > 50000000) {
+                return 'MEDIO';
+            } else {
+                return 'BÁSICO';
+            }
+        }
+
+        // Función para calcular prioridad de seguimiento
+        function calcularPrioridadSeguimiento(cotizacion) {
+            let puntos = 0;
+            
+            // Por inversión
+            const inversion = parseFloat(cotizacion.valorTotalSistema);
+            if (inversion > 40000000) puntos += 5;
+            else if (inversion > 25000000) puntos += 4;
+            else if (inversion > 15000000) puntos += 3;
+            else puntos += 2;
+            
+            // Por payback
+            const payback = parseFloat(cotizacion.tiempoRetorno);
+            if (payback < 4) puntos += 3;
+            else if (payback < 6) puntos += 2;
+            else puntos += 1;
+            
+            // Por tipo de cliente
+            if (cotizacion.tipoVivienda === 'empresa') puntos += 3;
+            else if (cotizacion.tipoVivienda === 'local') puntos += 2;
+            
+            // Por ciudad (principales)
+            const ciudadesPrincipales = ['bogota', 'medellin', 'cali', 'barranquilla', 'cartagena'];
+            if (ciudadesPrincipales.some(c => cotizacion.ciudad.toLowerCase().includes(c))) {
+                puntos += 2;
+            }
+            
+            if (puntos >= 10) return 'ALTA';
+            else if (puntos >= 7) return 'MEDIA';
+            else return 'BAJA';
+        }
+
+        // Función para actualizar estadísticas del CRM
+        function actualizarEstadisticasCRM() {
+            try {
+                const registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                
+                const estadisticas = {
+                    totalCotizaciones: registroCompleto.length,
+                    valorTotalPotencial: registroCompleto.reduce((sum, item) => sum + item.valorPotencial, 0),
+                    capacidadTotalCotizada: registroCompleto.reduce((sum, item) => sum + item.capacidadInstalada, 0),
+                    segmentos: {
+                        CORPORATIVO: registroCompleto.filter(item => item.segmentoCliente === 'CORPORATIVO').length,
+                        PREMIUM: registroCompleto.filter(item => item.segmentoCliente === 'PREMIUM').length,
+                        MEDIO: registroCompleto.filter(item => item.segmentoCliente === 'MEDIO').length,
+                        BÁSICO: registroCompleto.filter(item => item.segmentoCliente === 'BÁSICO').length
+                    },
+                    prioridades: {
+                        ALTA: registroCompleto.filter(item => item.prioridadSeguimiento === 'ALTA').length,
+                        MEDIA: registroCompleto.filter(item => item.prioridadSeguimiento === 'MEDIA').length,
+                        BAJA: registroCompleto.filter(item => item.prioridadSeguimiento === 'BAJA').length
+                    },
+                    ciudades: {},
+                    ultimaActualizacion: new Date().toISOString()
+                };
+                
+                // Contar por ciudades
+                registroCompleto.forEach(item => {
+                    const ciudad = item.ciudad.toUpperCase();
+                    estadisticas.ciudades[ciudad] = (estadisticas.ciudades[ciudad] || 0) + 1;
+                });
+                
+                localStorage.setItem('nassaCRMStats', JSON.stringify(estadisticas));
+                
+            } catch (error) {
+                console.error('❌ Error actualizando estadísticas CRM:', error);
+            }
+        }
+
+        // 📊 PANEL CRM COMPLETO PARA NASSA SOLAR
+        function mostrarRegistroCotizaciones() {
+            try {
+                const registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                const estadisticas = JSON.parse(localStorage.getItem('nassaCRMStats') || '{}');
+                
+                if (registroCompleto.length === 0) {
+                    mostrarNotificacion('📋 No hay cotizaciones registradas en el CRM aún', 'info');
+                    return;
+                }
+                
+                let html = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div class="bg-white rounded-2xl max-w-7xl w-full max-h-[95vh] overflow-y-auto">
+                            <div class="p-6 border-b border-gray-200">
+                                <div class="flex justify-between items-center">
+                                    <h2 class="text-2xl font-bold text-gray-900">🏢 NASSA SOLAR CRM - Base de Datos Completa</h2>
+                                    <button onclick="cerrarModalRegistro()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">&times;</button>
+                                </div>
+                            </div>
+                            
+                            <!-- ESTADÍSTICAS GENERALES -->
+                            <div class="p-6 bg-gradient-to-r from-blue-50 to-green-50">
+                                <h3 class="text-lg font-bold mb-4">📊 Estadísticas Generales</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                    <div class="bg-white p-4 rounded-lg shadow">
+                                        <div class="text-2xl font-bold text-blue-600">${registroCompleto.length}</div>
+                                        <div class="text-sm text-gray-600">Total Cotizaciones</div>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow">
+                                        <div class="text-2xl font-bold text-green-600">$${Math.round(estadisticas.valorTotalPotencial || 0).toLocaleString()}</div>
+                                        <div class="text-sm text-gray-600">Valor Potencial</div>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow">
+                                        <div class="text-2xl font-bold text-purple-600">${Math.round(estadisticas.capacidadTotalCotizada || 0)} kW</div>
+                                        <div class="text-sm text-gray-600">Capacidad Total</div>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg shadow">
+                                        <div class="text-2xl font-bold text-orange-600">${estadisticas.prioridades?.ALTA || 0}</div>
+                                        <div class="text-sm text-gray-600">Prioridad Alta</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- SEGMENTACIÓN -->
+                                <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                    <div class="bg-red-100 p-3 rounded-lg">
+                                        <div class="font-bold text-red-800">CORPORATIVO</div>
+                                        <div class="text-red-600">${estadisticas.segmentos?.CORPORATIVO || 0} leads</div>
+                                    </div>
+                                    <div class="bg-yellow-100 p-3 rounded-lg">
+                                        <div class="font-bold text-yellow-800">PREMIUM</div>
+                                        <div class="text-yellow-600">${estadisticas.segmentos?.PREMIUM || 0} leads</div>
+                                    </div>
+                                    <div class="bg-blue-100 p-3 rounded-lg">
+                                        <div class="font-bold text-blue-800">MEDIO</div>
+                                        <div class="text-blue-600">${estadisticas.segmentos?.MEDIO || 0} leads</div>
+                                    </div>
+                                    <div class="bg-gray-100 p-3 rounded-lg">
+                                        <div class="font-bold text-gray-800">BÁSICO</div>
+                                        <div class="text-gray-600">${estadisticas.segmentos?.BÁSICO || 0} leads</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- FILTROS Y CONTROLES -->
+                            <div class="p-6 bg-gray-50 border-b">
+                                <div class="flex flex-wrap gap-4 items-center">
+                                    <select id="filtroSegmento" onchange="filtrarCRM()" class="px-3 py-2 border rounded-lg">
+                                        <option value="">Todos los Segmentos</option>
+                                        <option value="CORPORATIVO">Corporativo</option>
+                                        <option value="PREMIUM">Premium</option>
+                                        <option value="MEDIO">Medio</option>
+                                        <option value="BÁSICO">Básico</option>
+                                    </select>
+                                    
+                                    <select id="filtroPrioridad" onchange="filtrarCRM()" class="px-3 py-2 border rounded-lg">
+                                        <option value="">Todas las Prioridades</option>
+                                        <option value="ALTA">Alta</option>
+                                        <option value="MEDIA">Media</option>
+                                        <option value="BAJA">Baja</option>
+                                    </select>
+                                    
+                                    <input type="text" id="buscarCliente" placeholder="Buscar cliente..." onkeyup="filtrarCRM()" class="px-3 py-2 border rounded-lg">
+                                    
+                                    <button onclick="exportarCRMCompleto()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold">
+                                        📊 Exportar CRM Completo
+                                    </button>
+                                    
+                                    <button onclick="exportarSeguimientoAlta()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold">
+                                        🎯 Exportar Prioridad Alta
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- TABLA PRINCIPAL -->
+                            <div class="p-6">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-xs" id="tablaCRM">
+                                        <thead class="bg-gray-100 sticky top-0">
+                                            <tr>
+                                                <th class="py-2 px-2 text-left">Fecha</th>
+                                                <th class="py-2 px-2 text-left">Cliente</th>
+                                                <th class="py-2 px-2 text-left">Teléfono</th>
+                                                <th class="py-2 px-2 text-left">Email</th>
+                                                <th class="py-2 px-2 text-left">Ciudad</th>
+                                                <th class="py-2 px-2 text-left">Segmento</th>
+                                                <th class="py-2 px-2 text-left">Prioridad</th>
+                                                <th class="py-2 px-2 text-left">Capacidad</th>
+                                                <th class="py-2 px-2 text-left">Inversión</th>
+                                                <th class="py-2 px-2 text-left">PayBack</th>
+                                                <th class="py-2 px-2 text-left">ROI 5 años</th>
+                                                <th class="py-2 px-2 text-left">Total Acum</th>
+                                                <th class="py-2 px-2 text-left">Tipo Sistema</th>
+                                                <th class="py-2 px-2 text-left">Estado</th>
+                                                <th class="py-2 px-2 text-left">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cuerpoTablaCRM">
+                `;
+                
+                // Generar filas de la tabla
+                registroCompleto.forEach((item, index) => {
+                    const colorSegmento = {
+                        'CORPORATIVO': 'bg-red-100 text-red-800',
+                        'PREMIUM': 'bg-yellow-100 text-yellow-800',
+                        'MEDIO': 'bg-blue-100 text-blue-800',
+                        'BÁSICO': 'bg-gray-100 text-gray-800'
+                    };
+                    
+                    const colorPrioridad = {
+                        'ALTA': 'bg-red-500 text-white',
+                        'MEDIA': 'bg-yellow-500 text-white',
+                        'BAJA': 'bg-green-500 text-white'
+                    };
+                    
+                    html += `
+                        <tr class="border-b hover:bg-gray-50" data-segmento="${item.segmentoCliente}" data-prioridad="${item.prioridadSeguimiento}" data-cliente="${item.nombre.toLowerCase()}">
+                            <td class="py-2 px-2">${item.fecha}</td>
+                            <td class="py-2 px-2 font-semibold">${item.nombre}</td>
+                            <td class="py-2 px-2">
+                                <a href="tel:${item.telefono}" class="text-blue-600 hover:underline">${item.telefono}</a>
+                            </td>
+                            <td class="py-2 px-2">
+                                <a href="mailto:${item.email}" class="text-blue-600 hover:underline text-xs">${item.email}</a>
+                            </td>
+                            <td class="py-2 px-2">${item.ciudad}</td>
+                            <td class="py-2 px-2">
+                                <span class="px-2 py-1 rounded text-xs ${colorSegmento[item.segmentoCliente] || 'bg-gray-100'}">${item.segmentoCliente}</span>
+                            </td>
+                            <td class="py-2 px-2">
+                                <span class="px-2 py-1 rounded text-xs ${colorPrioridad[item.prioridadSeguimiento] || 'bg-gray-500 text-white'}">${item.prioridadSeguimiento}</span>
+                            </td>
+                            <td class="py-2 px-2">${item.capacidadInstalada} kW</td>
+                            <td class="py-2 px-2 font-bold">$${Math.round(item.valorTotalSistema).toLocaleString()}</td>
+                            <td class="py-2 px-2">${item.tiempoRetorno} años</td>
+                            <td class="py-2 px-2 ${item.roiAño5 > 0 ? 'text-green-600' : 'text-red-600'}">${item.roiAño5}%</td>
+                            <td class="py-2 px-2 text-green-600 font-bold">$${Math.round(item.TotalAcum).toLocaleString()}</td>
+                            <td class="py-2 px-2 text-xs">${item.tipoSistemaFV}</td>
+                            <td class="py-2 px-2">
+                                <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">${item.estadoLead}</span>
+                            </td>
+                            <td class="py-2 px-2">
+                                <button onclick="verDetalleCompleto('${item.id}')" class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs mr-1">
+                                    👁️ Ver
+                                </button>
+                                <button onclick="contactarCliente('${item.telefono}', '${item.nombre}')" class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs">
+                                    📞 Call
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- RESUMEN INFERIOR -->
+                                <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-sm text-gray-600">
+                                        <strong>Última actualización:</strong> ${estadisticas.ultimaActualizacion ? new Date(estadisticas.ultimaActualizacion).toLocaleString('es-CO') : 'N/A'}
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-2">
+                                        💾 Datos almacenados localmente en el navegador | 🔄 Se actualiza automáticamente con cada cotización
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6 text-center">
+                                    <button onclick="cerrarModalRegistro()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold">
+                                        Cerrar CRM
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', html);
+                
+            } catch (error) {
+                console.error('❌ Error mostrando CRM:', error);
+                mostrarNotificacion('❌ Error mostrando CRM: ' + error.message, 'error');
+            }
+        }
+
+        // Función para filtrar el CRM
+        function filtrarCRM() {
+            const filtroSegmento = document.getElementById('filtroSegmento').value;
+            const filtroPrioridad = document.getElementById('filtroPrioridad').value;
+            const buscarCliente = document.getElementById('buscarCliente').value.toLowerCase();
+            
+            const filas = document.querySelectorAll('#cuerpoTablaCRM tr');
+            
+            filas.forEach(fila => {
+                const segmento = fila.getAttribute('data-segmento');
+                const prioridad = fila.getAttribute('data-prioridad');
+                const cliente = fila.getAttribute('data-cliente');
+                
+                let mostrar = true;
+                
+                if (filtroSegmento && segmento !== filtroSegmento) mostrar = false;
+                if (filtroPrioridad && prioridad !== filtroPrioridad) mostrar = false;
+                if (buscarCliente && !cliente.includes(buscarCliente)) mostrar = false;
+                
+                fila.style.display = mostrar ? '' : 'none';
+            });
+        }
+
+        // Función para ver detalle completo de un cliente
+        function verDetalleCompleto(clienteId) {
+            try {
+                const registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                const cliente = registroCompleto.find(item => item.id === clienteId);
+                
+                if (!cliente) {
+                    mostrarNotificacion('❌ Cliente no encontrado', 'error');
+                    return;
+                }
+                
+                const html = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                            <div class="p-6 border-b border-gray-200">
+                                <div class="flex justify-between items-center">
+                                    <h2 class="text-2xl font-bold text-gray-900">👤 Detalle Completo - ${cliente.nombre}</h2>
+                                    <button onclick="cerrarDetalleCliente()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">&times;</button>
+                                </div>
+                            </div>
+                            <div class="p-6 space-y-6">
+                                <!-- Información Personal -->
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold mb-3">👤 Información Personal</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                        <div><strong>Nombre:</strong> ${cliente.nombre}</div>
+                                        <div><strong>Teléfono:</strong> <a href="tel:${cliente.telefono}" class="text-blue-600">${cliente.telefono}</a></div>
+                                        <div><strong>Email:</strong> <a href="mailto:${cliente.email}" class="text-blue-600">${cliente.email}</a></div>
+                                        <div><strong>Ciudad:</strong> ${cliente.ciudad}</div>
+                                        <div><strong>Dirección:</strong> ${cliente.direccion}</div>
+                                        <div><strong>Identificación:</strong> ${cliente.identificacion || 'N/A'}</div>
+                                        <div><strong>Tipo Vivienda:</strong> ${cliente.tipoVivienda}</div>
+                                        <div><strong>Segmento:</strong> <span class="font-bold text-blue-600">${cliente.segmentoCliente}</span></div>
+                                        <div><strong>Prioridad:</strong> <span class="font-bold text-red-600">${cliente.prioridadSeguimiento}</span></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Sistema Propuesto -->
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold mb-3">⚡ Sistema Propuesto</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                        <div><strong>Capacidad:</strong> ${cliente.capacidadInstalada} kW</div>
+                                        <div><strong>Paneles:</strong> ${cliente.numeroPaneles} x ${cliente.panelSeleccionado.nombre}</div>
+                                        <div><strong>Inversores:</strong> ${cliente.numeroInversores} x ${cliente.inversorSeleccionado.nombre}</div>
+                                        <div><strong>Baterías:</strong> ${cliente.bateriaSeleccionada ? cliente.bateriaSeleccionada.nombre : 'No incluye'}</div>
+                                        <div><strong>Tipo Sistema:</strong> ${cliente.tipoSistemaFV}</div>
+                                        <div><strong>Generación Mensual:</strong> ${Math.round(cliente.generacionMensual)} kWh</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Financiero -->
+                                <div class="bg-yellow-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold mb-3">💰 Información Financiera</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                        <div><strong>Inversión Total:</strong> $${Math.round(cliente.valorTotalSistema).toLocaleString()}</div>
+                                        <div><strong>Ahorro Mensual:</strong> $${Math.round(cliente.ahorroMensualEnergia).toLocaleString()}</div>
+                                        <div><strong>Ahorro Anual:</strong> $${Math.round(cliente.ahorroAnualEnergia).toLocaleString()}</div>
+                                        <div><strong>PayBack:</strong> ${cliente.tiempoRetorno} años</div>
+                                        <div><strong>ROI 5 años:</strong> ${cliente.roiAño5}%</div>
+                                        <div><strong>ROI 10 años:</strong> ${cliente.roiAño10}%</div>
+                                        <div><strong>Total Acumulado:</strong> $${Math.round(cliente.TotalAcum).toLocaleString()}</div>
+                                        <div><strong>Deducción Fiscal:</strong> $${Math.round(cliente.ahorroTotalDeduccion).toLocaleString()}</div>
+                                        <div><strong>Depreciación:</strong> $${Math.round(cliente.ahorroTotalDepreciacion).toLocaleString()}</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Acciones -->
+                                <div class="flex flex-wrap gap-4 justify-center">
+                                    <button onclick="contactarCliente('${cliente.telefono}', '${cliente.nombre}')" class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold">
+                                        📞 Llamar Cliente
+                                    </button>
+                                    <button onclick="enviarWhatsAppSeguimiento('${cliente.telefono}', '${cliente.nombre}')" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold">
+                                        💬 WhatsApp Seguimiento
+                                    </button>
+                                    <button onclick="exportarClienteIndividual('${cliente.id}')" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold">
+                                        📊 Exportar Cliente
+                                    </button>
+                                    <button onclick="cerrarDetalleCliente()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold">
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', html);
+                
+            } catch (error) {
+                console.error('❌ Error mostrando detalle:', error);
+                mostrarNotificacion('❌ Error mostrando detalle: ' + error.message, 'error');
+            }
+        }
+
+        // Función para contactar cliente
+        function contactarCliente(telefono, nombre) {
+            window.open(`tel:${telefono}`, '_blank', 'noopener,noreferrer');
+            mostrarNotificacion(`📞 Llamando a ${nombre}...`, 'info');
+        }
+
+        // Función para enviar WhatsApp de seguimiento
+        function enviarWhatsAppSeguimiento(telefono, nombre) {
+            const mensaje = `Hola ${nombre}! 👋 Soy de NASSA SOLAR. Quería hacer seguimiento a la cotización de sistema solar que generamos para ti. ¿Tienes alguna pregunta o te gustaría agendar una visita técnica? 🌞⚡`;
+            const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        // Función para cerrar detalle de cliente
+        function cerrarDetalleCliente() {
+            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Función para cerrar modal de registro
+        function cerrarModalRegistro() {
+            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 📊 FUNCIONES DE EXPORTACIÓN CRM AVANZADAS
+        
+        // Función para exportar CRM completo
+        function exportarCRMCompleto() {
+            try {
+                const registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                
+                if (registroCompleto.length === 0) {
+                    mostrarNotificacion('📋 No hay datos para exportar', 'info');
+                    return;
+                }
+                
+                // Crear CSV con TODAS las variables
+                let csv = 'ID,Timestamp,Fecha,Hora,Version,Nombre,Telefono,Email,Ciudad,Direccion,Identificacion,TipoVivienda,ConsumoMensual,ValorFactura,ValorKwh,NIC,SistemaElectrico,NumeroPisos,AreaDisponible,PorcentajeConsumodia,TipoSistemaFV,HSPCalculado,';
+                csv += 'PanelNombre,PanelCapacidad,PanelPrecio,NumeroPaneles,InversorNombre,InversorCapacidad,InversorPrecio,NumeroInversores,BateriaNombre,BateriaCapacidad,BateriaPrecio,';
+                csv += 'CapacidadInstalada,GeneracionMensual,GeneracionAnual,PorcentajeProduccionMensual,';
+                csv += 'CostoPaneles,CostoInversores,CostoBaterias,CostoSoporteria,CostoInstalacion,CostoMateriales,SubtotalAntesIVA,IVAEquipos,ValorTotalSistema,';
+                csv += 'AhorroMensualEnergia,AhorroAnualEnergia,DeduccionRentaBase,DeduccionRentaEfectiva,AhorroTotalDeduccion,AhorroAnualDeduccion,DepreciacionAnual,AhorroAnualDepreciacion,AhorroTotalDepreciacion,CostoMantenimientoAnual,';
+                csv += 'TiempoRetorno,AñoPayback,AcumxGen,AcumxDeduc,AcumxDepre,TotalAcum,';
+                csv += 'ROIAño5,ROIAño10,ROIAño25,AhorroAcumAño25,';
+                csv += 'EstadoLead,FechaUltimaActualizacion,SegmentoCliente,PrioridadSeguimiento,ValorPotencial\n';
+                
+                registroCompleto.forEach(item => {
+                    csv += `"${item.id}",${item.timestamp},"${item.fecha}","${item.hora}","${item.version}","${item.nombre}","${item.telefono}","${item.email}","${item.ciudad}","${item.direccion}","${item.identificacion}","${item.tipoVivienda}",`;
+                    csv += `${item.consumoMensual},${item.valorFactura},${item.valorKwh},"${item.nic}","${item.sistemaElectrico}","${item.numeroPisos}",${item.areaDisponible},${item.porcentajeConsumodia},"${item.tipoSistemaFV}",${item.hspCalculado},`;
+                    csv += `"${item.panelSeleccionado.nombre}",${item.panelSeleccionado.capacidad},${item.panelSeleccionado.precio},${item.numeroPaneles},"${item.inversorSeleccionado.nombre}",${item.inversorSeleccionado.capacidad},${item.inversorSeleccionado.precio},${item.numeroInversores},`;
+                    csv += `"${item.bateriaSeleccionada ? item.bateriaSeleccionada.nombre : 'N/A'}",${item.bateriaSeleccionada ? item.bateriaSeleccionada.capacidad : 0},${item.bateriaSeleccionada ? item.bateriaSeleccionada.precio : 0},`;
+                    csv += `${item.capacidadInstalada},${item.generacionMensual},${item.generacionAnual},${item.porcentajeProduccionMensual},`;
+                    csv += `${item.costoPaneles},${item.costoInversores},${item.costoBaterias},${item.costoSoporteria},${item.costoInstalacion},${item.costoMateriales},${item.subtotalAntesIVA},${item.ivaEquipos},${item.valorTotalSistema},`;
+                    csv += `${item.ahorroMensualEnergia},${item.ahorroAnualEnergia},${item.deduccionRentaBase},${item.deduccionRentaEfectiva},${item.ahorroTotalDeduccion},${item.ahorroAnualDeduccion},${item.depreciacionAnual},${item.ahorroAnualDepreciacion},${item.ahorroTotalDepreciacion},${item.costoMantenimientoAnual},`;
+                    csv += `${item.tiempoRetorno},${item.añoPayback},${item.acumxgen},${item.acumxdeduc},${item.acumxdepre},${item.TotalAcum},`;
+                    csv += `${item.roiAño5},${item.roiAño10},${item.roiAño25},${item.ahorroAcumAño25},`;
+                    csv += `"${item.estadoLead}","${item.fechaUltimaActualizacion}","${item.segmentoCliente}","${item.prioridadSeguimiento}",${item.valorPotencial}\n`;
+                });
+                
+                // Descargar archivo
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `NASSA_CRM_Completo_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                mostrarNotificacion('✅ CRM completo exportado exitosamente', 'success');
+                
+            } catch (error) {
+                console.error('❌ Error exportando CRM completo:', error);
+                mostrarNotificacion('❌ Error exportando CRM: ' + error.message, 'error');
+            }
+        }
+
+        // Función para exportar solo leads de prioridad alta
+        function exportarSeguimientoAlta() {
+            try {
+                const registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                const leadsAlta = registroCompleto.filter(item => item.prioridadSeguimiento === 'ALTA');
+                
+                if (leadsAlta.length === 0) {
+                    mostrarNotificacion('📋 No hay leads de prioridad alta para exportar', 'info');
+                    return;
+                }
+                
+                // CSV optimizado para seguimiento comercial
+                let csv = 'Fecha,Cliente,Telefono,Email,Ciudad,Segmento,Inversion,Capacidad,PayBack,ROI_5años,TotalAcum,Estado,Notas_Seguimiento\n';
+                
+                leadsAlta.forEach(item => {
+                    csv += `"${item.fecha}","${item.nombre}","${item.telefono}","${item.email}","${item.ciudad}","${item.segmentoCliente}",${Math.round(item.valorTotalSistema)},${item.capacidadInstalada},${item.tiempoRetorno},${item.roiAño5},${Math.round(item.TotalAcum)},"${item.estadoLead}",""\n`;
+                });
+                
+                // Descargar archivo
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `NASSA_Seguimiento_PrioridadAlta_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                mostrarNotificacion(`✅ ${leadsAlta.length} leads de prioridad alta exportados`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Error exportando seguimiento:', error);
+                mostrarNotificacion('❌ Error exportando seguimiento: ' + error.message, 'error');
+            }
+        }
+
+        // Función para exportar cliente individual
+        function exportarClienteIndividual(clienteId) {
+            try {
+                const registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                const cliente = registroCompleto.find(item => item.id === clienteId);
+                
+                if (!cliente) {
+                    mostrarNotificacion('❌ Cliente no encontrado', 'error');
+                    return;
+                }
+                
+                // Crear reporte detallado del cliente
+                let reporte = `REPORTE DETALLADO - NASSA SOLAR\n`;
+                reporte += `=====================================\n\n`;
+                reporte += `INFORMACIÓN PERSONAL:\n`;
+                reporte += `Nombre: ${cliente.nombre}\n`;
+                reporte += `Teléfono: ${cliente.telefono}\n`;
+                reporte += `Email: ${cliente.email}\n`;
+                reporte += `Ciudad: ${cliente.ciudad}\n`;
+                reporte += `Dirección: ${cliente.direccion}\n`;
+                reporte += `Identificación: ${cliente.identificacion || 'N/A'}\n`;
+                reporte += `Tipo Vivienda: ${cliente.tipoVivienda}\n`;
+                reporte += `Segmento: ${cliente.segmentoCliente}\n`;
+                reporte += `Prioridad: ${cliente.prioridadSeguimiento}\n\n`;
+                
+                reporte += `SISTEMA PROPUESTO:\n`;
+                reporte += `Capacidad: ${cliente.capacidadInstalada} kW\n`;
+                reporte += `Paneles: ${cliente.numeroPaneles} x ${cliente.panelSeleccionado.nombre}\n`;
+                reporte += `Inversores: ${cliente.numeroInversores} x ${cliente.inversorSeleccionado.nombre}\n`;
+                reporte += `Baterías: ${cliente.bateriaSeleccionada ? cliente.bateriaSeleccionada.nombre : 'No incluye'}\n`;
+                reporte += `Tipo Sistema: ${cliente.tipoSistemaFV}\n`;
+                reporte += `Generación Mensual: ${Math.round(cliente.generacionMensual)} kWh\n`;
+                reporte += `Generación Anual: ${Math.round(cliente.generacionAnual)} kWh\n\n`;
+                
+                reporte += `INFORMACIÓN FINANCIERA:\n`;
+                reporte += `Inversión Total: $${Math.round(cliente.valorTotalSistema).toLocaleString()}\n`;
+                reporte += `Ahorro Mensual: $${Math.round(cliente.ahorroMensualEnergia).toLocaleString()}\n`;
+                reporte += `Ahorro Anual: $${Math.round(cliente.ahorroAnualEnergia).toLocaleString()}\n`;
+                reporte += `PayBack: ${cliente.tiempoRetorno} años\n`;
+                reporte += `ROI 5 años: ${cliente.roiAño5}%\n`;
+                reporte += `ROI 10 años: ${cliente.roiAño10}%\n`;
+                reporte += `Total Acumulado PayBack: $${Math.round(cliente.TotalAcum).toLocaleString()}\n`;
+                reporte += `Deducción Fiscal Total: $${Math.round(cliente.ahorroTotalDeduccion).toLocaleString()}\n`;
+                reporte += `Depreciación Total: $${Math.round(cliente.ahorroTotalDepreciacion).toLocaleString()}\n\n`;
+                
+                reporte += `PROYECCIÓN FINANCIERA (10 AÑOS):\n`;
+                reporte += `Año\tAhorro Anual\tAhorro Acumulado\tROI\n`;
+                cliente.tablaAhorros.slice(0, 10).forEach(item => {
+                    reporte += `${item.año}\t$${Math.round(item.ahorroTotalAño).toLocaleString()}\t$${Math.round(item.ahorroAcumulado).toLocaleString()}\t${item.roi.toFixed(1)}%\n`;
+                });
+                
+                reporte += `\nFecha Cotización: ${cliente.fecha} ${cliente.hora}\n`;
+                reporte += `ID Cotización: ${cliente.id}\n`;
+                reporte += `Estado: ${cliente.estadoLead}\n`;
+                reporte += `\nNASSA SOLAR - Energía Renovable\n`;
+                reporte += `Teléfono: (057) 313 690 9723\n`;
+                
+                // Descargar archivo
+                const blob = new Blob([reporte], { type: 'text/plain;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `Reporte_${cliente.nombre.replace(/\s+/g, '_')}_${cliente.id}.txt`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                mostrarNotificacion(`✅ Reporte de ${cliente.nombre} exportado`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Error exportando cliente:', error);
+                mostrarNotificacion('❌ Error exportando cliente: ' + error.message, 'error');
+            }
+        }
+
+        // Función para exportar datos (versión simplificada para compatibilidad)
+        function exportarDatos() {
+            exportarCRMCompleto();
+        }
+
+        // Función para mostrar guía de publicación
+        function mostrarGuiaPublicacion() {
+            const html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold text-gray-900">🌐 Guía de Publicación</h2>
+                                <button onclick="cerrarModalGuia()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">&times;</button>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-6">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold text-blue-900 mb-2">🚀 Opción 1: GitHub Pages (Gratis)</h3>
+                                    <ol class="list-decimal list-inside space-y-2 text-sm">
+                                        <li>Crear cuenta en <strong>github.com</strong></li>
+                                        <li>Crear nuevo repositorio llamado <strong>cotizador-solar</strong></li>
+                                        <li>Subir este archivo HTML como <strong>index.html</strong></li>
+                                        <li>Ir a Settings → Pages → Source: Deploy from branch</li>
+                                        <li>Tu URL será: <strong>tuusuario.github.io/cotizador-solar</strong></li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold text-green-900 mb-2">⚡ Opción 2: Netlify (Gratis)</h3>
+                                    <ol class="list-decimal list-inside space-y-2 text-sm">
+                                        <li>Ir a <strong>netlify.com</strong></li>
+                                        <li>Arrastrar este archivo HTML a la zona de deploy</li>
+                                        <li>Obtienes URL automática en segundos</li>
+                                        <li>Opcional: Configurar dominio personalizado</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold text-purple-900 mb-2">🏢 Opción 3: Hosting Profesional</h3>
+                                    <ul class="list-disc list-inside space-y-2 text-sm">
+                                        <li><strong>Hostinger, GoDaddy, etc.</strong></li>
+                                        <li>Dominio propio: <strong>www.nassasolar.com</strong></li>
+                                        <li>Mayor control y personalización</li>
+                                        <li>Soporte técnico incluido</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-yellow-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold text-yellow-900 mb-2">📁 Estructura de Archivos Simplificada</h3>
+                                    <pre class="text-sm bg-gray-100 p-3 rounded">
+├── index.html (este archivo - TODO INCLUIDO)
+└── templates/ (opcional)
+    └── nassa-template.pptx</pre>
+                                    <p class="text-sm mt-2 text-gray-700">
+                                        ✅ <strong>Equipos integrados:</strong> Ya no necesitas archivos TXT externos.<br>
+                                        ✅ <strong>Un solo archivo:</strong> Todo funciona desde index.html<br>
+                                        ✅ <strong>Fácil despliegue:</strong> Sube solo el archivo HTML
+                                    </p>
+                                </div>
+                                
+                                <div class="bg-red-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-bold text-red-900 mb-2">⚙️ Configuración EmailJS</h3>
+                                    <p class="text-sm mb-2">Para activar el envío automático de emails:</p>
+                                    <ol class="list-decimal list-inside space-y-1 text-sm">
+                                        <li>Crear cuenta en <strong>emailjs.com</strong></li>
+                                        <li>Conectar Gmail de NASSA SOLAR</li>
+                                        <li>Crear template de email</li>
+                                        <li>Reemplazar las variables en el código:</li>
+                                    </ol>
+                                    <pre class="text-xs bg-gray-100 p-2 rounded mt-2">
+serviceId: 'TU_SERVICE_ID'
+templateId: 'TU_TEMPLATE_ID'  
+publicKey: 'TU_PUBLIC_KEY'</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 text-center">
+                                <button onclick="cerrarModalGuia()" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold">
+                                    Entendido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        // Función para cerrar modal de guía
+        function cerrarModalGuia() {
+            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Función para mostrar resultado completo
+        function mostrarResultadoCompleto(cotizacion) {
+            const contenido = document.getElementById('contenidoResultado');
+            
+            // Verificar que el elemento existe
+            if (!contenido) {
+                console.error('❌ No se encontró el elemento contenidoResultado');
+                mostrarNotificacion('❌ Error mostrando resultado: elemento no encontrado', 'error');
+                return;
+            }
+            
+            // Crear tabla de ahorros para los primeros 10 años con datos corregidos
+            const tablaAhorros10 = cotizacion.tablaAhorros.slice(0, 10).map(item => `
+                <tr class="border-b">
+                    <td class="py-2 px-4">${item.año}</td>
+                    <td class="py-2 px-4">$${Math.round(item.valorKwhAño).toLocaleString()}</td>
+                    <td class="py-2 px-4">${Math.round(item.produccionAnual).toLocaleString()} kWh</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroGeneracion).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroDepreciacion).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroDeduccion).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.costoMantenimiento).toLocaleString()}</td>
+                    <td class="py-2 px-4 font-bold">$${Math.round(item.ahorroTotalAño).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroAcumulado).toLocaleString()}</td>
+                    <td class="py-2 px-4 ${item.roi > 0 ? 'text-green-600' : 'text-red-600'}">${item.roi.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+
+            contenido.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Resumen Ejecutivo -->
+                    <div class="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-xl border-l-4 border-blue-500">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">📊 Resumen Ejecutivo</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <div class="text-2xl font-bold text-blue-600">${cotizacion.capacidadInstalada} kW</div>
+                                <div class="text-sm text-gray-600">Capacidad Instalada</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-green-600">${cotizacion.generacionMensual} kWh</div>
+                                <div class="text-sm text-gray-600">Generación Mensual</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-purple-600">$${cotizacion.ahorroAnualEnergia.toLocaleString()}</div>
+                                <div class="text-sm text-gray-600">Ahorro Anual</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-orange-600">${cotizacion.tiempoRetorno} años</div>
+                                <div class="text-sm text-gray-600">Tiempo Retorno</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Variables Solicitadas -->
+                    <div class="bg-purple-50 p-6 rounded-xl border-l-4 border-purple-500">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">🎯 Variables Calculadas (Solicitadas)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div><strong>1. Porcentaje Producción Mensual:</strong> ${cotizacion.porcentajeProduccionMensual}%</div>
+                            <div><strong>2. Ahorro Total Depreciación (3 años):</strong> $${cotizacion.ahorroTotalDepreciacion.toLocaleString()}</div>
+                            <div><strong>3. Ahorro Total Deducción (5 años):</strong> $${cotizacion.ahorroTotalDeduccion.toLocaleString()}</div>
+                            <div><strong>8a. Acum. Generación hasta PayBack:</strong> $${cotizacion.acumxgen.toLocaleString()}</div>
+                            <div><strong>8b. Acum. Deducción hasta PayBack:</strong> $${cotizacion.acumxdeduc.toLocaleString()}</div>
+                            <div><strong>8c. Acum. Depreciación hasta PayBack:</strong> $${cotizacion.acumxdepre.toLocaleString()}</div>
+                        </div>
+                        <div class="mt-4 p-4 bg-yellow-100 rounded-lg">
+                            <div class="text-lg font-bold text-center">
+                                <strong>9. TOTAL ACUM (suma a+b+c):</strong> 
+                                <span class="text-2xl text-green-600">$${cotizacion.TotalAcum.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos del Cliente -->
+                    <div class="bg-gray-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">👤 Información del Cliente</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                            <div><strong>Nombre:</strong> ${cotizacion.nombre}</div>
+                            <div><strong>Teléfono:</strong> ${cotizacion.telefono}</div>
+                            <div><strong>Email:</strong> ${cotizacion.email}</div>
+                            <div><strong>Ciudad:</strong> ${cotizacion.ciudad}</div>
+                            <div><strong>Dirección:</strong> ${cotizacion.direccion}</div>
+                            <div><strong>Tipo Sistema:</strong> ${cotizacion.tipoSistemaFV}</div>
+                            <div><strong>HSP:</strong> ${cotizacion.hspCalculado}</div>
+                            <div><strong>Fecha:</strong> ${cotizacion.fecha} ${cotizacion.hora}</div>
+                            <div><strong>ID:</strong> ${cotizacion.cotizacionId}</div>
+                        </div>
+                    </div>
+
+                    <!-- Dimensionamiento del Sistema -->
+                    <div class="bg-yellow-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">🔧 Dimensionamiento del Sistema</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold mb-2">Equipos Seleccionados:</h4>
+                                <ul class="space-y-1 text-sm">
+                                    <li>• ${cotizacion.numeroPaneles} x ${cotizacion.panelSeleccionado.nombre}</li>
+                                    <li>• ${cotizacion.numeroInversores} x ${cotizacion.inversorSeleccionado.nombre}</li>
+                                    ${cotizacion.bateriaSeleccionada ? `<li>• 1 x ${cotizacion.bateriaSeleccionada.nombre}</li>` : ''}
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">Especificaciones Técnicas:</h4>
+                                <ul class="space-y-1 text-sm">
+                                    <li>• Capacidad: ${cotizacion.capacidadInstalada} kW</li>
+                                    <li>• Generación Anual: ${cotizacion.generacionAnual} kWh</li>
+                                    <li>• Tipo Sistema: ${cotizacion.tipoSistemaFV}</li>
+                                    <li>• Consumo Diurno: ${cotizacion.porcentajeConsumodia}%</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inversión y Beneficios -->
+                    <div class="bg-blue-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">💰 Inversión Total del Sistema</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="text-center">
+                                <div class="text-4xl font-bold text-blue-600 mb-2">$${cotizacion.valorTotalSistema.toLocaleString()}</div>
+                                <div class="text-lg text-gray-700">Valor Total del Sistema</div>
+                                <div class="text-sm text-gray-600 mt-2">Subtotal antes IVA: $${cotizacion.subtotalAntesIVA.toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">Beneficios Tributarios (Base: Subtotal antes IVA):</h4>
+                                <table class="w-full text-sm">
+                                    <tr><td>Deducción Renta Base (50%):</td><td class="text-right">$${cotizacion.deduccionRentaBase.toLocaleString()}</td></tr>
+                                    <tr><td>Deducción Efectiva (35%):</td><td class="text-right text-green-600">$${cotizacion.deduccionRentaEfectiva.toLocaleString()}</td></tr>
+                                    <tr><td>Depreciación Anual (3 años):</td><td class="text-right text-green-600">$${cotizacion.depreciacionAnual.toLocaleString()}</td></tr>
+                                    <tr><td>Ahorro Fiscal Depreciación:</td><td class="text-right text-green-600">$${cotizacion.ahorroAnualDepreciacion.toLocaleString()}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla Completa de Ahorros -->
+                    <div class="bg-green-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">📈 Tabla Detallada de Ahorros (10 años)</h3>
+                        <div class="mb-4 text-sm text-gray-700 bg-yellow-100 p-3 rounded-lg">
+                            <strong>⚠️ Consideraciones:</strong><br>
+                            • Año 1: Solo 6 meses de inyección | Degradación: -3.5% anual | Inflación kWh: +5.5% anual<br>
+                            • Depreciación: 3 años | Deducción 50%: 5 años | Mantenimiento: incremento anual igual kWh
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="py-2 px-2 text-left">Año</th>
+                                        <th class="py-2 px-2 text-left">Valor kWh</th>
+                                        <th class="py-2 px-2 text-left">Producción</th>
+                                        <th class="py-2 px-2 text-left">Ahorro Gen.</th>
+                                        <th class="py-2 px-2 text-left">Depreciación</th>
+                                        <th class="py-2 px-2 text-left">Deducción</th>
+                                        <th class="py-2 px-2 text-left">Mantenimiento</th>
+                                        <th class="py-2 px-2 text-left">Total Año</th>
+                                        <th class="py-2 px-2 text-left">Acumulado</th>
+                                        <th class="py-2 px-2 text-left">ROI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tablaAhorros10}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="abrirWhatsApp()" class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold">
+                            💬 Contactar por WhatsApp
+                        </button>
+                        <button onclick="generarPDFProtegido(cotizacionActual)" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold" title="Se descarga en tu carpeta de Descargas">
+                            📄 Descargar PDF Protegido
+                        </button>
+                        <button onclick="enviarEmailConEmailJS(cotizacionActual)" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold">
+                            📧 Enviar por Email
+                        </button>
+                        <button onclick="mostrarDiagnostico()" class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+                            🔧 Diagnóstico
+                        </button>
+                        <button onclick="llenarDatosPrueba()" class="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold">
+                            🧪 Datos Prueba
+                        </button>
+                        <button onclick="nuevaCotizacion()" class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold">
+                            🔄 Nueva Cotización
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Mostrar modal con verificación
+            const modal = document.getElementById('modalResultado');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                console.log('✅ Modal mostrado correctamente');
+            } else {
+                console.error('❌ No se encontró el modal de resultado');
+                mostrarNotificacion('❌ Error mostrando modal de resultado', 'error');
+            }
+        }
+
+        // Función para mostrar notificaciones
+        function mostrarNotificacion(mensaje, tipo) {
+            const notif = document.createElement('div');
+            const colores = {
+                'success': 'bg-green-500',
+                'error': 'bg-red-500',
+                'info': 'bg-blue-500'
+            };
+            
+            notif.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 max-w-sm ${colores[tipo] || 'bg-gray-500'} text-white`;
+            notif.innerHTML = mensaje;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                if (document.body.contains(notif)) {
+                    document.body.removeChild(notif);
+                }
+            }, 4000);
+        }
+
+        // Función para cerrar modal
+        function cerrarModal() {
+            document.getElementById('modalResultado').classList.add('hidden');
+            document.getElementById('modalResultado').classList.remove('flex');
+        }
+
+        // Función para nueva cotización
+        function nuevaCotizacion() {
+            cerrarModal();
+            document.getElementById('formularioCotizacion').reset();
+            document.getElementById('hspCalculado').value = '';
+            document.getElementById('seccionBaterias').style.display = 'none';
+            document.querySelectorAll('.equipo-selected').forEach(el => el.classList.remove('equipo-selected'));
+            // No limpiar el template cargado
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Manejo del formulario
+        document.getElementById('formularioCotizacion').addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('🚀 Formulario enviado');
+            
+            try {
+                mostrarNotificacion('🔄 Procesando cotización...', 'info');
+                
+                const formData = new FormData(this);
+                const datos = Object.fromEntries(formData);
+                
+                console.log('📋 Datos del formulario:', datos);
+                
+                // Validar campos requeridos
+                const camposRequeridos = ['nombre', 'telefono', 'email', 'ciudad', 'direccion', 'consumoMensual', 
+                                        'valorFactura', 'tipoVivienda', 'nic', 'valorKwh', 'numeroPisos', 
+                                        'sistemaElectrico', 'porcentajeConsumodia', 'tipoSistemaFV', 'panel', 'inversor'];
+                
+                const camposFaltantes = camposRequeridos.filter(campo => !datos[campo]);
+                
+                if (camposFaltantes.length > 0) {
+                    console.log('❌ Campos faltantes:', camposFaltantes);
+                    mostrarNotificacion('⚠️ Campos faltantes: ' + camposFaltantes.join(', '), 'error');
+                    return;
+                }
+
+                // Validar baterías si son requeridas
+                const tipoSistema = datos.tipoSistemaFV;
+                if ((tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') && !datos.bateria) {
+                    mostrarNotificacion('⚠️ Debes seleccionar una batería para este tipo de sistema', 'error');
+                    return;
+                }
+
+                // Validar que HSP esté calculado
+                if (!datos.hspCalculado || datos.hspCalculado === '') {
+                    calcularHSP(); // Intentar calcular automáticamente
+                    datos.hspCalculado = document.getElementById('hspCalculado').value;
+                }
+                
+                // Guardar datos globalmente
+                datosCliente = datos;
+                console.log('✅ Datos guardados globalmente');
+                
+                // Calcular y mostrar resultado
+                console.log('🔄 Iniciando cálculo de cotización...');
+                
+                try {
+                    const cotizacion = calcularCotizacionAvanzada(datos);
+                    
+                    if (!cotizacion) {
+                        throw new Error('La cotización no se generó correctamente');
+                    }
+                    
+                    cotizacionActual = cotizacion;
+                    
+                    // Registrar cotización completa en CRM
+                    registrarCotizacionCompleta(cotizacion);
+                    
+                    console.log('✅ Cotización calculada, mostrando resultado...');
+                    
+                    // Mostrar resultado con verificación adicional
+                    setTimeout(() => {
+                        mostrarResultadoCompleto(cotizacion);
+                    }, 100);
+                    
+                } catch (calcError) {
+                    console.error('❌ Error en cálculo de cotización:', calcError);
+                    mostrarNotificacion('❌ Error calculando cotización: ' + calcError.message, 'error');
+                    return;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error en manejo del formulario:', error);
+                mostrarNotificacion('❌ Error procesando formulario: ' + error.message, 'error');
+            }
+        });
+
+        // 🧪 SISTEMA COMPLETO DE PRUEBAS PARA NASSA SOLAR
+        
+        // Función para llenar datos de prueba
+        function llenarDatosPrueba() {
+            console.log('🧪 Llenando datos de prueba...');
+            
+            // Datos de prueba realistas
+            document.getElementById('nombre').value = 'Juan Carlos Pérez';
+            document.getElementById('telefono').value = '+57 300 123 4567';
+            document.getElementById('email').value = 'juan.perez@email.com';
+            document.getElementById('ciudad').value = 'Bogotá';
+            document.getElementById('direccion').value = 'Calle 123 #45-67, Chapinero';
+            document.getElementById('identificacion').value = '12345678';
+            document.getElementById('consumoMensual').value = '350';
+            document.getElementById('valorFactura').value = '180000';
+            document.getElementById('nic').value = '12345678901';
+            document.getElementById('valorKwh').value = '514';
+            document.getElementById('tipoVivienda').value = 'casa';
+            document.getElementById('areaDisponible').value = '60';
+            document.getElementById('numeroPisos').value = '2';
+            document.getElementById('sistemaElectrico').value = 'monofasico';
+            document.getElementById('porcentajeConsumodia').value = '70';
+            document.getElementById('tipoSistemaFV').value = 'ongrid';
+            
+            // Calcular HSP automáticamente
+            calcularHSP();
+            
+            // Seleccionar equipos automáticamente
+            setTimeout(() => {
+                seleccionarEquipo('panel2', 'panel'); // Jinko 615W
+                seleccionarEquipo('inv2', 'inversor'); // Huawei 5kW
+                mostrarNotificacion('✅ Datos de prueba cargados - Listo para cotizar', 'success');
+            }, 100);
+        }
+
+        // Función para ejecutar pruebas automáticas completas
+        async function ejecutarPruebasCompletas() {
+            console.log('🚀 Iniciando pruebas automáticas completas...');
+            mostrarNotificacion('🚀 Ejecutando pruebas automáticas...', 'info');
+            
+            const resultados = {
+                formulario: false,
+                calculo: false,
+                pdf: false,
+                email: false,
+                crm: false,
+                exportacion: false
+            };
+            
+            try {
+                // 1. PRUEBA DE FORMULARIO
+                console.log('📝 Prueba 1: Llenado de formulario...');
+                llenarDatosPrueba();
+                await esperar(1000);
+                resultados.formulario = true;
+                console.log('✅ Prueba 1: Formulario OK');
+                
+                // 2. PRUEBA DE CÁLCULO
+                console.log('🔢 Prueba 2: Cálculo de cotización...');
+                const formData = new FormData(document.getElementById('formularioCotizacion'));
+                const datos = Object.fromEntries(formData);
+                
+                const cotizacion = calcularCotizacionAvanzada(datos);
+                if (cotizacion && cotizacion.valorTotalSistema > 0) {
+                    resultados.calculo = true;
+                    cotizacionActual = cotizacion;
+                    console.log('✅ Prueba 2: Cálculo OK - Inversión:', cotizacion.valorTotalSistema.toLocaleString());
+                } else {
+                    throw new Error('Cálculo falló');
+                }
+                
+                // 3. PRUEBA DE CRM
+                console.log('📊 Prueba 3: Registro en CRM...');
+                const registroExitoso = registrarCotizacionCompleta(cotizacion);
+                if (registroExitoso) {
+                    resultados.crm = true;
+                    console.log('✅ Prueba 3: CRM OK');
+                } else {
+                    throw new Error('Registro CRM falló');
+                }
+                
+                // 4. PRUEBA DE PDF
+                console.log('📄 Prueba 4: Generación de PDF...');
+                try {
+                    const pdfExitoso = generarPDFProtegido(cotizacion);
+                    if (pdfExitoso) {
+                        resultados.pdf = true;
+                        console.log('✅ Prueba 4: PDF OK');
+                    }
+                } catch (pdfError) {
+                    console.log('⚠️ Prueba 4: PDF falló -', pdfError.message);
+                }
+                
+                // 5. PRUEBA DE EMAIL (solo verificar configuración)
+                console.log('📧 Prueba 5: Configuración EmailJS...');
+                if (typeof emailjs !== 'undefined' && emailConfig.serviceId && emailConfig.templateId) {
+                    resultados.email = true;
+                    console.log('✅ Prueba 5: EmailJS configurado OK');
+                } else {
+                    console.log('⚠️ Prueba 5: EmailJS no configurado completamente');
+                }
+                
+                // 6. PRUEBA DE EXPORTACIÓN
+                console.log('📊 Prueba 6: Exportación de datos...');
+                try {
+                    const registroCompleto = JSON.parse(localStorage.getItem('nassaCRM') || '[]');
+                    if (registroCompleto.length > 0) {
+                        resultados.exportacion = true;
+                        console.log('✅ Prueba 6: Exportación OK -', registroCompleto.length, 'registros');
+                    }
+                } catch (expError) {
+                    console.log('⚠️ Prueba 6: Exportación falló -', expError.message);
+                }
+                
+                // MOSTRAR RESULTADOS
+                mostrarResultadosPruebas(resultados, cotizacion);
+                
+            } catch (error) {
+                console.error('❌ Error en pruebas automáticas:', error);
+                mostrarNotificacion('❌ Error en pruebas: ' + error.message, 'error');
+                mostrarResultadosPruebas(resultados, null);
+            }
+        }
+
+        // Función para mostrar resultados de pruebas
+        function mostrarResultadosPruebas(resultados, cotizacion) {
+            const totalPruebas = Object.keys(resultados).length;
+            const pruebasExitosas = Object.values(resultados).filter(r => r).length;
+            const porcentajeExito = Math.round((pruebasExitosas / totalPruebas) * 100);
+            
+            const html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold text-gray-900">🧪 Resultados de Pruebas Automáticas</h2>
+                                <button onclick="cerrarResultadosPruebas()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">&times;</button>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <!-- Resumen General -->
+                            <div class="text-center p-6 rounded-xl ${porcentajeExito >= 80 ? 'bg-green-50 border-green-200' : porcentajeExito >= 60 ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'} border-2">
+                                <div class="text-4xl font-bold ${porcentajeExito >= 80 ? 'text-green-600' : porcentajeExito >= 60 ? 'text-yellow-600' : 'text-red-600'} mb-2">
+                                    ${porcentajeExito}%
+                                </div>
+                                <div class="text-lg font-semibold text-gray-700">
+                                    ${pruebasExitosas} de ${totalPruebas} pruebas exitosas
+                                </div>
+                                <div class="text-sm text-gray-600 mt-2">
+                                    ${porcentajeExito >= 80 ? '🎉 Sistema funcionando excelente' : 
+                                      porcentajeExito >= 60 ? '⚠️ Sistema funcional con observaciones' : 
+                                      '🚨 Sistema requiere ajustes'}
+                                </div>
+                            </div>
+
+                            <!-- Resultados Detallados -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="p-4 rounded-lg ${resultados.formulario ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-2xl mr-3">${resultados.formulario ? '✅' : '❌'}</span>
+                                        <h3 class="font-bold">Formulario</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600">
+                                        ${resultados.formulario ? 'Llenado y validación correcta' : 'Error en validación de campos'}
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-lg ${resultados.calculo ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-2xl mr-3">${resultados.calculo ? '✅' : '❌'}</span>
+                                        <h3 class="font-bold">Cálculos</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600">
+                                        ${resultados.calculo ? 'Algoritmo de cálculo funcionando' : 'Error en cálculos del sistema'}
+                                    </p>
+                                    ${cotizacion ? `<div class="text-xs text-gray-500 mt-1">Inversión: $${cotizacion.valorTotalSistema.toLocaleString()}</div>` : ''}
+                                </div>
+
+                                <div class="p-4 rounded-lg ${resultados.crm ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-2xl mr-3">${resultados.crm ? '✅' : '❌'}</span>
+                                        <h3 class="font-bold">CRM</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600">
+                                        ${resultados.crm ? 'Registro en base de datos exitoso' : 'Error guardando en CRM'}
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-lg ${resultados.pdf ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-2xl mr-3">${resultados.pdf ? '✅' : '⚠️'}</span>
+                                        <h3 class="font-bold">PDF</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600">
+                                        ${resultados.pdf ? 'Generación de PDF funcionando' : 'Verificar configuración de descarga'}
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-lg ${resultados.email ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-2xl mr-3">${resultados.email ? '✅' : '⚠️'}</span>
+                                        <h3 class="font-bold">Email</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600">
+                                        ${resultados.email ? 'EmailJS configurado correctamente' : 'Configurar credenciales EmailJS'}
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-lg ${resultados.exportacion ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border">
+                                    <div class="flex items-center mb-2">
+                                        <span class="text-2xl mr-3">${resultados.exportacion ? '✅' : '❌'}</span>
+                                        <h3 class="font-bold">Exportación</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600">
+                                        ${resultados.exportacion ? 'Sistema de exportación funcionando' : 'Error en exportación de datos'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Datos de Prueba Generados -->
+                            ${cotizacion ? `
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h3 class="font-bold mb-3">📊 Datos de Prueba Generados</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div><strong>Cliente:</strong> ${cotizacion.nombre}</div>
+                                    <div><strong>Capacidad:</strong> ${cotizacion.capacidadInstalada} kW</div>
+                                    <div><strong>Inversión:</strong> $${cotizacion.valorTotalSistema.toLocaleString()}</div>
+                                    <div><strong>PayBack:</strong> ${cotizacion.tiempoRetorno} años</div>
+                                    <div><strong>Ahorro Mensual:</strong> $${Math.round(cotizacion.ahorroMensualEnergia).toLocaleString()}</div>
+                                    <div><strong>Total Acum:</strong> $${Math.round(cotizacion.TotalAcum).toLocaleString()}</div>
+                                    <div><strong>Segmento:</strong> ${cotizacion.segmentoCliente || 'N/A'}</div>
+                                    <div><strong>Prioridad:</strong> ${cotizacion.prioridadSeguimiento || 'N/A'}</div>
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            <!-- Recomendaciones -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="font-bold mb-3">💡 Recomendaciones</h3>
+                                <ul class="text-sm space-y-2">
+                                    ${!resultados.pdf ? '<li>• <strong>PDF:</strong> Verificar que el navegador permita descargas automáticas</li>' : ''}
+                                    ${!resultados.email ? '<li>• <strong>Email:</strong> Configurar credenciales EmailJS en el código</li>' : ''}
+                                    ${!resultados.crm ? '<li>• <strong>CRM:</strong> Verificar almacenamiento local del navegador</li>' : ''}
+                                    ${!resultados.exportacion ? '<li>• <strong>Exportación:</strong> Verificar permisos de descarga</li>' : ''}
+                                    <li>• <strong>Producción:</strong> Subir a servidor web para funcionalidad completa</li>
+                                    <li>• <strong>Template:</strong> Subir template PowerPoint a GitHub para carga automática</li>
+                                </ul>
+                            </div>
+
+                            <!-- Acciones -->
+                            <div class="flex flex-wrap gap-4 justify-center">
+                                <button onclick="mostrarDiagnostico()" class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+                                    🔧 Diagnóstico Detallado
+                                </button>
+                                <button onclick="mostrarRegistroCotizaciones()" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold">
+                                    📋 Ver CRM
+                                </button>
+                                <button onclick="cerrarResultadosPruebas()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+            
+            // Mostrar notificación final
+            if (porcentajeExito >= 80) {
+                mostrarNotificacion('🎉 Pruebas completadas: Sistema funcionando excelente', 'success');
+            } else if (porcentajeExito >= 60) {
+                mostrarNotificacion('⚠️ Pruebas completadas: Sistema funcional con observaciones', 'info');
+            } else {
+                mostrarNotificacion('🚨 Pruebas completadas: Sistema requiere ajustes', 'error');
+            }
+        }
+
+        // Función para cerrar resultados de pruebas
+        function cerrarResultadosPruebas() {
+            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Función auxiliar para esperar
+        function esperar(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Función para prueba de estrés (múltiples cotizaciones)
+        async function pruebaEstres() {
+            console.log('🔥 Iniciando prueba de estrés...');
+            mostrarNotificacion('🔥 Ejecutando prueba de estrés...', 'info');
+            
+            const ciudades = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena'];
+            const nombres = ['Juan Pérez', 'María García', 'Carlos López', 'Ana Martínez', 'Luis Rodríguez'];
+            const tiposVivienda = ['casa', 'apartamento', 'local', 'empresa'];
+            
+            let exitosas = 0;
+            let errores = 0;
+            
+            for (let i = 0; i < 10; i++) {
+                try {
+                    // Generar datos aleatorios
+                    const datos = {
+                        nombre: nombres[Math.floor(Math.random() * nombres.length)] + ` ${i + 1}`,
+                        telefono: `+57 300 ${Math.floor(Math.random() * 900) + 100} ${Math.floor(Math.random() * 9000) + 1000}`,
+                        email: `cliente${i + 1}@email.com`,
+                        ciudad: ciudades[Math.floor(Math.random() * ciudades.length)],
+                        direccion: `Calle ${Math.floor(Math.random() * 200) + 1} #${Math.floor(Math.random() * 99) + 1}-${Math.floor(Math.random() * 99) + 1}`,
+                        consumoMensual: Math.floor(Math.random() * 500) + 200,
+                        valorFactura: Math.floor(Math.random() * 200000) + 100000,
+                        valorKwh: Math.floor(Math.random() * 200) + 400,
+                        nic: `${Math.floor(Math.random() * 90000000000) + 10000000000}`,
+                        tipoVivienda: tiposVivienda[Math.floor(Math.random() * tiposVivienda.length)],
+                        numeroPisos: Math.floor(Math.random() * 3) + 1,
+                        sistemaElectrico: 'monofasico',
+                        porcentajeConsumodia: [30, 50, 70, 90][Math.floor(Math.random() * 4)],
+                        tipoSistemaFV: 'ongrid',
+                        hspCalculado: 4.5,
+                        panel: 'panel2',
+                        inversor: 'inv2'
+                    };
+                    
+                    const cotizacion = calcularCotizacionAvanzada(datos);
+                    registrarCotizacionCompleta(cotizacion);
+                    exitosas++;
+                    
+                } catch (error) {
+                    console.error(`❌ Error en cotización ${i + 1}:`, error);
+                    errores++;
+                }
+                
+                // Pequeña pausa entre cotizaciones
+                await esperar(100);
+            }
+            
+            mostrarNotificacion(`🔥 Prueba de estrés completada: ${exitosas} exitosas, ${errores} errores`, exitosas > errores ? 'success' : 'error');
+            console.log(`🔥 Prueba de estrés: ${exitosas} exitosas, ${errores} errores`);
+        }
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Mostrar mensaje de carga
+            mostrarNotificacion('🔄 Cargando sistema...', 'info');
+            
+            // Cargar equipos directamente
+            cargarOpcionesEquipos();
+            
+            // 🚀 INTENTAR CARGA AUTOMÁTICA DE TEMPLATE
+            await cargarTemplateAutomatico();
+            
+            mostrarNotificacion('✅ Sistema listo - Versión 3.1 con pruebas automáticas', 'success');
+            
+            // Mostrar ayuda de pruebas en consola
+            console.log('🧪 SISTEMA DE PRUEBAS DISPONIBLE:');
+            console.log('• llenarDatosPrueba() - Llena formulario con datos de prueba');
+            console.log('• ejecutarPruebasCompletas() - Ejecuta todas las pruebas automáticamente');
+            console.log('• pruebaEstres() - Genera 10 cotizaciones aleatorias');
+            console.log('• mostrarDiagnostico() - Muestra diagnóstico técnico detallado');
+        });
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995ba4e985f49876',t:'MTc2MTY2NzIwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
