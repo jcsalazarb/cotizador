@@ -2,7 +2,10 @@
 nixPkgs = ["python39", "python39Packages.pip", "libreoffice"]
 
 [phases.install]
-cmds = ["pip install --user -r backend/requirements.txt"]
+cmds = [
+    "python3 -m venv /opt/venv",
+    "/opt/venv/bin/pip install -r backend/requirements.txt"
+]
 
 [start]
-cmd = "cd backend && python3 -m uvicorn server:app --host 0.0.0.0 --port $PORT"
+cmd = "cd backend && /opt/venv/bin/python3 -m uvicorn server:app --host 0.0.0.0 --port $PORT"
