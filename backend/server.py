@@ -24,7 +24,7 @@ from pptx.util import Pt
 
 load_dotenv()
 
-le# ========================================
+# ========================================
 # ⏰ ZONA HORARIA COLOMBIA (UTC-5)
 # ========================================
 COLOMBIA_TZ = timezone(timedelta(hours=-5))
