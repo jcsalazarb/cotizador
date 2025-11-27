@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - NASSA Solar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Login */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-box h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-small {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 0 5px;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .user-info {
+            color: #666;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .content-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .content-box.active {
+            display: block;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .card-details {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .card-price {
+            color: #28a745;
+            font-weight: 600;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .card-actions button {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 20px 30px;
+            border-radius: 12px;
+            display: none;
+            z-index: 2000;
+            min-width: 300px;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            font-weight: 500;
+            font-size: 16px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #28a745;
+            color: white;
+            border-left: 5px solid #1e7e34;
+        }
+
+        .alert-error {
+            background: #dc3545;
+            color: white;
+            border-left: 5px solid #bd2130;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: #667eea;
+            font-size: 22px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #666;
+            cursor: pointer;
+            width: auto;
+            padding: 0;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .param-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .param-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-actions {
+                flex-direction: column;
+            }
+
+            .card-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login -->
+        <div id="loginContainer" class="login-container">
+            <div class="login-box">
+                <h2>🔐 Panel de Administración</h2>
+                <div class="alert alert-error" id="loginError"></div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Usuario</label>
+                        <input type="text" id="username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <input type="password" id="password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit">Iniciar Sesión</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="dashboard">
+            <div class="header">
+                <h1>⚡ NASSA Solar - Administración</h1>
+                <div class="user-info">
+                    <span id="userName"></span> | 
+                    <button class="btn-small btn-secondary" onclick="logout()">Cerrar Sesión</button>
+                </div>
+            </div>
+
+            <div class="alert alert-success" id="successAlert"></div>
+            <div class="alert alert-error" id="errorAlert"></div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('parametros')">📊 Parámetros de Costos</button>
+                <button class="tab" onclick="showTab('paneles')">🔆 Paneles</button>
+                <button class="tab" onclick="showTab('inversores')">⚡ Inversores</button>
+                <button class="tab" onclick="showTab('baterias')">🔋 Baterías</button>
+            </div>
+
+            <!-- Parámetros -->
+            <div id="parametros" class="content-box active">
+                <h2 class="section-title">Parámetros de Costos y Fiscales</h2>
+                <form id="parametrosForm">
+                    <div class="param-section">
+                        <h3>💰 Costos de Instalación (COP)</h3>
+                        <div class="form-group">
+                            <label>Soportería por Panel</label>
+                            <input type="number" id="soporteria_por_panel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Instalación por Panel</label>
+                            <input type="number" id="instalacion_por_panel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Materiales por Panel</label>
+                            <input type="number" id="materiales_por_panel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mantenimiento Anual por kW</label>
+                            <input type="number" id="mantenimiento_anual_por_kw" required>
+                        </div>
+                    </div>
+
+                    <div class="param-section">
+                        <h3>📈 Parámetros Fiscales</h3>
+                        <div class="form-group">
+                            <label>IVA (Porcentaje: 0.19 = 19%)</label>
+                            <input type="number" step="0.01" id="iva_porcentaje" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Impuesto Renta (Porcentaje: 0.35 = 35%)</label>
+                            <input type="number" step="0.01" id="impuesto_renta_porcentaje" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Deducción Renta Base (Porcentaje: 0.50 = 50%)</label>
+                            <input type="number" step="0.01" id="deduccion_renta_base_porcentaje" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Años para Deducción</label>
+                            <input type="number" id="anos_deduccion" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Años para Depreciación</label>
+                            <input type="number" id="anos_depreciacion" required>
+                        </div>
+                    </div>
+
+                    <div class="param-section">
+                        <h3>📊 Parámetros de Proyección</h3>
+                        <div class="form-group">
+                            <label>Degradación Anual del Panel (0.01 = 1%)</label>
+                            <input type="number" step="0.001" id="degradacion_anual_panel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Factor Primer Año (0.5 = 50%)</label>
+                            <input type="number" step="0.1" id="factor_primer_ano" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Incremento Anual kWh (0.055 = 5.5%)</label>
+                            <input type="number" step="0.001" id="incremento_anual_kwh" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Años de Proyección</label>
+                            <input type="number" id="anos_proyeccion" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-success">💾 Guardar Parámetros</button>
+                </form>
+            </div>
+
+            <!-- Paneles -->
+            <div id="paneles" class="content-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 class="section-title" style="margin: 0;">Gestión de Paneles Solares</h2>
+                    <button class="btn-success btn-small" onclick="openModal('panel')">➕ Nuevo Panel</button>
+                </div>
+                <div id="panelesList" class="grid"></div>
+            </div>
+
+            <!-- Inversores -->
+            <div id="inversores" class="content-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 class="section-title" style="margin: 0;">Gestión de Inversores</h2>
+                    <button class="btn-success btn-small" onclick="openModal('inversor')">➕ Nuevo Inversor</button>
+                </div>
+                <div id="inversoresList" class="grid"></div>
+            </div>
+
+            <!-- Baterías -->
+            <div id="baterias" class="content-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 class="section-title" style="margin: 0;">Gestión de Baterías</h2>
+                    <button class="btn-success btn-small" onclick="openModal('bateria')">➕ Nueva Batería</button>
+                </div>
+                <div id="bateriasList" class="grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Crear/Editar Equipos -->
+    <div id="equipoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="equipoForm">
+                <input type="hidden" id="equipoTipo">
+                <input type="hidden" id="equipoId">
+                <input type="hidden" id="isEdit">
+
+                <div class="form-group" id="idGroup" style="display: none;">
+                    <label>ID del Equipo</label>
+                    <input type="text" id="formId" disabled style="background: #f0f0f0; cursor: not-allowed;">
+                    <small style="color: #666; font-size: 12px;">El ID se genera automáticamente</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" id="formNombre" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Capacidad (W o Wh) *</label>
+                    <input type="number" id="formCapacidad" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Precio (COP) *</label>
+                    <input type="number" id="formPrecio" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción *</label>
+                    <textarea id="formDescripcion" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group" id="eficienciaGroup">
+                    <label>Eficiencia (0.90 = 90%)</label>
+                    <input type="number" step="0.01" id="formEficiencia">
+                </div>
+
+                <div class="form-group" id="tipoSistemaGroup" style="display: none;">
+                    <label>Tipo de Sistema Eléctrico *</label>
+                    <select id="formTipoSistema">
+                        <option value="">Seleccione...</option>
+                        <option value="monofasico">Monofásico</option>
+                        <option value="bifasico">Bifásico</option>
+                        <option value="trifasico">Trifásico</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="btnGuardar" class="btn-success">💾 Guardar</button>
+                <button type="button" class="btn-secondary" onclick="closeModal()">❌ Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8001';
+        let authCredentials = null;
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            authCredentials = btoa(`${username}:${password}`);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/parametros`, {
+                    headers: {
+                        'Authorization': `Basic ${authCredentials}`
+                    }
+                });
+                
+                if (response.ok) {
+                    document.getElementById('userName').textContent = username;
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('dashboard').classList.add('active');
+                    loadAllData();
+                } else {
+                    showLoginError('Credenciales inválidas');
+                }
+            } catch (error) {
+                showLoginError('Error de conexión');
+            }
+        });
+
+        function logout() {
+            authCredentials = null;
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 3000);
+        }
+
+        function showAlert(message, isSuccess = true) {
+            const alertId = isSuccess ? 'successAlert' : 'errorAlert';
+            const alert = document.getElementById(alertId);
+            alert.textContent = message;
+            alert.classList.add('show');
+            
+            // Duración más larga para mensajes de éxito (5 segundos)
+            const duration = isSuccess ? 5000 : 4000;
+            setTimeout(() => alert.classList.remove('show'), duration);
+        }
+
+        // Tabs
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.content-box').forEach(box => box.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Cargar todos los datos
+        async function loadAllData() {
+            await loadParametros();
+            await loadPaneles();
+            await loadInversores();
+            await loadBaterias();
+        }
+
+        // Parámetros
+        async function loadParametros() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/parametros`, {
+                    headers: { 'Authorization': `Basic ${authCredentials}` }
+                });
+                const data = await response.json();
+                
+                // Costos
+                document.getElementById('soporteria_por_panel').value = data.costos_instalacion.soporteria_por_panel;
+                document.getElementById('instalacion_por_panel').value = data.costos_instalacion.instalacion_por_panel;
+                document.getElementById('materiales_por_panel').value = data.costos_instalacion.materiales_por_panel;
+                document.getElementById('mantenimiento_anual_por_kw').value = data.costos_instalacion.mantenimiento_anual_por_kw;
+                
+                // Fiscales
+                document.getElementById('iva_porcentaje').value = data.parametros_fiscales.iva_porcentaje;
+                document.getElementById('impuesto_renta_porcentaje').value = data.parametros_fiscales.impuesto_renta_porcentaje;
+                document.getElementById('deduccion_renta_base_porcentaje').value = data.parametros_fiscales.deduccion_renta_base_porcentaje;
+                document.getElementById('anos_deduccion').value = data.parametros_fiscales.anos_deduccion;
+                document.getElementById('anos_depreciacion').value = data.parametros_fiscales.anos_depreciacion;
+                
+                // Proyección
+                document.getElementById('degradacion_anual_panel').value = data.parametros_proyeccion.degradacion_anual_panel;
+                document.getElementById('factor_primer_ano').value = data.parametros_proyeccion.factor_primer_ano;
+                document.getElementById('incremento_anual_kwh').value = data.parametros_proyeccion.incremento_anual_kwh;
+                document.getElementById('anos_proyeccion').value = data.parametros_proyeccion.anos_proyeccion;
+            } catch (error) {
+                showAlert('Error al cargar parámetros', false);
+            }
+        }
+
+        document.getElementById('parametrosForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Obtener botón y deshabilitar
+            const btnGuardar = e.submitter || document.querySelector('#parametrosForm button[type="submit"]');
+            const textoOriginal = btnGuardar.textContent;
+            btnGuardar.disabled = true;
+            btnGuardar.textContent = '⏳ Guardando parámetros...';
+            
+            const parametros = {
+                costos_instalacion: {
+                    soporteria_por_panel: parseInt(document.getElementById('soporteria_por_panel').value),
+                    instalacion_por_panel: parseInt(document.getElementById('instalacion_por_panel').value),
+                    materiales_por_panel: parseInt(document.getElementById('materiales_por_panel').value),
+                    mantenimiento_anual_por_kw: parseInt(document.getElementById('mantenimiento_anual_por_kw').value)
+                },
+                parametros_fiscales: {
+                    iva_porcentaje: parseFloat(document.getElementById('iva_porcentaje').value),
+                    impuesto_renta_porcentaje: parseFloat(document.getElementById('impuesto_renta_porcentaje').value),
+                    deduccion_renta_base_porcentaje: parseFloat(document.getElementById('deduccion_renta_base_porcentaje').value),
+                    anos_deduccion: parseInt(document.getElementById('anos_deduccion').value),
+                    anos_depreciacion: parseInt(document.getElementById('anos_depreciacion').value)
+                },
+                parametros_proyeccion: {
+                    degradacion_anual_panel: parseFloat(document.getElementById('degradacion_anual_panel').value),
+                    factor_primer_ano: parseFloat(document.getElementById('factor_primer_ano').value),
+                    incremento_anual_kwh: parseFloat(document.getElementById('incremento_anual_kwh').value),
+                    anos_proyeccion: parseInt(document.getElementById('anos_proyeccion').value)
+                }
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/parametros`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Basic ${authCredentials}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(parametros)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert('✅ Parámetros actualizados correctamente. Los nuevos valores se aplicarán en las próximas cotizaciones.');
+                } else {
+                    const error = await response.json();
+                    showAlert(`❌ Error al actualizar parámetros: ${error.detail || 'Error desconocido'}`, false);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('❌ Error de conexión con el servidor', false);
+            } finally {
+                // Restaurar botón
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = textoOriginal;
+            }
+        });
+
+        // Paneles
+        async function loadPaneles() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/paneles`, {
+                    headers: { 'Authorization': `Basic ${authCredentials}` }
+                });
+                const paneles = await response.json();
+                
+                const container = document.getElementById('panelesList');
+                container.innerHTML = paneles.map(panel => `
+                    <div class="card">
+                        <div class="card-title">${panel.nombre}</div>
+                        <div class="card-details">🆔 ID: ${panel.id}</div>
+                        <div class="card-details">⚡ Capacidad: ${panel.capacidad}W</div>
+                        <div class="card-details">📊 Eficiencia: ${(panel.eficienciaPanel * 100).toFixed(0)}%</div>
+                        <div class="card-price">💵 $${panel.precio.toLocaleString('es-CO')}</div>
+                        <div class="card-details">${panel.descripcion}</div>
+                        <div class="card-actions">
+                            <button class="btn-warning btn-small" onclick='editEquipo("panel", ${JSON.stringify(panel).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+                            <button class="btn-danger btn-small" onclick="deleteEquipo('panel', '${panel.id}')">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showAlert('Error al cargar paneles', false);
+            }
+        }
+
+        // Inversores
+        async function loadInversores() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/inversores`, {
+                    headers: { 'Authorization': `Basic ${authCredentials}` }
+                });
+                const inversores = await response.json();
+                
+                const container = document.getElementById('inversoresList');
+                container.innerHTML = inversores.map(inv => `
+                    <div class="card">
+                        <div class="card-title">${inv.nombre}</div>
+                        <div class="card-details">🆔 ID: ${inv.id}</div>
+                        <div class="card-details">⚡ Capacidad: ${inv.capacidad}W</div>
+                        <div class="card-details">🔌 Tipo: ${inv.tipo_sistema || 'No especificado'}</div>
+                        <div class="card-details">📊 Eficiencia: ${(inv.eficiencia * 100).toFixed(0)}%</div>
+                        <div class="card-price">💵 $${inv.precio.toLocaleString('es-CO')}</div>
+                        <div class="card-details">${inv.descripcion}</div>
+                        <div class="card-actions">
+                            <button class="btn-warning btn-small" onclick='editEquipo("inversor", ${JSON.stringify(inv).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+                            <button class="btn-danger btn-small" onclick="deleteEquipo('inversor', '${inv.id}')">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showAlert('Error al cargar inversores', false);
+            }
+        }
+
+        // Baterías
+        async function loadBaterias() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/baterias`, {
+                    headers: { 'Authorization': `Basic ${authCredentials}` }
+                });
+                const baterias = await response.json();
+                
+                const container = document.getElementById('bateriasList');
+                container.innerHTML = baterias.map(bat => `
+                    <div class="card">
+                        <div class="card-title">${bat.nombre}</div>
+                        <div class="card-details">🆔 ID: ${bat.id}</div>
+                        <div class="card-details">🔋 Capacidad: ${bat.capacidad}Wh</div>
+                        <div class="card-price">💵 $${bat.precio.toLocaleString('es-CO')}</div>
+                        <div class="card-details">${bat.descripcion}</div>
+                        <div class="card-actions">
+                            <button class="btn-warning btn-small" onclick='editEquipo("bateria", ${JSON.stringify(bat).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+                            <button class="btn-danger btn-small" onclick="deleteEquipo('bateria', '${bat.id}')">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showAlert('Error al cargar baterías', false);
+            }
+        }
+
+        // Modal
+        function openModal(tipo, data = null) {
+            document.getElementById('equipoModal').classList.add('show');
+            document.getElementById('equipoTipo').value = tipo;
+            
+            // Mostrar/ocultar campos según tipo
+            const eficienciaGroup = document.getElementById('eficienciaGroup');
+            const tipoSistemaGroup = document.getElementById('tipoSistemaGroup');
+            const idGroup = document.getElementById('idGroup');
+            
+            eficienciaGroup.style.display = tipo !== 'bateria' ? 'block' : 'none';
+            tipoSistemaGroup.style.display = tipo === 'inversor' ? 'block' : 'none';
+            
+            if (data) {
+                // MODO EDICIÓN: Mostrar ID (deshabilitado)
+                document.getElementById('modalTitle').textContent = `Editar ${tipo}`;
+                document.getElementById('isEdit').value = 'true';
+                document.getElementById('equipoId').value = data.id;
+                document.getElementById('formId').value = data.id;
+                idGroup.style.display = 'block';
+                
+                document.getElementById('formNombre').value = data.nombre;
+                document.getElementById('formCapacidad').value = data.capacidad;
+                document.getElementById('formPrecio').value = data.precio;
+                document.getElementById('formDescripcion').value = data.descripcion;
+                
+                if (tipo !== 'bateria') {
+                    document.getElementById('formEficiencia').value = data.eficiencia || data.eficienciaPanel || 0.90;
+                }
+                if (tipo === 'inversor') {
+                    document.getElementById('formTipoSistema').value = data.tipo_sistema || '';
+                }
+            } else {
+                // MODO CREACIÓN: Ocultar ID (se genera automáticamente)
+                document.getElementById('modalTitle').textContent = `Nuevo ${tipo}`;
+                document.getElementById('isEdit').value = 'false';
+                document.getElementById('equipoForm').reset();
+                idGroup.style.display = 'none';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('equipoModal').classList.remove('show');
+            document.getElementById('equipoForm').reset();
+        }
+
+        function editEquipo(tipo, data) {
+            openModal(tipo, data);
+        }
+
+        document.getElementById('equipoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const tipo = document.getElementById('equipoTipo').value;
+            const isEdit = document.getElementById('isEdit').value === 'true';
+            
+            // Deshabilitar botón y mostrar estado de guardando
+            const btnGuardar = document.getElementById('btnGuardar');
+            const textoOriginal = btnGuardar.textContent;
+            btnGuardar.disabled = true;
+            btnGuardar.textContent = '⏳ Guardando...';
+            
+            const equipo = {
+                nombre: document.getElementById('formNombre').value,
+                capacidad: parseInt(document.getElementById('formCapacidad').value),
+                precio: parseInt(document.getElementById('formPrecio').value),
+                descripcion: document.getElementById('formDescripcion').value
+            };
+            
+            // Solo incluir ID al editar
+            if (isEdit) {
+                equipo.id = document.getElementById('formId').value;
+            }
+            
+            if (tipo !== 'bateria') {
+                const eficienciaKey = tipo === 'panel' ? 'eficienciaPanel' : 'eficiencia';
+                equipo[eficienciaKey] = parseFloat(document.getElementById('formEficiencia').value);
+            }
+            
+            if (tipo === 'inversor') {
+                equipo.tipo_sistema = document.getElementById('formTipoSistema').value;
+            }
+            
+            const plurales = { panel: 'paneles', inversor: 'inversores', bateria: 'baterias' };
+            const endpoint = `${API_BASE_URL}/api/admin/${plurales[tipo]}${isEdit ? '/' + equipo.id : ''}`;
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            console.log('🔄 Guardando equipo:', { tipo, isEdit, endpoint, method });
+            console.log('📦 Datos a enviar:', equipo);
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Basic ${authCredentials}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(equipo)
+                });
+                
+                console.log('📡 Respuesta del servidor:', response.status, response.statusText);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Respuesta exitosa:', result);
+                    
+                    // Recargar lista correspondiente primero
+                    if (tipo === 'panel') await loadPaneles();
+                    else if (tipo === 'inversor') await loadInversores();
+                    else await loadBaterias();
+                    
+                    // Cerrar modal
+                    closeModal();
+                    
+                    // Mostrar mensaje de éxito con más detalle
+                    const accion = isEdit ? 'actualizado' : 'creado';
+                    const nombreTipo = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                    
+                    // Si es creación, mostrar el ID generado
+                    if (!isEdit && result.id) {
+                        showAlert(`✅ ${nombreTipo} "${equipo.nombre}" ${accion} exitosamente con ID: ${result.id}`);
+                    } else {
+                        showAlert(`✅ ${nombreTipo} "${equipo.nombre}" ${accion} exitosamente`);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Error del servidor:', response.status, errorText);
+                    
+                    let errorMessage = 'No se pudo guardar';
+                    try {
+                        const error = JSON.parse(errorText);
+                        errorMessage = error.detail || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                    
+                    showAlert(`❌ Error (${response.status}): ${errorMessage}`, false);
+                }
+            } catch (error) {
+                console.error('❌ Error de red:', error);
+                showAlert(`❌ Error de conexión: ${error.message}. Verifica que el backend esté corriendo.`, false);
+            } finally {
+                // Restaurar botón
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = textoOriginal;
+            }
+        });
+
+        async function deleteEquipo(tipo, id) {
+            if (!confirm(`⚠️ ¿Estás seguro de eliminar este ${tipo}?\n\nID: ${id}\n\nEsta acción no se puede deshacer.`)) return;
+            
+            const plurales = { panel: 'paneles', inversor: 'inversores', bateria: 'baterias' };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/${plurales[tipo]}/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Basic ${authCredentials}` }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Recargar lista correspondiente
+                    if (tipo === 'panel') await loadPaneles();
+                    else if (tipo === 'inversor') await loadInversores();
+                    else await loadBaterias();
+                    
+                    // Mensaje de éxito
+                    const nombreTipo = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                    showAlert(`✅ ${nombreTipo} "${id}" eliminado exitosamente`);
+                } else {
+                    const error = await response.json();
+                    showAlert(`❌ Error al eliminar: ${error.detail || 'Error desconocido'}`, false);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('❌ Error de conexión con el servidor', false);
+            }
+        }
+    </script>
+</body>
+</html>
