@@ -774,10 +774,20 @@ def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "") -> t
     if not os.path.isfile(TEMPLATE_PPTX):
         raise RuntimeError("Template PPTX no encontrado")
     
-    fd_temp, filled_path = tempfile.mkstemp(suffix=".pptx")
+    # Crear archivo temporal con nombre único que incluya timestamp
+    timestamp_ms = int(datetime.now().timestamp() * 1000)
+    opcion_suffix = "_op1" if opcion and "OPCIÓN 1" in opcion else "_op2" if opcion and "OPCIÓN 2" in opcion else ""
+    fd_temp, filled_path = tempfile.mkstemp(
+        suffix=f"_{timestamp_ms}{opcion_suffix}.pptx",
+        prefix="cotizacion_"
+    )
     os.close(fd_temp)
+    
+    # Copiar template original (FRESCO) al archivo temporal
     shutil.copy(TEMPLATE_PPTX, filled_path)
+    print(f"📄 Template copiado a: {os.path.basename(filled_path)}")
 
+    # Cargar presentación desde la copia fresca
     prs = Presentation(filled_path)
     
     # Reemplazar placeholders (pasando el parámetro opcion)
@@ -1485,18 +1495,22 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     necesita_segunda_opcion = areaDisponible > 0 and areaDisponible < (areaRequerida * 0.92)
     
     pdf_paths = []
+    pptx_paths = []  # Para limpiar después
     opciones = []
     num_opciones = 1
     
     try:
         # GENERAR OPCIÓN 1
+        print(f"🔄 Generando Opción 1 {'(única)' if not necesita_segunda_opcion else '(de 2)'}...")
         pptx_path1, pdf_path1 = fill_template_and_convert(
             req.dict(), 
             resultado_opcion1,
             opcion="" if not necesita_segunda_opcion else "OPCIÓN 1"
         )
         pdf_paths.append(pdf_path1)
+        pptx_paths.append(pptx_path1)
         opciones.append(resultado_opcion1)
+        print(f"✅ Opción 1 generada: {os.path.basename(pdf_path1)}")
         
         # GENERAR OPCIÓN 2 si es necesario
         resultado_opcion2 = None
@@ -1512,9 +1526,10 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
                     opcion="OPCIÓN 2 - Ajustada a área disponible"
                 )
                 pdf_paths.append(pdf_path2)
+                pptx_paths.append(pptx_path2)
                 opciones.append(resultado_opcion2)
                 num_opciones = 2
-                print(f"✅ Segunda opción generada: {resultado_opcion2['numeroPaneles']} paneles")
+                print(f"✅ Segunda opción generada: {resultado_opcion2['numeroPaneles']} paneles - {os.path.basename(pdf_path2)}")
             except Exception as e:
                 print(f"⚠️ Error generando segunda opción: {e}")
         
@@ -1529,16 +1544,39 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             email_error = str(e)
             print(f"⚠️ Error email: {e}")
         finally:
-            # Limpiar archivos temporales
+            # Limpiar archivos temporales (PDFs y PPTXs generados)
+            print("🧹 Limpiando archivos temporales...")
             for pdf_path in pdf_paths:
                 if pdf_path and os.path.exists(pdf_path):
-                    os.remove(pdf_path)
-            # Limpiar PPTX también
-            for f in [f for f in os.listdir(tempfile.gettempdir()) if f.startswith("cotizacion_") and f.endswith(".pptx")]:
-                try:
-                    os.remove(os.path.join(tempfile.gettempdir(), f))
-                except:
-                    pass
+                    try:
+                        os.remove(pdf_path)
+                        print(f"   🗑️  Eliminado: {os.path.basename(pdf_path)}")
+                    except Exception as e:
+                        print(f"   ⚠️ Error eliminando PDF: {e}")
+            
+            for pptx_path in pptx_paths:
+                if pptx_path and os.path.exists(pptx_path):
+                    try:
+                        os.remove(pptx_path)
+                        print(f"   🗑️  Eliminado: {os.path.basename(pptx_path)}")
+                    except Exception as e:
+                        print(f"   ⚠️ Error eliminando PPTX: {e}")
+            
+            # Limpiar directorios temporales de LibreOffice
+            try:
+                temp_dir = tempfile.gettempdir()
+                for item in os.listdir(temp_dir):
+                    if item.startswith("tmp") and os.path.isdir(os.path.join(temp_dir, item)):
+                        item_path = os.path.join(temp_dir, item)
+                        try:
+                            # Eliminar PDFs viejos de cotizaciones en directorios temp
+                            for f in os.listdir(item_path):
+                                if f.startswith("cotizacion_") and f.endswith(".pdf"):
+                                    os.remove(os.path.join(item_path, f))
+                        except:
+                            pass
+            except:
+                pass
                     
     except Exception as e:
         print(f"⚠️ Error generando PDFs: {e}")
