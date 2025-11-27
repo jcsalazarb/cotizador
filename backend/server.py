@@ -8,7 +8,7 @@ import smtplib
 import secrets
 import unicodedata
 from math import ceil
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
@@ -23,6 +23,15 @@ from pptx.enum.text import PP_ALIGN
 from pptx.util import Pt
 
 load_dotenv()
+
+# ========================================
+# ⏰ ZONA HORARIA COLOMBIA (UTC-5)
+# ========================================
+COLOMBIA_TZ = timezone(timedelta(hours=-5))
+
+def now_colombia():
+    """Retorna la hora actual en Colombia (UTC-5)"""
+    return datetime.now(COLOMBIA_TZ)
 
 # ========================================
 # 📁 CONFIGURACIÓN DE RUTAS
@@ -249,8 +258,8 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     tiempoRetorno = payback or (valorTotalSistema / (ahorroAnualEnergia + ahorroAnualDeduccion + ahorroAnualDepreciacion + 1e-9))
 
     return {
-        "fecha": datetime.now(timezone.utc).isoformat(),
-        "cotizacionId": "NASSA-" + str(int(datetime.now(timezone.utc).timestamp())),
+        "fecha": now_colombia().isoformat(),
+        "cotizacionId": "NASSA-" + str(int(now_colombia().timestamp())),
         "panel": {"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"]},
         "inversor": {"id": inversor["id"], "nombre": inversor["nombre"], "capacidad": inversor["capacidad"]},
         "bateria": {"id": bateria["id"], "nombre": bateria["nombre"]} if bateria else None,
@@ -474,36 +483,56 @@ def build_placeholders(req: dict, resultado: dict) -> dict:
     }
 
 def replace_text_in_shape(shape, mapping: dict):
-    """Reemplaza texto en un shape individual (text_frame)"""
+    """Reemplaza texto en un shape individual (text_frame) - VERSION MEJORADA"""
     if not shape.has_text_frame:
         return
     
     for p in shape.text_frame.paragraphs:
-        # Primero intentar reemplazar en runs individuales
-        for r in p.runs:
-            for k, v in mapping.items():
-                if k in r.text:
-                    r.text = r.text.replace(k, v)
-        
-        # Si el placeholder está fragmentado entre varios runs, unir y reemplazar
+        # Construir texto completo del párrafo
         full_text = "".join([r.text for r in p.runs])
-        for k, v in mapping.items():
-            if k in full_text:
-                # Placeholder encontrado fragmentado, reconstruir párrafo
-                new_text = full_text.replace(k, v)
-                # Limpiar runs existentes de forma segura
+        
+        # Verificar si algún placeholder existe
+        needs_replacement = any(k in full_text for k in mapping.keys())
+        
+        if needs_replacement:
+            # Reemplazar todos los placeholders
+            new_text = full_text
+            for k, v in mapping.items():
+                new_text = new_text.replace(k, v)
+            
+            # Guardar formato del primer run (si existe)
+            original_font = None
+            if len(p.runs) > 0:
+                original_font = p.runs[0].font
+            
+            # LIMPIAR TODOS LOS RUNS
+            for _ in range(len(p.runs)):
                 try:
-                    while len(p.runs) > 0:
-                        run = p.runs[0]
-                        if hasattr(run, '_element') and hasattr(p, '_element'):
-                            p._element.remove(run._element)
-                        else:
-                            break
+                    run = p.runs[0]
+                    p._element.remove(run._element)
+                except:
+                    break
+            
+            # Crear UN SOLO RUN con el texto reemplazado
+            new_run = p.add_run()
+            new_run.text = new_text
+            
+            # Restaurar formato si existía
+            if original_font:
+                try:
+                    new_run.font.name = original_font.name
+                    new_run.font.size = original_font.size
+                    new_run.font.bold = original_font.bold
+                    new_run.font.italic = original_font.italic
+                    new_run.font.color.rgb = original_font.color.rgb
                 except:
                     pass
-                # Crear nuevo run con texto completo
-                p.add_run().text = new_text
-                break
+        else:
+            # Sin placeholders, reemplazar run por run (preserva formato)
+            for r in p.runs:
+                for k, v in mapping.items():
+                    if k in r.text:
+                        r.text = r.text.replace(k, v)
 
 def replace_shape_text(shape, mapping: dict):
     """Reemplaza texto en shapes - incluye SmartArt y shapes anidados con formato de alineación"""
@@ -725,34 +754,165 @@ def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_pat
         raise RuntimeError("SENDGRID_API_KEY no configurada en .env")
     
     cuerpo_html = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2563eb;">Cotización NASSA Solar</h2>
-            <p>Estimado cliente,</p>
-            <p>Adjuntamos su cotización personalizada de sistema fotovoltaico:</p>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotización NASSA Solar</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+    
+    <!-- Contenedor Principal -->
+    <div style="max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        
+        <!-- Header con Gradiente -->
+        <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #ea580c 100%); padding: 40px 30px; text-align: center; position: relative;">
+            <div style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 20px; display: inline-block; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+                <h1 style="margin: 0; color: #ea580c; font-size: 32px; font-weight: 800; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">
+                    ☀️ NASSA SOLAR
+                </h1>
+                <p style="margin: 8px 0 0 0; color: #92400e; font-size: 16px; font-weight: 600; letter-spacing: 2px;">
+                    ENERGÍA INTELIGENTE
+                </p>
+            </div>
+        </div>
+        
+        <!-- Contenido -->
+        <div style="padding: 40px 30px;">
             
-            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0; color: #1f2937;">📊 RESUMEN</h3>
-                <ul style="list-style: none; padding: 0;">
-                    <li><strong>ID:</strong> {resultado['cotizacionId']}</li>
-                    <li><strong>Inversión:</strong> ${resultado['valorTotalSistema']:,.0f} COP</li>
-                    <li><strong>Ahorro mensual:</strong> ${resultado['ahorroMensualEnergia']:,.0f} COP</li>
-                    <li><strong>Retorno:</strong> {resultado['tiempoRetorno']} años</li>
-                    <li><strong>Capacidad:</strong> {resultado['capacidadInstalada']} kW</li>
+            <!-- Saludo -->
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: #1f2937; font-size: 24px; margin: 0 0 10px 0;">
+                    ✨ ¡Tu Cotización Está Lista!
+                </h2>
+                <p style="color: #6b7280; font-size: 16px; margin: 0; line-height: 1.6;">
+                    Hemos preparado una propuesta personalizada para tu proyecto solar
+                </p>
+            </div>
+            
+            <!-- Tarjeta de Resumen Premium -->
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 16px; padding: 25px; margin: 30px 0; border: 3px solid #fbbf24; box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);">
+                <h3 style="color: #92400e; font-size: 20px; margin: 0 0 20px 0; text-align: center; font-weight: 700;">
+                    📊 RESUMEN DE TU INVERSIÓN
+                </h3>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 12px 0; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #78350f; font-size: 14px; font-weight: 600;">📋 ID Cotización</span>
+                        </td>
+                        <td style="padding: 12px 0; text-align: right; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #92400e; font-size: 16px; font-weight: 700;">{resultado['cotizacionId']}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #78350f; font-size: 14px; font-weight: 600;">💰 Inversión Total</span>
+                        </td>
+                        <td style="padding: 12px 0; text-align: right; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #dc2626; font-size: 20px; font-weight: 800;">${resultado['valorTotalSistema']:,.0f}</span>
+                            <span style="color: #92400e; font-size: 14px; font-weight: 600;"> COP</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #78350f; font-size: 14px; font-weight: 600;">💡 Ahorro Mensual</span>
+                        </td>
+                        <td style="padding: 12px 0; text-align: right; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #16a34a; font-size: 20px; font-weight: 800;">${resultado['ahorroMensualEnergia']:,.0f}</span>
+                            <span style="color: #92400e; font-size: 14px; font-weight: 600;"> COP</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #78350f; font-size: 14px; font-weight: 600;">⏱️ Tiempo de Retorno</span>
+                        </td>
+                        <td style="padding: 12px 0; text-align: right; border-bottom: 2px solid rgba(146, 64, 14, 0.2);">
+                            <span style="color: #2563eb; font-size: 20px; font-weight: 800;">{resultado['tiempoRetorno']}</span>
+                            <span style="color: #92400e; font-size: 14px; font-weight: 600;"> años</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0;">
+                            <span style="color: #78350f; font-size: 14px; font-weight: 600;">⚡ Capacidad Instalada</span>
+                        </td>
+                        <td style="padding: 12px 0; text-align: right;">
+                            <span style="color: #7c3aed; font-size: 20px; font-weight: 800;">{resultado['capacidadInstalada']}</span>
+                            <span style="color: #92400e; font-size: 14px; font-weight: 600;"> kW</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Beneficios -->
+            <div style="background: #f0fdf4; border-radius: 12px; padding: 20px; margin: 25px 0; border-left: 5px solid #16a34a;">
+                <h4 style="color: #166534; margin: 0 0 15px 0; font-size: 18px;">🌟 Beneficios de tu Sistema Solar</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #15803d; line-height: 1.8;">
+                    <li style="margin-bottom: 8px;"><strong>Ahorro inmediato</strong> en tu factura de energía</li>
+                    <li style="margin-bottom: 8px;"><strong>Protección</strong> contra aumentos de tarifas</li>
+                    <li style="margin-bottom: 8px;"><strong>Valorización</strong> de tu propiedad hasta 20%</li>
+                    <li style="margin-bottom: 8px;"><strong>Contribución ambiental</strong> reduciendo CO₂</li>
                 </ul>
             </div>
             
-            <p>Quedamos atentos a sus consultas.</p>
+            <!-- Call to Action -->
+            <div style="text-align: center; margin: 35px 0;">
+                <a href="https://wa.me/573136909723?text=Hola,%20me%20interesa%20la%20cotización%20{resultado['cotizacionId']}" 
+                   style="display: inline-block; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 18px 40px; text-decoration: none; border-radius: 50px; font-size: 18px; font-weight: 700; box-shadow: 0 10px 25px rgba(22, 163, 74, 0.4); transition: transform 0.3s;">
+                    💬 Contáctanos por WhatsApp
+                </a>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
+                    O llámanos al <strong style="color: #ea580c;">(057) 313 690 9723</strong>
+                </p>
+            </div>
             
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <p style="margin: 5px 0;"><strong>NASSA SOLAR</strong></p>
-                <p style="margin: 5px 0;">Tel: (057) 313 690 9723</p>
-                <p style="margin: 5px 0;">www.nassasolar.com</p>
+            <!-- Archivo Adjunto -->
+            <div style="background: #eff6ff; border-radius: 12px; padding: 20px; margin: 25px 0; text-align: center; border: 2px dashed #3b82f6;">
+                <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 600;">
+                    📎 Tu cotización detallada está adjunta en formato PDF
+                </p>
+            </div>
+            
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 30px; text-align: center; color: white;">
+            <h3 style="margin: 0 0 15px 0; font-size: 22px; font-weight: 700; color: #fbbf24;">
+                ☀️ NASSA SOLAR
+            </h3>
+            <p style="margin: 5px 0; font-size: 14px; color: #d1d5db;">
+                Expertos en Energía Solar Fotovoltaica
+            </p>
+            <p style="margin: 5px 0; font-size: 14px; color: #d1d5db;">
+                📞 Tel: (057) 313 690 9723
+            </p>
+            <p style="margin: 5px 0; font-size: 14px; color: #d1d5db;">
+                🌐 www.nassasolar.com
+            </p>
+            <p style="margin: 15px 0 5px 0; font-size: 14px; color: #d1d5db;">
+                📧 comercial@nassasolar.com
+            </p>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #374151;">
+                <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.6;">
+                    Esta cotización tiene una validez de 30 días.<br>
+                    Precios sujetos a disponibilidad y condiciones del mercado.
+                </p>
             </div>
         </div>
-    </body>
-    </html>
+        
+    </div>
+    
+    <!-- Nota de Privacidad -->
+    <div style="text-align: center; margin-top: 20px; padding: 0 20px;">
+        <p style="color: rgba(255,255,255,0.8); font-size: 12px; margin: 0;">
+            Has recibido este email porque solicitaste una cotización en nuestro sitio web.
+        </p>
+    </div>
+    
+</body>
+</html>
     """
     
     # Leer PDF y convertir a base64
@@ -829,7 +989,7 @@ def admin_panel():
 
 @app.get("/health", tags=["General"])
 def health():
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    return {"status": "ok", "timestamp": now_colombia().isoformat()}
 
 @app.get("/api/equipos", tags=["Equipos"])
 def equipos_publicos(sistemaElectrico: str = None):
