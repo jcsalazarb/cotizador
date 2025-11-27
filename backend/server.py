@@ -1501,7 +1501,19 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     # Verificar si se necesita segunda opción (área disponible < 92% del área requerida)
     areaDisponible = float(req.areaDisponible or 0)
     areaRequerida = resultado_opcion1["areaRequerida"]
+    
+    print(f"\n{'='*60}")
+    print(f"🔍 VERIFICACIÓN DE SEGUNDA OPCIÓN")
+    print(f"{'='*60}")
+    print(f"   Área disponible (cliente): {areaDisponible} m²")
+    print(f"   Área requerida (cálculo): {areaRequerida} m²")
+    print(f"   Umbral 92%: {areaRequerida * 0.92:.2f} m²")
+    print(f"   ¿Área > 0?: {areaDisponible > 0}")
+    print(f"   ¿Área < umbral?: {areaDisponible < (areaRequerida * 0.92)}")
+    
     necesita_segunda_opcion = areaDisponible > 0 and areaDisponible < (areaRequerida * 0.92)
+    print(f"   ✅ RESULTADO: {'SÍ GENERA 2 OPCIONES' if necesita_segunda_opcion else 'NO, SOLO 1 OPCIÓN'}")
+    print(f"{'='*60}\n")
     
     pdf_paths = []
     pptx_paths = []  # Para limpiar después
@@ -1524,11 +1536,20 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         # GENERAR OPCIÓN 2 si es necesario
         resultado_opcion2 = None
         if necesita_segunda_opcion:
-            print(f"⚠️ Área disponible ({areaDisponible} m²) < 92% del área requerida ({areaRequerida} m²)")
-            print("🔄 Generando segunda opción ajustada...")
+            print(f"\n🚀 INICIANDO GENERACIÓN DE SEGUNDA OPCIÓN")
+            print(f"   Área disponible: {areaDisponible} m²")
+            print(f"   Área requerida original: {areaRequerida} m²")
             
             try:
+                print(f"   � Calculando segunda opción...")
                 resultado_opcion2 = calcular_segunda_opcion(req.dict(), equipos, ciudades, areaDisponible)
+                print(f"   ✅ Cálculo completado:")
+                print(f"      - Paneles reducidos: {resultado_opcion2['numeroPaneles']} (vs {resultado_opcion1['numeroPaneles']} original)")
+                print(f"      - Capacidad: {resultado_opcion2['capacidadInstalada']} kW (vs {resultado_opcion1['capacidadInstalada']} kW original)")
+                print(f"      - Área ajustada: {resultado_opcion2['areaRequerida']} m²")
+                print(f"      - Valor: ${resultado_opcion2['valorTotalSistema']:,.0f} (vs ${resultado_opcion1['valorTotalSistema']:,.0f} original)")
+                
+                print(f"   📄 Generando PDF de segunda opción...")
                 pptx_path2, pdf_path2 = fill_template_and_convert(
                     req.dict(),
                     resultado_opcion2,
@@ -1538,13 +1559,25 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
                 pptx_paths.append(pptx_path2)
                 opciones.append(resultado_opcion2)
                 num_opciones = 2
-                print(f"✅ Segunda opción generada: {resultado_opcion2['numeroPaneles']} paneles - {os.path.basename(pdf_path2)}")
+                print(f"   ✅ Segunda opción generada: {resultado_opcion2['numeroPaneles']} paneles - {os.path.basename(pdf_path2)}")
+                print(f"   📦 Total PDFs generados: {len(pdf_paths)}")
             except Exception as e:
-                print(f"⚠️ Error generando segunda opción: {e}")
+                print(f"   ❌ ERROR GENERANDO SEGUNDA OPCIÓN: {e}")
+                import traceback
+                traceback.print_exc()
+                # No lanzar excepción, continuar con una sola opción
+        else:
+            print(f"\n❌ NO SE GENERA SEGUNDA OPCIÓN (condición no cumplida)")
         
         # ENVIAR EMAIL con 1 o 2 PDFs
         email_enviado = False
         email_error = None
+        
+        print(f"\n📧 PREPARANDO ENVÍO DE EMAIL")
+        print(f"   Total de PDFs generados: {len(pdf_paths)}")
+        print(f"   Archivos: {[os.path.basename(p) for p in pdf_paths]}")
+        print(f"   Número de opciones: {num_opciones}")
+        
         try:
             enviar_email_sendgrid(req.email, pdf_paths, resultado_opcion1, num_opciones)
             email_enviado = True
