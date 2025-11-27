@@ -577,6 +577,10 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
     Construye diccionario de placeholders - TODOS máximo 8 letras
     opcion: "" para una sola opción, "OPCIÓN 1" o "OPCIÓN 2 - Ajustada a área disponible"
     """
+    print(f"   🏗️  Construyendo placeholders para: {opcion if opcion else '(única)'}")
+    print(f"      N_PANEL: {resultado['numeroPaneles']}, CAP_KW: {resultado['capacidadInstalada']} kW")
+    print(f"      AREA_REQ: {resultado['areaRequerida']} m², INVER: ${resultado['valorTotalSistema']:,.0f}")
+    
     # Manejar baterías: si no hay batería, dejar campos en blanco
     num_baterias = "1" if resultado.get("bateria") else " "
     bateria_modelo = resultado["bateria"]["nombre"] if resultado.get("bateria") else " "
@@ -785,7 +789,12 @@ def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "") -> t
     
     # Copiar template original (FRESCO) al archivo temporal
     shutil.copy(TEMPLATE_PPTX, filled_path)
-    print(f"📄 Template copiado a: {os.path.basename(filled_path)}")
+    print(f"\n📄 ===== GENERANDO PDF {opcion if opcion else '(ÚNICA OPCIÓN)'} =====")
+    print(f"   Template copiado a: {os.path.basename(filled_path)}")
+    print(f"   Paneles: {resultado['numeroPaneles']}")
+    print(f"   Capacidad: {resultado['capacidadInstalada']} kW")
+    print(f"   Área requerida: {resultado['areaRequerida']} m²")
+    print(f"   Valor total: ${resultado['valorTotalSistema']:,.0f}")
 
     # Cargar presentación desde la copia fresca
     prs = Presentation(filled_path)
