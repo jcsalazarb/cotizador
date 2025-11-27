@@ -680,16 +680,36 @@ www.nassasolar.com
     if EMAIL_NASSA and EMAIL_NASSA != destino:
         destinatarios.append(EMAIL_NASSA)
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
+    # Intentar primero puerto 465 (SSL) y luego 587 (STARTTLS)
+    puertos_intentar = [465, SMTP_PORT] if SMTP_PORT != 465 else [465]
     
-    # Log detallado de envío
+    for puerto in puertos_intentar:
+        try:
+            if puerto == 465:
+                # Usar SMTP_SSL para puerto 465
+                with smtplib.SMTP_SSL(SMTP_HOST, puerto, timeout=60) as server:
+                    server.login(SMTP_USER, SMTP_PASS)
+                    server.send_message(msg)
+                print(f"✅ Email enviado via puerto {puerto} (SSL)")
+                break
+            else:
+                # Usar SMTP con STARTTLS para puerto 587
+                with smtplib.SMTP(SMTP_HOST, puerto, timeout=60) as server:
+                    server.starttls()
+                    server.login(SMTP_USER, SMTP_PASS)
+                    server.send_message(msg)
+                print(f"✅ Email enviado via puerto {puerto} (STARTTLS)")
+                break
+        except Exception as e:
+            print(f"⚠️ Fallo puerto {puerto}: {str(e)}")
+            if puerto == puertos_intentar[-1]:
+                raise  # Si es el último puerto, propagar error
+    
+    # Log detallado de destinatarios
     if EMAIL_NASSA and EMAIL_NASSA != destino:
-        print(f"✅ Email enviado a: {destino} | CC: {EMAIL_NASSA}")
+        print(f"   Destinatarios: {destino} | CC: {EMAIL_NASSA}")
     else:
-        print(f"✅ Email enviado a: {destino}")
+        print(f"   Destinatario: {destino}")
 
 def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_path: Optional[str] = None):
     """Enviar email usando SendGrid API (alternativa a SMTP)"""
