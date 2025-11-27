@@ -736,16 +736,17 @@
             e.preventDefault();
             console.log('🚀 Formulario enviado');
             
-            // Bloquear formulario inmediatamente
-            bloquearFormulario();
-            
             try {
-                mostrarNotificacion('🔄 Procesando cotización... Por favor espere.', 'info');
-                
+                // IMPORTANTE: Capturar datos ANTES de bloquear el formulario
+                // (los inputs deshabilitados no se incluyen en FormData)
                 const formData = new FormData(this);
                 const datos = Object.fromEntries(formData);
                 
                 console.log('📋 Datos del formulario:', datos);
+                
+                // Ahora sí bloquear el formulario
+                bloquearFormulario();
+                mostrarNotificacion('🔄 Procesando cotización... Por favor espere.', 'info');
                 
                 // Validar campos requeridos
                 const camposRequeridos = ['nombre', 'telefono', 'email', 'ciudad', 'direccion', 'consumoMensual', 
