@@ -745,28 +745,8 @@ def replace_shape_text(shape, mapping: dict):
             #elif '$' in text_content or (',' in text_content and any(c.isdigit() for c in text_content)):
             #    paragraph.alignment = PP_ALIGN.RIGHT
     
-    # 5. Buscar y reemplazar en TODOS los elementos <a:t> del XML
-    # Esto captura SmartArt, diagramas y cualquier texto en XML
-    try:
-        namespaces = {
-            'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'
-        }
-        
-        # Buscar TODOS los elementos <a:t> en el shape completo
-        for text_elem in shape.element.findall('.//a:t', namespaces):
-            if text_elem.text:
-                original_text = text_elem.text
-                new_text = original_text
-                for k, v in mapping.items():
-                    if k in new_text:
-                        new_text = new_text.replace(k, v)
-                        replaced_count += 1
-                        print(f"   🔄 Reemplazando '{k}' en XML: '{original_text[:50]}' → '{new_text[:50]}'")
-                
-                if new_text != original_text:
-                    text_elem.text = new_text
-    except Exception as e:
-        print(f"   ⚠️ Error procesando XML: {e}")
+    # NOTA: NO procesamos XML directamente aquí para evitar duplicación
+    # El reemplazo en text_frame y SmartArt ya es suficiente
     
     return replaced_count
 
@@ -1502,18 +1482,23 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     areaDisponible = float(req.areaDisponible or 0)
     areaRequerida = resultado_opcion1["areaRequerida"]
     
-    print(f"\n{'='*60}")
-    print(f"🔍 VERIFICACIÓN DE SEGUNDA OPCIÓN")
-    print(f"{'='*60}")
-    print(f"   Área disponible (cliente): {areaDisponible} m²")
-    print(f"   Área requerida (cálculo): {areaRequerida} m²")
+    print(f"\n{'='*80}")
+    print(f"🔍 DIAGNÓSTICO COMPLETO - SEGUNDA OPCIÓN")
+    print(f"{'='*80}")
+    print(f"📥 DATOS RECIBIDOS:")
+    print(f"   req.areaDisponible (raw): {req.areaDisponible}")
+    print(f"   req.areaDisponible (type): {type(req.areaDisponible)}")
+    print(f"   areaDisponible (float convertido): {areaDisponible}")
+    print(f"\n📊 CÁLCULOS:")
+    print(f"   Área requerida (opción 1): {areaRequerida} m²")
     print(f"   Umbral 92%: {areaRequerida * 0.92:.2f} m²")
-    print(f"   ¿Área > 0?: {areaDisponible > 0}")
-    print(f"   ¿Área < umbral?: {areaDisponible < (areaRequerida * 0.92)}")
+    print(f"\n✅ EVALUACIÓN DE CONDICIONES:")
+    print(f"   [1] ¿Área disponible > 0?: {areaDisponible > 0}")
+    print(f"   [2] ¿Área disponible < umbral?: {areaDisponible < (areaRequerida * 0.92)}")
     
     necesita_segunda_opcion = areaDisponible > 0 and areaDisponible < (areaRequerida * 0.92)
-    print(f"   ✅ RESULTADO: {'SÍ GENERA 2 OPCIONES' if necesita_segunda_opcion else 'NO, SOLO 1 OPCIÓN'}")
-    print(f"{'='*60}\n")
+    print(f"\n{'🎯 DECISIÓN FINAL: ' + ('✅ SÍ GENERA 2 OPCIONES' if necesita_segunda_opcion else '❌ NO, SOLO 1 OPCIÓN')}")
+    print(f"{'='*80}\n")
     
     pdf_paths = []
     pptx_paths = []  # Para limpiar después
