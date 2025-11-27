@@ -373,9 +373,11 @@
         }
         // Función para crear tarjetas de equipos
         function crearTarjetaEquipo(equipo, tipo) {
+            // Convertir el ID a minúsculas para que coincida con el backend
+            const equipoIdLower = equipo.id.toLowerCase();
             return `
-                <div class="equipo-card glass rounded-xl p-4 cursor-pointer" onclick="seleccionarEquipo('${equipo.id}', '${tipo}')">
-                    <input type="radio" name="${tipo}" value="${equipo.id}" id="${equipo.id}" class="hidden" ${tipo !== 'bateria' ? 'required' : ''}>
+                <div class="equipo-card glass rounded-xl p-4 cursor-pointer" onclick="seleccionarEquipo('${equipoIdLower}', '${tipo}')">
+                    <input type="radio" name="${tipo}" value="${equipoIdLower}" id="${equipoIdLower}" class="hidden" ${tipo !== 'bateria' ? 'required' : ''}>
                     <div class="text-center">
                         <h4 class="text-white font-bold text-lg mb-2">${equipo.nombre}</h4>
                         <div class="text-yellow-400 text-2xl font-bold mb-2">
