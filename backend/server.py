@@ -296,6 +296,154 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
         "TotalAcum": round(TotalAcum)
     }
 
+def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDisponible: float) -> dict:
+    """
+    Calcula cotización ajustada al área disponible del cliente.
+    Reduce número de paneles para que quepan en el espacio real.
+    """
+    parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
+    parametros = load_json(parametros_path)
+    
+    costos = parametros["costos_instalacion"]
+    fiscales = parametros["parametros_fiscales"]
+    proyeccion = parametros["parametros_proyeccion"]
+    
+    consumoMensual = float(data["consumoMensual"])
+    valorFactura = float(data["valorFactura"])
+    valorKwh = float(data["valorKwh"])
+    ciudad_key = data["ciudad"].lower().strip().replace(" ", "_")
+    hsp = float(data.get("hspCalculado") or ciudades.get(ciudad_key, ciudades.get("default", 4.5)))
+
+    panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)
+    inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
+    bateria = next((x for x in equipos["baterias"] if x["id"] == data.get("bateria")), None) if data.get("bateria") else None
+    
+    factorAreaEfectiva = equipos.get("configuracion", {}).get("factorAreaEfectiva", 1.2)
+    areaPanel = panel.get("area", 2.0)
+    
+    # CALCULAR NÚMERO MÁXIMO DE PANELES QUE CABEN
+    numeroPaneles = max(1, int(areaDisponible / (areaPanel * factorAreaEfectiva)))
+    
+    # Recalcular todo con paneles ajustados
+    eficiencia = 0.90
+    energiaPanelDia = (panel["capacidad"] * eficiencia * hsp) / 1000
+    capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000
+    generacionMensual = numeroPaneles * energiaPanelDia * 30
+    generacionAnual = generacionMensual * 12
+    numeroInversores = int(ceil(capacidadInstalada / (inversor["capacidad"] / 1000)))
+    
+    areaRequerida = round(numeroPaneles * areaPanel * factorAreaEfectiva, 2)
+    
+    # Costos
+    soporteria = costos["soporteria_por_panel"]
+    instalacion = costos["instalacion_por_panel"]
+    materialesAdicionales = costos["materiales_por_panel"]
+    mantenimientoAnual = costos["mantenimiento_anual_por_kw"]
+    
+    costoPaneles = numeroPaneles * panel.get("precio", 0)
+    costoInversores = numeroInversores * inversor.get("precio", 0)
+    costoBaterias = bateria.get("precio", 0) if bateria else 0
+    costoSoporteria = numeroPaneles * soporteria
+    costoInstalacion = numeroPaneles * instalacion
+    costoMateriales = numeroPaneles * materialesAdicionales
+    
+    subtotalAntesIVA = costoPaneles + costoInversores + costoBaterias + costoSoporteria + costoInstalacion + costoMateriales
+    ivaEquipos = (costoBaterias + costoSoporteria + costoInstalacion + costoMateriales) * fiscales["iva_porcentaje"]
+    valorTotalSistema = subtotalAntesIVA + ivaEquipos
+    
+    porcentajeProduccionMensual = ((generacionMensual / consumoMensual) * 100) if consumoMensual > 0 else 0
+    ahorroMensualEnergia = generacionMensual * valorKwh
+    ahorroAnualEnergia = ahorroMensualEnergia * 12
+    
+    # Fiscales (misma lógica)
+    tasaRenta = fiscales["tasa_renta"]
+    deduccionRentaBase = min(valorTotalSistema * fiscales["deduccion_renta_porcentaje"], valorFactura * 12 * fiscales["deduccion_renta_tope_anios"])
+    deduccionRentaEfectiva = deduccionRentaBase * tasaRenta
+    depreciacionAnual = (valorTotalSistema / fiscales["depreciacion_anios"]) * tasaRenta
+    ahorroAnualDepreciacion = depreciacionAnual
+    ahorroAnualDeduccion = deduccionRentaEfectiva / fiscales["deduccion_renta_aplicacion_anios"]
+    
+    # Proyección 25 años (misma lógica)
+    tasaIncremento = proyeccion["tasa_incremento_costo_energia"]
+    tasaDegradacion = proyeccion["tasa_degradacion_paneles"]
+    eficienciaPrimerAño = proyeccion["eficiencia_primer_anio"]
+    
+    tabla = []
+    acumxgen = acumxdeduc = acumxdepre = 0
+    ahorroAcum = 0
+    payback = None
+    
+    for year in range(1, 26):
+        valorKwhAño = valorKwh * ((1 + tasaIncremento) ** (year - 1))
+        eficienciaAño = eficienciaPrimerAño if year == 1 else (1 - tasaDegradacion * (year - 1))
+        prodAnual = generacionAnual * eficienciaAño
+        ahorroGeneracion = prodAnual * valorKwhAño
+        
+        ahorroDep = depreciacionAnual if year <= fiscales["depreciacion_anios"] else 0
+        ahorroDed = ahorroAnualDeduccion if year <= fiscales["deduccion_renta_aplicacion_anios"] else 0
+        costoMant = capacidadInstalada * mantenimientoAnual
+        
+        ahorroTotal = ahorroGeneracion + ahorroDep + ahorroDed - costoMant
+        ahorroAcum += ahorroTotal
+        
+        acumxgen += ahorroGeneracion
+        if year <= fiscales["deduccion_renta_aplicacion_anios"]:
+            acumxdeduc += ahorroDed
+        if year <= fiscales["depreciacion_anios"]:
+            acumxdepre += ahorroDep
+        
+        roi = (ahorroAcum / valorTotalSistema) * 100 if valorTotalSistema > 0 else 0
+        if payback is None and ahorroAcum >= valorTotalSistema:
+            payback = year
+        
+        tabla.append({
+            "año": year,
+            "valorKwhAño": round(valorKwhAño),
+            "produccionAnual": round(prodAnual),
+            "ahorroGeneracion": round(ahorroGeneracion),
+            "ahorroDep": round(ahorroDep),
+            "ahorroDed": round(ahorroDed),
+            "costoMant": round(costoMant),
+            "ahorroTotalAño": round(ahorroTotal),
+            "ahorroAcumulado": round(ahorroAcum),
+            "roi": round(roi, 2)
+        })
+    
+    TotalAcum = acumxgen + acumxdeduc + acumxdepre
+    tiempoRetorno = payback or (valorTotalSistema / (ahorroAnualEnergia + ahorroAnualDeduccion + ahorroAnualDepreciacion + 1e-9))
+    
+    return {
+        "fecha": now_colombia().isoformat(),
+        "cotizacionId": "NASSA-" + str(int(now_colombia().timestamp())) + "-OP2",
+        "panel": {"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"], "area": areaPanel},
+        "inversor": {"id": inversor["id"], "nombre": inversor["nombre"], "capacidad": inversor["capacidad"]},
+        "bateria": {"id": bateria["id"], "nombre": bateria["nombre"]} if bateria else None,
+        "numeroPaneles": numeroPaneles,
+        "numeroInversores": numeroInversores,
+        "capacidadInstalada": round(capacidadInstalada, 2),
+        "areaRequerida": areaRequerida,
+        "areaDisponibleCliente": areaDisponible,
+        "generacionMensual": round(generacionMensual),
+        "generacionAnual": round(generacionAnual),
+        "valorTotalSistema": round(valorTotalSistema),
+        "ahorroMensualEnergia": round(ahorroMensualEnergia),
+        "ahorroAnualEnergia": round(ahorroAnualEnergia),
+        "tiempoRetorno": round(tiempoRetorno, 1),
+        "tablaAhorros": tabla,
+        "porcentajeProduccionMensual": round(porcentajeProduccionMensual, 1),
+        "subtotalAntesIVA": round(subtotalAntesIVA),
+        "deduccionRentaBase": round(deduccionRentaBase),
+        "deduccionRentaEfectiva": round(deduccionRentaEfectiva),
+        "depreciacionAnual": round(depreciacionAnual),
+        "ahorroAnualDepreciacion": round(ahorroAnualDepreciacion),
+        "ahorroTotalDepreciacion": round(ahorroAnualDepreciacion * 3),
+        "ahorroTotalDeduccion": round(deduccionRentaEfectiva),
+        "acumxgen": round(acumxgen),
+        "acumxdeduc": round(acumxdeduc),
+        "acumxdepre": round(acumxdepre),
+        "TotalAcum": round(TotalAcum)
+    }
+
 # ========================================
 # 📄 PROCESAMIENTO DE TEMPLATE PPTX
 # ========================================
@@ -424,8 +572,11 @@ def fill_ahorros_table_in_ppt(prs, tabla_ahorros: list, max_years: int = None):
         for c in range(len(table.columns)):
             table.cell(j, c).text = ""
 
-def build_placeholders(req: dict, resultado: dict) -> dict:
-    """Construye diccionario de placeholders - TODOS máximo 8 letras"""
+def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
+    """
+    Construye diccionario de placeholders - TODOS máximo 8 letras
+    opcion: "" para una sola opción, "OPCIÓN 1" o "OPCIÓN 2 - Ajustada a área disponible"
+    """
     # Manejar baterías: si no hay batería, dejar campos en blanco
     num_baterias = "1" if resultado.get("bateria") else " "
     bateria_modelo = resultado["bateria"]["nombre"] if resultado.get("bateria") else " "
@@ -443,6 +594,7 @@ def build_placeholders(req: dict, resultado: dict) -> dict:
         # Información general (8 letras máx)
         "{{COT_ID}}": resultado["cotizacionId"],
         "{{FECHA}}": resultado["fecha"][:10],
+        "{{OPCION}}": opcion,
         
         # Datos del cliente (8 letras máx)
         "{{NOMBRE}}": req["nombre"],
@@ -614,8 +766,11 @@ def replace_shape_text(shape, mapping: dict):
     
     return replaced_count
 
-def fill_template_and_convert(req: dict, resultado: dict) -> tuple:
-    """Llena template y convierte a PDF"""
+def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "") -> tuple:
+    """
+    Llena template y convierte a PDF
+    opcion: "" para una sola opción, "OPCIÓN 1" o "OPCIÓN 2 - Ajustada a área disponible"
+    """
     if not os.path.isfile(TEMPLATE_PPTX):
         raise RuntimeError("Template PPTX no encontrado")
     
@@ -625,11 +780,12 @@ def fill_template_and_convert(req: dict, resultado: dict) -> tuple:
 
     prs = Presentation(filled_path)
     
-    # Reemplazar placeholders
-    mapping = build_placeholders(req, resultado)
+    # Reemplazar placeholders (pasando el parámetro opcion)
+    mapping = build_placeholders(req, resultado, opcion)
     total_replaced = 0
     print(f"🔄 Iniciando reemplazo de placeholders...")
     print(f"   Total de placeholders definidos: {len(mapping)}")
+    print(f"   Opción: {opcion if opcion else '(única)'}") 
     
     for slide_idx, slide in enumerate(prs.slides):
         print(f"\n   📄 Procesando diapositiva {slide_idx + 1}...")
@@ -750,8 +906,12 @@ www.nassasolar.com
     else:
         print(f"   Destinatario: {destino}")
 
-def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_path: Optional[str] = None):
-    """Enviar email usando SendGrid API (alternativa a SMTP)"""
+def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_opciones: int = 1, pptx_path: Optional[str] = None):
+    """
+    Enviar email usando SendGrid API (alternativa a SMTP)
+    pdf_paths: lista de rutas a PDFs (uno o más)
+    num_opciones: 1 o 2 opciones de cotización
+    """
     import base64
     from sendgrid import SendGridAPIClient
     from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
@@ -762,6 +922,10 @@ def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_pat
     
     if not SENDGRID_API_KEY:
         raise RuntimeError("SENDGRID_API_KEY no configurada en .env")
+    
+    # Mensaje personalizado según número de opciones
+    mensaje_opciones = "Le presentamos 2 propuestas para su análisis" if num_opciones == 2 else "Hemos preparado una propuesta personalizada para tu proyecto solar"
+    mensaje_adjunto = "Sus cotizaciones detalladas están adjuntas en formato PDF" if num_opciones == 2 else "Tu cotización detallada está adjunta en formato PDF"
     
     cuerpo_html = f"""
 <!DOCTYPE html>
@@ -797,7 +961,7 @@ def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_pat
                     ✨ ¡Tu Cotización Está Lista!
                 </h2>
                 <p style="color: #6b7280; font-size: 16px; margin: 0; line-height: 1.6;">
-                    Hemos preparado una propuesta personalizada para tu proyecto solar
+                    {mensaje_opciones}
                 </p>
             </div>
             
@@ -880,7 +1044,7 @@ def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_pat
             <!-- Archivo Adjunto -->
             <div style="background: #eff6ff; border-radius: 12px; padding: 20px; margin: 25px 0; text-align: center; border: 2px dashed #3b82f6;">
                 <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 600;">
-                    📎 Tu cotización detallada está adjunta en formato PDF
+                    📎 {mensaje_adjunto}
                 </p>
             </div>
             
@@ -925,16 +1089,24 @@ def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_pat
 </html>
     """
     
-    # Leer PDF y convertir a base64
-    with open(pdf_path, "rb") as f:
-        pdf_data = base64.b64encode(f.read()).decode()
-    
-    # Crear objeto Attachment
-    attachment = Attachment()
-    attachment.file_content = FileContent(pdf_data)
-    attachment.file_name = FileName(f"Cotizacion_{resultado['cotizacionId']}.pdf")
-    attachment.file_type = FileType("application/pdf")
-    attachment.disposition = Disposition("attachment")
+    # Leer PDFs y crear attachments
+    attachments = []
+    for i, pdf_path in enumerate(pdf_paths, 1):
+        with open(pdf_path, "rb") as f:
+            pdf_data = base64.b64encode(f.read()).decode()
+        
+        attachment = Attachment()
+        attachment.file_content = FileContent(pdf_data)
+        
+        # Nombre del archivo según número de opciones
+        if num_opciones == 1:
+            attachment.file_name = FileName(f"Cotizacion_{resultado['cotizacionId']}.pdf")
+        else:
+            attachment.file_name = FileName(f"Cotizacion_{resultado['cotizacionId']}_Opcion{i}.pdf")
+        
+        attachment.file_type = FileType("application/pdf")
+        attachment.disposition = Disposition("attachment")
+        attachments.append(attachment)
     
     # Crear mensaje
     message = Mail(
@@ -943,7 +1115,10 @@ def enviar_email_sendgrid(destino: str, pdf_path: str, resultado: dict, pptx_pat
         subject=f"Cotización NASSA Solar - {resultado['cotizacionId']}",
         html_content=cuerpo_html
     )
-    message.attachment = attachment
+    
+    # Agregar todos los attachments
+    for attachment in attachments:
+        message.add_attachment(attachment)
     
     # Enviar
     sg = SendGridAPIClient(SENDGRID_API_KEY)
@@ -1292,40 +1467,86 @@ def delete_bateria(bateria_id: str):
 
 @app.post("/api/cotizar", tags=["Cotización"])
 async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_limit)):
-    """Generar cotización completa"""
+    """Generar cotización completa con 1 o 2 opciones según área disponible"""
     equipos = load_json(EQUIPOS_FILE)
     ciudades = load_json(CIUDADES_FILE)
     
     try:
-        resultado = calcular_cotizacion(req.dict(), equipos, ciudades)
+        # Calcular OPCIÓN 1 (ideal sin restricciones)
+        resultado_opcion1 = calcular_cotizacion(req.dict(), equipos, ciudades)
     except ValueError as e:
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(500, f"Error cálculo: {e}")
 
-    pptx_path = pdf_path = None
-    email_enviado = False
-    email_error = None
+    # Verificar si se necesita segunda opción (área disponible < 92% del área requerida)
+    areaDisponible = float(req.areaDisponible or 0)
+    areaRequerida = resultado_opcion1["areaRequerida"]
+    necesita_segunda_opcion = areaDisponible > 0 and areaDisponible < (areaRequerida * 0.92)
+    
+    pdf_paths = []
+    opciones = []
+    num_opciones = 1
     
     try:
-        pptx_path, pdf_path = fill_template_and_convert(req.dict(), resultado)
+        # GENERAR OPCIÓN 1
+        pptx_path1, pdf_path1 = fill_template_and_convert(
+            req.dict(), 
+            resultado_opcion1,
+            opcion="" if not necesita_segunda_opcion else "OPCIÓN 1"
+        )
+        pdf_paths.append(pdf_path1)
+        opciones.append(resultado_opcion1)
+        
+        # GENERAR OPCIÓN 2 si es necesario
+        resultado_opcion2 = None
+        if necesita_segunda_opcion:
+            print(f"⚠️ Área disponible ({areaDisponible} m²) < 92% del área requerida ({areaRequerida} m²)")
+            print("🔄 Generando segunda opción ajustada...")
+            
+            try:
+                resultado_opcion2 = calcular_segunda_opcion(req.dict(), equipos, ciudades, areaDisponible)
+                pptx_path2, pdf_path2 = fill_template_and_convert(
+                    req.dict(),
+                    resultado_opcion2,
+                    opcion="OPCIÓN 2 - Ajustada a área disponible"
+                )
+                pdf_paths.append(pdf_path2)
+                opciones.append(resultado_opcion2)
+                num_opciones = 2
+                print(f"✅ Segunda opción generada: {resultado_opcion2['numeroPaneles']} paneles")
+            except Exception as e:
+                print(f"⚠️ Error generando segunda opción: {e}")
+        
+        # ENVIAR EMAIL con 1 o 2 PDFs
+        email_enviado = False
+        email_error = None
         try:
-            enviar_email_inteligente(req.email, pdf_path, resultado, pptx_path)
+            enviar_email_sendgrid(req.email, pdf_paths, resultado_opcion1, num_opciones)
             email_enviado = True
-            print(f"✅ Email enviado exitosamente a {req.email}")
+            print(f"✅ Email enviado con {num_opciones} opción(es) a {req.email}")
         except Exception as e:
             email_error = str(e)
             print(f"⚠️ Error email: {e}")
         finally:
-            for f in (pptx_path, pdf_path):
-                if f and os.path.exists(f):
-                    os.remove(f)
+            # Limpiar archivos temporales
+            for pdf_path in pdf_paths:
+                if pdf_path and os.path.exists(pdf_path):
+                    os.remove(pdf_path)
+            # Limpiar PPTX también
+            for f in [f for f in os.listdir(tempfile.gettempdir()) if f.startswith("cotizacion_") and f.endswith(".pptx")]:
+                try:
+                    os.remove(os.path.join(tempfile.gettempdir(), f))
+                except:
+                    pass
+                    
     except Exception as e:
-        print(f"⚠️ Error plantilla/PDF: {e}")
+        print(f"⚠️ Error generando PDFs: {e}")
+        raise HTTPException(500, f"Error generando documentos: {e}")
 
     # Combinar datos de la solicitud con el resultado para el frontend
     resumen_completo = {
-        **resultado,
+        **resultado_opcion1,
         "nombre": req.nombre,
         "email": req.email,
         "telefono": req.telefono,
@@ -1339,22 +1560,34 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         "valorKwh": req.valorKwh,
         "porcentajeConsumodia": req.porcentajeConsumodia,
         "hspCalculado": req.hspCalculado,
-        "panelSeleccionado": resultado["panel"],
-        "inversorSeleccionado": resultado["inversor"],
-        "bateriaSeleccionada": resultado["bateria"],
-        "hora": datetime.now().strftime("%H:%M:%S")
+        "panelSeleccionado": resultado_opcion1["panel"],
+        "inversorSeleccionado": resultado_opcion1["inversor"],
+        "bateriaSeleccionada": resultado_opcion1["bateria"],
+        "hora": now_colombia().strftime("%H:%M:%S"),
+        "numOpciones": num_opciones,
+        "opcion2": {
+            "numeroPaneles": resultado_opcion2["numeroPaneles"],
+            "capacidadInstalada": resultado_opcion2["capacidadInstalada"],
+            "valorTotalSistema": resultado_opcion2["valorTotalSistema"],
+            "ahorroMensualEnergia": resultado_opcion2["ahorroMensualEnergia"],
+            "tiempoRetorno": resultado_opcion2["tiempoRetorno"]
+        } if resultado_opcion2 else None
     }
     
     # Mensaje personalizado según el estado del email
     if email_enviado:
-        mensaje = "✅ Cotización generada exitosamente. Revisa tu email."
+        if num_opciones == 2:
+            mensaje = f"✅ Cotización generada con {num_opciones} opciones. Revisa tu email."
+        else:
+            mensaje = "✅ Cotización generada exitosamente. Revisa tu email."
     else:
-        mensaje = "✅ Cotización generada exitosamente. ⚠️ El email no pudo enviarse (verifica credenciales SMTP)."
+        mensaje = "✅ Cotización generada exitosamente. ⚠️ El email no pudo enviarse."
     
     return JSONResponse({
         "status": "success",
         "mensaje": mensaje,
         "emailEnviado": email_enviado,
+        "numOpciones": num_opciones,
         "resumen": resumen_completo
     })
 
