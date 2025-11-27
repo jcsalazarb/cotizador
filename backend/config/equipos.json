@@ -1,0 +1,194 @@
+{
+  "paneles": [
+    {
+      "id": "panel1",
+      "nombre": "Panel Canadian Solar 550W",
+      "capacidad": 550,
+      "precio": 850000,
+      "descripcion": "Monocristalino, 25 años garantía",
+      "eficienciaPanel": 0.9
+    },
+    {
+      "id": "panel2",
+      "nombre": "Panel Jinko Solar 615W",
+      "capacidad": 615,
+      "precio": 850000,
+      "descripcion": "Monocristalino Tiger Pro, alta eficiencia",
+      "eficienciaPanel": 0.9
+    },
+    {
+      "id": "panel3",
+      "nombre": "Panel Trina Solar 670W",
+      "capacidad": 670,
+      "precio": 1050000,
+      "descripcion": "Vertex S+, tecnología avanzada",
+      "eficienciaPanel": 0.9
+    },
+    {
+      "id": "panel5",
+      "nombre": "Panel JA Solar 580W",
+      "capacidad": 580,
+      "precio": 890000,
+      "descripcion": "Monocristalino, tecnología PERCIUM+",
+      "eficienciaPanel": 0.9
+    },
+    {
+      "id": "panel6",
+      "nombre": "Panel Solar 550W Bifacial",
+      "capacidad": 550,
+      "precio": 420000,
+      "descripcion": "Panel bifacial con mayor generación",
+      "eficienciaPanel": 0.9
+    },
+    {
+      "id": "panel7",
+      "nombre": "Panel Q CELLS 600W",
+      "capacidad": 600,
+      "precio": 920000,
+      "descripcion": "Monocristalino Q.ANTUM DUO Z",
+      "eficienciaPanel": 0.9
+    },
+    {
+      "id": "panel8",
+      "nombre": "Panel Luxen 625W Bifacial",
+      "capacidad": 625,
+      "precio": 340000,
+      "descripcion": "N-Type de 132 celulas reduce puntos calientes",
+      "eficienciaPanel": 0.95
+    }
+  ],
+  "inversores": [
+    {
+      "id": "inv1",
+      "nombre": "Inversor Growatt 3kW",
+      "capacidad": 3000,
+      "precio": 2200000,
+      "descripcion": "Monofásico, WiFi incluido",
+      "eficiencia": 0.9,
+      "tipo_sistema": "monofasico"
+    },
+    {
+      "id": "inv2",
+      "nombre": "Inversor Huawei 5kW bi_f",
+      "capacidad": 5000,
+      "precio": 3500000,
+      "descripcion": "Bifásico, optimizadores incluidos",
+      "eficiencia": 0.93,
+      "tipo_sistema": "bifasico"
+    },
+    {
+      "id": "inv3",
+      "nombre": "Inversor SMA 10kW",
+      "capacidad": 10000,
+      "precio": 6800000,
+      "descripcion": "Trifásico, grado industrial",
+      "eficiencia": 0.9,
+      "tipo_sistema": "trifasico"
+    },
+    {
+      "id": "inv4",
+      "nombre": "Inversor Fronius 8kW",
+      "capacidad": 8000,
+      "precio": 5200000,
+      "descripcion": "Monofásico, tecnología austriaca",
+      "eficiencia": 0.9,
+      "tipo_sistema": "monofasico"
+    },
+    {
+      "id": "inv5",
+      "nombre": "Inversor Solis 6kW",
+      "capacidad": 6000,
+      "precio": 4100000,
+      "descripcion": "Híbrido, compatible con baterías",
+      "eficiencia": 0.9,
+      "tipo_sistema": "bifasico"
+    },
+    {
+      "id": "inv6",
+      "nombre": "Inv 3kW Monofásico",
+      "capacidad": 3000,
+      "precio": 1500000,
+      "descripcion": "Ideal para sistemas residenciales pequeños",
+      "eficiencia": 0.9,
+      "tipo_sistema": "monofasico"
+    },
+    {
+      "id": "inv7",
+      "nombre": "Inversor 5kW Monofásico",
+      "capacidad": 5000,
+      "precio": 2200000,
+      "descripcion": "Para sistemas residenciales medianos",
+      "eficiencia": 0.9,
+      "tipo_sistema": "monofasico"
+    },
+    {
+      "id": "inv8",
+      "nombre": "Inversor 10kW Trifásico",
+      "capacidad": 10000,
+      "precio": 4500000,
+      "descripcion": "Para sistemas comerciales y grandes residenciales",
+      "eficiencia": 0.9,
+      "tipo_sistema": "trifasico"
+    },
+    {
+      "id": "INV8",
+      "nombre": "Inversor 3 kW 24V Hibrido BiF Must MPPT 80A",
+      "capacidad": 3000,
+      "precio": 1950000,
+      "descripcion": "Configurable 110V/220V Pot.Max:2500 W",
+      "eficiencia": 0.9,
+      "tipo_sistema": "bifasico"
+    }
+  ],
+  "baterias": [
+    {
+      "id": "bat1",
+      "nombre": "Bateria LiFePO4 5.12kWh",
+      "capacidad": 5120,
+      "precio": 8500000,
+      "descripcion": "Litio, 6000 ciclos, 10 años"
+    },
+    {
+      "id": "bat2",
+      "nombre": "Bateria LiFePO4 10.24kWh",
+      "capacidad": 10240,
+      "precio": 15800000,
+      "descripcion": "Litio, 6000 ciclos, 10 años"
+    },
+    {
+      "id": "bat3",
+      "nombre": "Bateria LiFePO4 15.36kWh",
+      "capacidad": 15360,
+      "precio": 22500000,
+      "descripcion": "Litio, 6000 ciclos, 10 años"
+    },
+    {
+      "id": "bat4",
+      "nombre": "Bateria Pylontech 7.4kWh",
+      "capacidad": 7400,
+      "precio": 12200000,
+      "descripcion": "Litio modular, expandible"
+    },
+    {
+      "id": "bat5",
+      "nombre": "Bateria BYD 13.8kWh",
+      "capacidad": 13800,
+      "precio": 19500000,
+      "descripcion": "Litio premium, alta densidad"
+    },
+    {
+      "id": "bat6",
+      "nombre": "Batería Litio 5kWh",
+      "capacidad": 5000,
+      "precio": 4500000,
+      "descripcion": "Batería de litio de alta duración"
+    },
+    {
+      "id": "bat7",
+      "nombre": "Batería Litio 10kWh",
+      "capacidad": 10000,
+      "precio": 8500000,
+      "descripcion": "Mayor capacidad de almacenamiento"
+    }
+  ]
+}

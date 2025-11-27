@@ -1,0 +1,21 @@
+{
+  "costos_instalacion": {
+    "soporteria_por_panel": 180000,
+    "instalacion_por_panel": 250000,
+    "materiales_por_panel": 190000,
+    "mantenimiento_anual_por_kw": 160000
+  },
+  "parametros_fiscales": {
+    "iva_porcentaje": 0.19,
+    "impuesto_renta_porcentaje": 0.35,
+    "deduccion_renta_base_porcentaje": 0.5,
+    "anos_deduccion": 5,
+    "anos_depreciacion": 3
+  },
+  "parametros_proyeccion": {
+    "degradacion_anual_panel": 0.02,
+    "factor_primer_ano": 0.4,
+    "incremento_anual_kwh": 0.035,
+    "anos_proyeccion": 30
+  }
+}
