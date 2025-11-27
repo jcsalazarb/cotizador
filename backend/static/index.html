@@ -801,6 +801,10 @@
                 // Guardar datos globalmente
                 datosCliente = datos;
                 console.log('✅ Datos preparados para enviar al backend');
+                console.log('📊 VALORES CRÍTICOS PARA SEGUNDA OPCIÓN:');
+                console.log(`   - areaDisponible: ${datos.areaDisponible} m²`);
+                console.log(`   - consumoMensual: ${datos.consumoMensual} kWh`);
+                console.log(`   - Tipo: ${typeof datos.areaDisponible}`);
                 
                 // Enviar al backend
                 console.log('🔄 Enviando cotización al backend...');
