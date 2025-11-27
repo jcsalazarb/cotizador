@@ -662,7 +662,7 @@
         }
 
         // Función para mostrar notificaciones
-        function mostrarNotificacion(mensaje, tipo) {
+        function mostrarNotificacion(mensaje, tipo, duracion = null) {
             const notif = document.createElement('div');
             const colores = {
                 'success': 'bg-green-500',
@@ -674,17 +674,49 @@
             notif.innerHTML = mensaje;
             document.body.appendChild(notif);
             
+            // Duración personalizable: success 8s, otros 4s por defecto
+            const tiempoMostrar = duracion || (tipo === 'success' ? 8000 : 4000);
+            
             setTimeout(() => {
                 if (document.body.contains(notif)) {
                     document.body.removeChild(notif);
                 }
-            }, 4000);
+            }, tiempoMostrar);
         }
 
         // Función para cerrar modal
         function cerrarModal() {
             document.getElementById('modalResultado').classList.add('hidden');
             document.getElementById('modalResultado').classList.remove('flex');
+        }
+        
+        // Funciones para bloquear/desbloquear formulario
+        function bloquearFormulario() {
+            const form = document.getElementById('formularioCotizacion');
+            const inputs = form.querySelectorAll('input, select, button, textarea');
+            inputs.forEach(input => {
+                input.disabled = true;
+                input.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+            // Cambiar texto del botón submit
+            const btnSubmit = form.querySelector('button[type="submit"]');
+            if (btnSubmit) {
+                btnSubmit.innerHTML = '⏳ GENERANDO COTIZACIÓN...';
+            }
+        }
+        
+        function desbloquearFormulario() {
+            const form = document.getElementById('formularioCotizacion');
+            const inputs = form.querySelectorAll('input, select, button, textarea');
+            inputs.forEach(input => {
+                input.disabled = false;
+                input.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+            // Restaurar texto del botón submit
+            const btnSubmit = form.querySelector('button[type="submit"]');
+            if (btnSubmit) {
+                btnSubmit.innerHTML = '🚀 GENERAR COTIZACIÓN TÉCNICA';
+            }
         }
 
         // Función para nueva cotización
@@ -694,6 +726,7 @@
             document.getElementById('hspCalculado').value = '';
             document.getElementById('seccionBaterias').style.display = 'none';
             document.querySelectorAll('.equipo-selected').forEach(el => el.classList.remove('equipo-selected'));
+            desbloquearFormulario(); // Asegurar que esté desbloqueado
             // No limpiar el template cargado
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -703,8 +736,11 @@
             e.preventDefault();
             console.log('🚀 Formulario enviado');
             
+            // Bloquear formulario inmediatamente
+            bloquearFormulario();
+            
             try {
-                mostrarNotificacion('🔄 Procesando cotización...', 'info');
+                mostrarNotificacion('🔄 Procesando cotización... Por favor espere.', 'info');
                 
                 const formData = new FormData(this);
                 const datos = Object.fromEntries(formData);
@@ -721,18 +757,21 @@
                 if (camposFaltantes.length > 0) {
                     console.log('❌ Campos faltantes:', camposFaltantes);
                     mostrarNotificacion('⚠️ Campos faltantes: ' + camposFaltantes.join(', '), 'error');
+                    desbloquearFormulario(); // Desbloquear si hay error
                     return;
                 }
 
                 // Validar que se haya seleccionado un sistema eléctrico
                 if (!datos.sistemaElectrico) {
                     mostrarNotificacion('⚠️ Debes seleccionar el tipo de sistema eléctrico', 'error');
+                    desbloquearFormulario();
                     return;
                 }
                 
                 // Validar que se haya seleccionado un inversor
                 if (!datos.inversor) {
                     mostrarNotificacion('⚠️ Debes seleccionar un inversor compatible con tu sistema eléctrico', 'error');
+                    desbloquearFormulario();
                     return;
                 }
 
@@ -740,6 +779,7 @@
                 const tipoSistema = datos.tipoSistemaFV;
                 if ((tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') && !datos.bateria) {
                     mostrarNotificacion('⚠️ Debes seleccionar una batería para este tipo de sistema', 'error');
+                    desbloquearFormulario();
                     return;
                 }
 
@@ -798,18 +838,23 @@
                     
                     console.log('✅ Cotización recibida del backend');
                     
+                    // Desbloquear formulario después de éxito
+                    desbloquearFormulario();
+                    
                     // Mostrar resultado
-                    mostrarNotificacion(`✅ ${resultado.mensaje || 'Cotización generada exitosamente'}`, 'success');
+                    mostrarNotificacion(`✅ ${resultado.mensaje || 'Cotización generada y email enviado exitosamente'}`, 'success');
                     mostrarResultadoCompleto(resultado.resumen);
                     
                 } catch (calcError) {
                     console.error('❌ Error en cotización:', calcError);
+                    desbloquearFormulario(); // Desbloquear en caso de error
                     mostrarNotificacion('❌ Error: ' + calcError.message, 'error');
                     return;
                 }
                 
             } catch (error) {
                 console.error('❌ Error en manejo del formulario:', error);
+                desbloquearFormulario(); // Desbloquear en caso de error general
                 mostrarNotificacion('❌ Error procesando formulario: ' + error.message, 'error');
             }
         });

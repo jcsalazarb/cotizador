@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador Profesional Nassautos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+        }
+
+        .resultado-cotizacion {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .resultado-cotizacion.show {
+            display: block;
+        }
+
+        .resultado-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .resultado-item:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        .download-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .download-links a {
+            flex: 1;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .download-links a:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <img src="Logo-Nassa.png" alt="Nassautos Logo" class="logo">
+            </div>
+            <h1>Sistema de Cotización Profesional</h1>
+            <p>Servicio Técnico Automotriz Especializado</p>
+        </div>
+
+        <div class="form-container">
+            <div id="alertContainer"></div>
+
+            <form id="cotizacionForm">
+                <!-- Información del Cliente -->
+                <div class="form-section">
+                    <h2>📋 Información del Cliente</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nombreCliente">Nombre Completo *</label>
+                            <input type="text" id="nombreCliente" name="nombreCliente" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailCliente">Correo Electrónico *</label>
+                            <input type="email" id="emailCliente" name="emailCliente" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="telefonoCliente">Teléfono *</label>
+                            <input type="tel" id="telefonoCliente" name="telefonoCliente" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ciudad">Ciudad *</label>
+                            <select id="ciudad" name="ciudad" required>
+                                <option value="">Cargando ciudades...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información del Vehículo -->
+                <div class="form-section">
+                    <h2>🚗 Información del Vehículo</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="placa">Placa *</label>
+                            <input type="text" id="placa" name="placa" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="marcaModelo">Marca y Modelo *</label>
+                            <input type="text" id="marcaModelo" name="marcaModelo" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="anio">Año *</label>
+                            <input type="number" id="anio" name="anio" min="1900" max="2099" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="kilometraje">Kilometraje *</label>
+                            <input type="number" id="kilometraje" name="kilometraje" min="0" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipos de Diagnóstico -->
+                <div class="form-section">
+                    <h2>🔧 Equipos de Diagnóstico</h2>
+                    <div id="equiposContainer">
+                        <p style="text-align: center; color: #666;">Cargando equipos disponibles...</p>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="form-section">
+                    <h2>📝 Observaciones y Fallas Reportadas</h2>
+                    <div class="form-group">
+                        <label for="observaciones">Descripción de Fallas</label>
+                        <textarea id="observaciones" name="observaciones" placeholder="Describa las fallas o síntomas del vehículo..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="button-group">
+                    <button type="button" class="btn-secondary" onclick="limpiarFormulario()">🔄 Limpiar</button>
+                    <button type="submit" class="btn-primary">📊 Generar Cotización</button>
+                </div>
+            </form>
+
+            <!-- Loading Spinner -->
+            <div class="loading" id="loadingSpinner">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #667eea;">Generando cotización...</p>
+            </div>
+
+            <!-- Resultado de Cotización -->
+            <div class="resultado-cotizacion" id="resultadoCotizacion">
+                <h3 style="color: #667eea; margin-bottom: 15px;">✅ Cotización Generada</h3>
+                <div id="resultadoDetalles"></div>
+                <div class="download-links" id="downloadLinks"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración del servidor Backend
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Variables globales
+        let equiposDisponibles = [];
+        let ciudadesDisponibles = [];
+
+        // Inicializar aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarCiudades();
+            cargarEquipos();
+            configurarFormulario();
+        });
+
+        // Cargar ciudades desde el Backend
+        async function cargarCiudades() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/ciudades`);
+                if (!response.ok) throw new Error('Error al cargar ciudades');
+                
+                ciudadesDisponibles = await response.json();
+                const selectCiudad = document.getElementById('ciudad');
+                selectCiudad.innerHTML = '<option value="">Seleccione una ciudad</option>';
+                
+                ciudadesDisponibles.forEach(ciudad => {
+                    const option = document.createElement('option');
+                    option.value = ciudad;
+                    option.textContent = ciudad;
+                    selectCiudad.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error cargando ciudades:', error);
+                mostrarAlerta('Error al cargar las ciudades. Recargue la página.', 'error');
+            }
+        }
+
+        // Cargar equipos desde el Backend
+        async function cargarEquipos() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/equipos`);
+                if (!response.ok) throw new Error('Error al cargar equipos');
+                
+                equiposDisponibles = await response.json();
+                renderizarEquipos();
+            } catch (error) {
+                console.error('Error cargando equipos:', error);
+                mostrarAlerta('Error al cargar los equipos. Recargue la página.', 'error');
+            }
+        }
+
+        // Renderizar lista de equipos
+        function renderizarEquipos() {
+            const container = document.getElementById('equiposContainer');
+            container.innerHTML = '';
+
+            equiposDisponibles.forEach(equipo => {
+                const equipoDiv = document.createElement('div');
+                equipoDiv.className = 'form-group';
+                equipoDiv.innerHTML = `
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" 
+                               name="equipo" 
+                               value="${equipo.nombre}"
+                               data-precio="${equipo.precio}"
+                               style="margin-right: 10px; width: auto; cursor: pointer;">
+                        <span>${equipo.nombre} - $${equipo.precio.toLocaleString('es-CO')}</span>
+                    </label>
+                `;
+                container.appendChild(equipoDiv);
+            });
+        }
+
+        // Configurar envío del formulario
+        function configurarFormulario() {
+            const form = document.getElementById('cotizacionForm');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await generarCotizacion();
+            });
+        }
+
+        // Generar cotización
+        async function generarCotizacion() {
+            try {
+                // Validar formulario
+                if (!validarFormulario()) return;
+
+                // Mostrar loading
+                document.getElementById('loadingSpinner').classList.add('active');
+                document.getElementById('resultadoCotizacion').classList.remove('show');
+
+                // Recopilar datos del formulario
+                const formData = recopilarDatosFormulario();
+
+                // Enviar al backend
+                const response = await fetch(`${API_BASE_URL}/cotizacion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al generar cotización');
+                }
+
+                const resultado = await response.json();
+                mostrarResultado(resultado);
+                mostrarAlerta('✅ Cotización generada exitosamente', 'success');
+
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('❌ Error: ' + error.message, 'error');
+            } finally {
+                document.getElementById('loadingSpinner').classList.remove('active');
+            }
+        }
+
+        // Recopilar datos del formulario
+        function recopilarDatosFormulario() {
+            const equiposSeleccionados = Array.from(document.querySelectorAll('input[name="equipo"]:checked'))
+                .map(checkbox => ({
+                    nombre: checkbox.value,
+                    precio: parseFloat(checkbox.dataset.precio)
+                }));
+
+            return {
+                cliente: {
+                    nombre: document.getElementById('nombreCliente').value,
+                    email: document.getElementById('emailCliente').value,
+                    telefono: document.getElementById('telefonoCliente').value,
+                    ciudad: document.getElementById('ciudad').value
+                },
+                vehiculo: {
+                    placa: document.getElementById('placa').value,
+                    marcaModelo: document.getElementById('marcaModelo').value,
+                    anio: parseInt(document.getElementById('anio').value),
+                    kilometraje: parseInt(document.getElementById('kilometraje').value)
+                },
+                equipos: equiposSeleccionados,
+                observaciones: document.getElementById('observaciones').value || 'Sin observaciones'
+            };
+        }
+
+        // Validar formulario
+        function validarFormulario() {
+            const equiposSeleccionados = document.querySelectorAll('input[name="equipo"]:checked');
+            
+            if (equiposSeleccionados.length === 0) {
+                mostrarAlerta('⚠️ Debe seleccionar al menos un equipo de diagnóstico', 'error');
+                return false;
+            }
+
+            const emailInput = document.getElementById('emailCliente');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value)) {
+                mostrarAlerta('⚠️ Ingrese un correo electrónico válido', 'error');
+                emailInput.focus();
+                return false;
+            }
+
+            return true;
+        }
+
+        // Mostrar resultado de cotización
+        function mostrarResultado(resultado) {
+            const detallesDiv = document.getElementById('resultadoDetalles');
+            const downloadLinksDiv = document.getElementById('downloadLinks');
+
+            // Mostrar detalles
+            detallesDiv.innerHTML = `
+                <div class="resultado-item">
+                    <span>Número de Cotización:</span>
+                    <strong>${resultado.numero_cotizacion}</strong>
+                </div>
+                <div class="resultado-item">
+                    <span>Cliente:</span>
+                    <strong>${resultado.cliente}</strong>
+                </div>
+                <div class="resultado-item">
+                    <span>Vehículo:</span>
+                    <strong>${resultado.vehiculo}</strong>
+                </div>
+                <div class="resultado-item">
+                    <span>Subtotal:</span>
+                    <strong>$${resultado.subtotal.toLocaleString('es-CO')}</strong>
+                </div>
+                <div class="resultado-item">
+                    <span>IVA (19%):</span>
+                    <strong>$${resultado.iva.toLocaleString('es-CO')}</strong>
+                </div>
+                <div class="resultado-item">
+                    <span>Total:</span>
+                    <strong>$${resultado.total.toLocaleString('es-CO')}</strong>
+                </div>
+            `;
+
+            // Enlaces de descarga
+            downloadLinksDiv.innerHTML = `
+                <a href="${resultado.pdf_url}" target="_blank">📄 Descargar PDF</a>
+                <a href="${resultado.pptx_url}" target="_blank">📊 Descargar PowerPoint</a>
+            `;
+
+            document.getElementById('resultadoCotizacion').classList.add('show');
+        }
+
+        // Limpiar formulario
+        function limpiarFormulario() {
+            document.getElementById('cotizacionForm').reset();
+            document.getElementById('resultadoCotizacion').classList.remove('show');
+            mostrarAlerta('🔄 Formulario limpiado', 'info');
+        }
+
+        // Mostrar alertas
+        function mostrarAlerta(mensaje, tipo) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${tipo} show`;
+            alert.textContent = mensaje;
+            
+            container.innerHTML = '';
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

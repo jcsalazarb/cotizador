@@ -1,0 +1,435 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2761
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fnil\fcharset0 Menlo-Regular;
+}
+{\colortbl;\red255\green255\blue255;\red67\green192\blue160;\red24\green24\blue24;\red193\green193\blue193;
+}
+{\*\expandedcolortbl;;\cssrgb\c30588\c78824\c69020;\cssrgb\c12157\c12157\c12157;\cssrgb\c80000\c80000\c80000;
+}
+\margl1440\margr1440\vieww25400\viewh15440\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import os, json, time, tempfile, 
+\f1\b shutil
+\f0\b0 , 
+\f1\b subprocess
+\f0\b0 , smtplib, secrets, re, 
+\f2 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 unicodedata\cf4 \cb1 \strokec4 \
+
+\f0 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 \
+from math import ceil\
+from datetime import datetime\
+from typing import Optional, Dict, Any\
+from fastapi import FastAPI, HTTPException, Depends, Request\
+from fastapi.responses import JSONResponse, FileResponse\
+from fastapi.middleware.cors import CORSMiddleware\
+from fastapi.security import HTTPBasic, HTTPBasicCredentials\
+from pydantic import BaseModel, EmailStr, Field, validator\
+from email.message import EmailMessage\
+from dotenv import load_dotenv\
+from pptx import Presentation\
+\
+load_dotenv()\
+\
+APP_DIR = os.path.dirname(os.path.abspath(__file__))\
+CONFIG_DIR = os.path.join(APP_DIR, "config")\
+EQUIPOS_FILE = os.path.join(CONFIG_DIR, "equipos.json")\
+CIUDADES_FILE = os.path.join(CONFIG_DIR, "ciudades.json")\
+TEMPLATE_DIR = os.path.join(APP_DIR, "..", "Template")\
+TEMPLATE_PPTX = os.path.join(TEMPLATE_DIR, \'93Template-PreCotizacion.pptx")\
+\
+# ---------------- API BASE ----------------\
+app = FastAPI(title="NASSA Solar API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")\
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")\
+app.add_middleware(\
+    CORSMiddleware,\
+    allow_origins=ALLOWED_ORIGINS,\
+    allow_credentials=True,\
+    allow_methods=["GET", "POST"],\
+    allow_headers=["*"],\
+)\
+\
+security = HTTPBasic()\
+RATE_LIMIT = int(os.getenv("RATE_LIMIT", "10"))\
+RATE_WINDOW = 60\
+request_counts: Dict[str, list] = \{\}\
+\
+def rate_limit(request: Request):\
+    ip = request.client.host\
+    now = time.time()\
+    arr = request_counts.setdefault(ip, [])\
+    request_counts[ip] = [t for t in arr if now - t < RATE_WINDOW]\
+    if len(request_counts[ip]) >= RATE_LIMIT:\
+        raise HTTPException(429, f"L\'edmite \{RATE_LIMIT\} req/min")\
+    request_counts[ip].append(now)\
+\
+def auth_admin(credentials: HTTPBasicCredentials = Depends(security)):\
+    u_ok = secrets.compare_digest(credentials.username, os.getenv("ADMIN_USER", "admin"))\
+    p_ok = secrets.compare_digest(credentials.password, os.getenv("ADMIN_PASS", "changeme"))\
+    if not (u_ok and p_ok):\
+        raise HTTPException(status_code=401, detail="Credenciales inv\'e1lidas", headers=\{"WWW-Authenticate": "Basic"\})\
+    return credentials.username\
+\
+# ---------------- MODELO ENTRADA ----------------\
+class CotizarRequest(BaseModel):\
+    nombre: str = Field(..., min_length=3, max_length=100)\
+    telefono: str = Field(..., regex=r'^\\+?[0-9\\s\\-()]\{7,20\}$')\
+    email: EmailStr\
+    ciudad: str = Field(..., min_length=2, max_length=80)\
+    direccion: str = Field(..., min_length=5, max_length=200)\
+    consumoMensual: float = Field(..., gt=50, lt=50000)\
+    valorFactura: float = Field(..., gt=10000, lt=100000000)\
+    valorKwh: float = Field(..., gt=100, lt=5000)\
+    nic: str = Field(..., min_length=5, max_length=25)\
+    tipoVivienda: str = Field(..., regex=r'^(casa|apartamento|local|empresa)$')\
+    areaDisponible: Optional[float] = Field(0, ge=0, lt=20000)\
+    numeroPisos: Optional[str] = Field("1", regex=r'^[1-6]$')\
+    sistemaElectrico: str = Field(..., regex=r'^(monofasico|bifasico|trifasico)$')\
+    porcentajeConsumodia: float = Field(..., ge=0, le=100)\
+    tipoSistemaFV: str = Field(..., regex=r'^(ongrid|offgrid|hibrido_incluido|hibrido_opcional)$')\
+    hspCalculado: Optional[float] = Field(None, gt=0, lt=9)\
+    panel: str = Field(..., regex=r'^panel[1-9]\\d?$')\
+    inversor: str = Field(..., regex=r'^inv[1-9]\\d?$')\
+    bateria: Optional[str] = Field(None, regex=r'^bat[1-9]\\d?$')\
+    identificacion: Optional[str] = Field(None, max_length=20)\
+\
+    @validator("bateria", always=True)\
+    def validar_bateria(cls, v, values):\
+        if values.get("tipoSistemaFV") in ("offgrid", "hibrido_incluido") and not v:\
+            raise ValueError("Bater\'eda requerida para el tipo de sistema seleccionado")\
+        return v\
+\
+# ---------------- UTILIDADES ----------------\
+def load_json(path: str) -> dict:\
+    try:\
+        with open(path, "r", encoding="utf-8") as f:\
+            return json.load(f)\
+    except FileNotFoundError:\
+        raise HTTPException(404, f"Archivo no encontrado: \{os.path.basename(path)\}")\
+    except json.JSONDecodeError:\
+        raise HTTPException(500, f"JSON inv\'e1lido: \{os.path.basename(path)\}")\
+\
+def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:\
+    consumoMensual = float(data["consumoMensual"])\
+    valorFactura = float(data["valorFactura"])\
+    valorKwh = float(data["valorKwh"])\
+    ciudad_key = data["ciudad"].lower().strip()\
+    hsp = float(data.get("hspCalculado") or ciudades.get(ciudad_key, \{\}).get("hsp", ciudades["default"]["hsp"]))\
+\
+    panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)\
+    inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)\
+    bateria = next((x for x in equipos["baterias"] if x["id"] == data.get("bateria")), None) if data.get("bateria") else None\
+    if not panel or not inversor:\
+        raise ValueError("Panel o inversor no encontrado")\
+\
+    eficiencia = 0.90\
+    consumoDiario = consumoMensual / 30\
+    energiaPanelDia = (panel["capacidad"] * eficiencia * hsp) / 1000\
+    numeroPaneles = int(ceil((consumoDiario * 1.2) / energiaPanelDia))\
+    capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000\
+    generacionMensual = numeroPaneles * energiaPanelDia * 30\
+    generacionAnual = generacionMensual * 12\
+    numeroInversores = int(ceil(capacidadInstalada / (inversor["capacidad"] / 1000)))\
+\
+    # Costos b\'e1sicos\
+    soporteria = 180000\
+    instalacion = 250000\
+    materialesAdicionales = 150000\
+    mantenimientoAnual = 120000\
+\
+    costoPaneles = numeroPaneles * panel.get("precio", 0)\
+    costoInversores = numeroInversores * inversor.get("precio", 0)\
+    costoBaterias = bateria.get("precio", 0) if bateria else 0\
+    costoSoporteria = numeroPaneles * soporteria\
+    costoInstalacion = numeroPaneles * instalacion\
+    costoMateriales = numeroPaneles * materialesAdicionales\
+\
+    subtotalAntesIVA = costoPaneles + costoInversores + costoBaterias + costoSoporteria + costoInstalacion + costoMateriales\
+    ivaEquipos = (costoBaterias + costoSoporteria + costoInstalacion + costoMateriales) * 0.19\
+    valorTotalSistema = subtotalAntesIVA + ivaEquipos\
+\
+    porcentajeProduccionMensual = min((generacionMensual / consumoMensual) * 100, 100) if consumoMensual > 0 else 0\
+    ahorroMensualEnergia = min(generacionMensual * valorKwh, valorFactura)\
+    ahorroAnualEnergia = ahorroMensualEnergia * 12\
+\
+    deduccionRentaBase = subtotalAntesIVA * 0.50\
+    deduccionRentaEfectiva = deduccionRentaBase * 0.35\
+    ahorroAnualDeduccion = (deduccionRentaEfectiva / 5)\
+    depreciacionAnual = subtotalAntesIVA / 3\
+    ahorroAnualDepreciacion = depreciacionAnual * 0.35\
+\
+    tabla = []\
+    ahorroAcum = 0\
+    payback = 0\
+    alcanzado = False\
+    costoMantBase = capacidadInstalada * mantenimientoAnual\
+    acumxgen = acumxdeduc = acumxdepre = 0\
+\
+    for year in range(1, 26):\
+        valorKwhA\'f1o = valorKwh * (1.055 ** (year - 1))\
+        degradacion = (0.99 ** (year - 1))\
+        factorInicio = 0.5 if year == 1 else 1\
+        prodAnual = generacionAnual * degradacion * factorInicio\
+        ahorroGeneracion = min(prodAnual * valorKwhA\'f1o, valorFactura * 12 * (1.055 ** (year - 1)))\
+        ahorroDep = ahorroAnualDepreciacion if year <= 3 else 0\
+        ahorroDed = ahorroAnualDeduccion if year <= 5 else 0\
+        costoMant = costoMantBase * (1.055 ** (year - 1))\
+        ahorroTotal = ahorroGeneracion + ahorroDep + ahorroDed - costoMant\
+        ahorroAcum += ahorroTotal\
+        roi = ((ahorroAcum - valorTotalSistema) / valorTotalSistema) * 100 if valorTotalSistema else 0\
+\
+        if not alcanzado and ahorroAcum >= valorTotalSistema:\
+            alcanzado = True\
+            payback = year\
+\
+        if not alcanzado or year <= payback:\
+            acumxgen += ahorroGeneracion\
+            acumxdeduc += ahorroDed\
+            acumxdepre += ahorroDep\
+\
+        tabla.append(\{\
+            "a\'f1o": year,\
+            "valorKwhA\'f1o": round(valorKwhA\'f1o),\
+            "produccionAnual": round(prodAnual),\
+	 \'93ahorroGen\'94: round(ahorroGenerqacion),\
+	 \'93ahorroDepre\'94: round(ahorroDep),\
+	 \'93ahorroDedu\'94: round(ahorroDed),\
+	 \'93costoMtto\'94: round(costoMant),\
+            "ahorroTotalA\'f1o": round(ahorroTotal),\
+            "ahorroAcumulado": round(ahorroAcum),\
+            "roi": round(roi, 2)\
+        \})\
+\
+    TotalAcum = acumxgen + acumxdeduc + acumxdepre\
+    tiempoRetorno = payback or (valorTotalSistema / (ahorroAnualEnergia + ahorroAnualDeduccion + ahorroAnualDepreciacion + 1e-9))\
+\
+    return \{\
+        "fecha": datetime.utcnow().isoformat(),\
+        "cotizacionId": "NASSA-" + str(int(datetime.utcnow().timestamp())),\
+        "panel": \{"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"]\},\
+        "inversor": \{"id": inversor["id"], "nombre": inversor["nombre"], "capacidad": inversor["capacidad"]\},\
+        "bateria": \{"id": bateria["id"], "nombre": bateria["nombre"]\} if bateria else None,\
+        "numeroPaneles": numeroPaneles,\
+        "numeroInversores": numeroInversores,\
+        "capacidadInstalada": round(capacidadInstalada, 2),\
+        "generacionMensual": round(generacionMensual),\
+        "generacionAnual": round(generacionAnual),\
+        "valorTotalSistema": round(valorTotalSistema),\
+        "ahorroMensualEnergia": round(ahorroMensualEnergia),\
+        "tiempoRetorno": round(tiempoRetorno, 1),\
+        "tablaAhorros": tabla,\
+        "porcentajeProduccionMensual": round(porcentajeProduccionMensual, 1),\
+        "subtotalAntesIVA": round(subtotalAntesIVA),\
+        "acumxgen": round(acumxgen),\
+        "acumxdeduc": round(acumxdeduc),\
+        "acumxdepre": round(acumxdepre),\
+        "TotalAcum": round(TotalAcum)\
+    \}\
+\
+# ---------------- TEMPLATE PPTX -> PDF ----------------\
+def build_placeholders(req: dict, resultado: dict) -> Dict[str, str]:\
+    return \{\
+        "\{\{COTIZACION_ID\}\}": resultado["cotizacionId"],\
+        "\{\{FECHA\}\}": resultado["fecha"][:10],\
+        "\{\{NOMBRE\}\}": req["nombre"],\
+        "\{\{EMAIL\}\}": req["email"],\
+        "\{\{TELEFONO\}\}": req["telefono"],\
+        "\{\{CIUDAD\}\}": req["ciudad"],\
+        "\{\{DIRECCION\}\}": req["direccion"],\
+        "\{\{CONSUMO_MENSUAL\}\}": f"\{req['consumoMensual']:.0f\} kWh",\
+        "\{\{VALOR_FACTURA\}\}": f"$\{req['valorFactura']:,.0f\} COP",\
+        "\{\{VALOR_KWH\}\}": f"$\{req['valorKwh']:,.0f\} COP",\
+        "\{\{TIPO_VIVIENDA\}\}": req["tipoVivienda"],\
+        "\{\{SISTEMA_ELECTRICO\}\}": req["sistemaElectrico"],\
+        "\{\{TIPO_SISTEMA\}\}": req["tipoSistemaFV"],\
+        "\{\{NUM_PANELES\}\}": str(resultado["numeroPaneles"]),\
+        "\{\{PANEL_MODELO\}\}": resultado["panel"]["nombre"],\
+        "\{\{INVERSORES\}\}": str(resultado["numeroInversores"]),\
+        "\{\{INVERSOR_MODELO\}\}": resultado["inversor"]["nombre"],\
+        "\{\{CAPACIDAD_INSTALADA_KW\}\}": f"\{resultado['capacidadInstalada']\} kW",\
+        "\{\{GENERACION_MENSUAL_KWH\}\}": f"\{resultado['generacionMensual']\} kWh",\
+        "\{\{AHORRO_MENSUAL\}\}": f"$\{resultado['ahorroMensualEnergia']:,.0f\} COP",\
+        "\{\{RETORNO_ANIOS\}\}": f"\{resultado['tiempoRetorno']\} a\'f1os",\
+        "\{\{INVERSION_TOTAL\}\}": f"$\{resultado['valorTotalSistema']:,.0f\} COP",\
+        "\{\{PORCENTAJE_PRODUCCION\}\}": f"\{resultado['porcentajeProduccionMensual']\}%",\
+        "\{\{SUBTOTAL_SIN_IVA\}\}": f"$\{resultado['subtotalAntesIVA']:,.0f\} COP",\
+        "\{\{TOTAL_ACUMULADO_PAYBACK\}\}": f"$\{resultado['TotalAcum']:,.0f\} COP"\
+    \}\
+\
+def replace_shape_text(shape, mapping: Dict[str, str]):\
+    if shape.has_text_frame:\
+        for p in shape.text_frame.paragraphs:\
+            for r in p.runs:\
+                for k, v in mapping.items():\
+                    if k in r.text:\
+                        r.text = r.text.replace(k, v)\
+    if shape.has_table:\
+        for row in shape.table.rows:\
+            for cell in row.cells:\
+                for k, v in mapping.items():\
+                    if k in cell.text:\
+                        cell.text = cell.text.replace(k, v)\
+\
+def fill_template_and_convert(req: dict, resultado: dict) -> (str, str):\
+    if not os.path.isfile(TEMPLATE_PPTX):\
+        raise RuntimeError("Template PPTX no encontrado")\
+    fd_temp, filled_path = tempfile.mkstemp(suffix=".pptx")\
+    os.close(fd_temp)\
+    shutil.copy(TEMPLATE_PPTX, filled_path)\
+\
+    prs = Presentation(filled_path)\
+    mapping = build_placeholders(req, resultado)\
+    for slide in prs.slides:\
+        for shape in slide.shapes:\
+            replace_shape_text(shape, mapping)\
+    prs.save(filled_path)\
+\
+    libreoffice_bin = os.getenv("LIBREOFFICE_PATH", "soffice")\
+    out_dir = tempfile.mkdtemp()\
+    cmd = [\
+        libreoffice_bin,\
+        "--headless",\
+        "--norestore",\
+        "--invisible",\
+        "--convert-to", "pdf",\
+        "--outdir", out_dir,\
+        filled_path\
+    ]\
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=90)\
+    if proc.returncode != 0:\
+        raise RuntimeError(f"LibreOffice error: \{proc.stderr.decode('utf-8')\}")\
+    pdf_name = os.path.splitext(os.path.basename(filled_path))[0] + ".pdf"\
+    pdf_path = os.path.join(out_dir, pdf_name)\
+    if not os.path.isfile(pdf_path):\
+        raise RuntimeError("Conversi\'f3n a PDF fallida")\
+    return filled_path, pdf_path\
+\
+# ---------------- EMAIL ----------------\
+def enviar_email(destino: str, pdf_path: str, resultado: dict, pptx_path: Optional[str]):\
+    SMTP_HOST = os.getenv("SMTP_HOST")\
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))\
+    SMTP_USER = os.getenv("SMTP_USER")\
+    SMTP_PASS = os.getenv("SMTP_PASS")\
+    EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)\
+    EMAIL_NASSA = os.getenv("EMAIL_NASSA", EMAIL_FROM)\
+\
+    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS, destino]):\
+        raise RuntimeError("SMTP incompleto")\
+\
+    msg = EmailMessage()\
+    msg["Subject"] = f"Cotizaci\'f3n NASSA Solar - \{resultado['cotizacionId']\}"\
+    msg["From"] = EMAIL_FROM\
+    msg["To"] = destino\
+    msg["Cc"] = EMAIL_NASSA\
+\
+    cuerpo = f"""\
+Estimado \{destino\},\
+\
+Adjuntamos su cotizaci\'f3n:\
+\
+ID: \{resultado['cotizacionId']\}\
+Inversi\'f3n: $\{resultado['valorTotalSistema']:,.0f\} COP\
+Ahorro mensual estimado: $\{resultado['ahorroMensualEnergia']:,.0f\} COP\
+Retorno estimado: \{resultado['tiempoRetorno']\} a\'f1os\
+Capacidad instalada: \{resultado['capacidadInstalada']\} kW\
+\
+Saludos,\
+NASSA SOLAR\
+"""\
+    msg.set_content(cuerpo.strip())\
+\
+    with open(pdf_path, "rb") as f:\
+        msg.add_attachment(f.read(), maintype="application", subtype="pdf",\
+                           filename=f"Cotizacion_\{resultado['cotizacionId']\}.pdf")\
+    if pptx_path and os.path.isfile(pptx_path):\
+        with open(pptx_path, "rb") as f:\
+            msg.add_attachment(\
+                f.read(),\
+                maintype="application",\
+                subtype="vnd.openxmlformats-officedocument.presentationml.presentation",\
+                filename=f"Plantilla_\{resultado['cotizacionId']\}.pptx"\
+            )\
+\
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:\
+        server.starttls()\
+        server.login(SMTP_USER, SMTP_PASS)\
+        server.send_message(msg)\
+\
+# ---------------- ENDPOINTS ----------------\
+@app.get("/", tags=["General"])\
+def root():\
+    return \{"message": "API NASSA Solar Activa", "version": "1.0.0"\}\
+\
+@app.get("/health", tags=["General"])\
+def health():\
+    return \{"status": "ok", "time": datetime.utcnow().isoformat()\}\
+\
+@app.get("/api/equipos", tags=["Equipos"])\
+def equipos_publicos():\
+    data = load_json(EQUIPOS_FILE)\
+    return \{\
+        "paneles": [\{k: v for k, v in p.items() if k in ("id", "nombre", "capacidad", "descripcion")\} for p in data["paneles"]],\
+        "inversores": [\{k: v for k, v in i.items() if k in ("id", "nombre", "capacidad", "descripcion")\} for i in data["inversores"]],\
+        "baterias": [\{k: v for k, v in b.items() if k in ("id", "nombre", "capacidad", "descripcion")\} for b in data["baterias"]],\
+    \}\
+\
+@app.get("/api/equipos/precios", tags=["Equipos"], dependencies=[Depends(auth_admin)])\
+def equipos_con_precios():\
+    return load_json(EQUIPOS_FILE)\
+\
+@app.get("/api/ciudades", tags=["Configuraci\'f3n"])\
+def ciudades():\
+    return load_json(CIUDADES_FILE)\
+\
+@app.get("/api/template/status", tags=["Template"])\
+def template_status():\
+    return \{"available": os.path.isfile(TEMPLATE_PPTX)\}\
+\
+@app.get("/api/template/download", tags=["Template"], dependencies=[Depends(auth_admin)])\
+def template_download():\
+    if not os.path.isfile(TEMPLATE_PPTX):\
+        raise HTTPException(404, "Template no encontrado")\
+    return FileResponse(TEMPLATE_PPTX, filename=os.path.basename(TEMPLATE_PPTX))\
+\
+@app.post("/api/cotizar", tags=["Cotizaci\'f3n"])\
+async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_limit)):\
+    equipos = load_json(EQUIPOS_FILE)\
+    ciudades = load_json(CIUDADES_FILE)\
+    try:\
+        resultado = calcular_cotizacion(req.dict(), equipos, ciudades)\
+    except ValueError as e:\
+        raise HTTPException(400, str(e))\
+    except Exception as e:\
+        raise HTTPException(500, f"Error c\'e1lculo: \{e\}")\
+\
+    pptx_path = pdf_path = None\
+    try:\
+        pptx_path, pdf_path = fill_template_and_convert(req.dict(), resultado)\
+        try:\
+            enviar_email(req.email, pdf_path, resultado, pptx_path)\
+        except Exception as e:\
+            print(f"Error email: \{e\}")\
+        finally:\
+            for f in (pptx_path, pdf_path):\
+                if f and os.path.exists(f):\
+                    os.remove(f)\
+    except Exception as e:\
+        print(f"Error plantilla/PDF: \{e\}")\
+\
+    resumen = \{\
+        "cotizacionId": resultado["cotizacionId"],\
+        "fecha": resultado["fecha"],\
+        "capacidadInstalada": resultado["capacidadInstalada"],\
+        "generacionMensual": resultado["generacionMensual"],\
+        "valorTotalSistema": resultado["valorTotalSistema"],\
+        "ahorroMensualEnergia": resultado["ahorroMensualEnergia"],\
+        "tiempoRetorno": resultado["tiempoRetorno"],\
+        "totalAcumuladoPayback": resultado["TotalAcum"],\
+        "tablaAhorros": resultado["tablaAhorros"][:10]\
+    \}\
+    return JSONResponse(\{"status": "success", "mensaje": "Cotizaci\'f3n generada", "resumen": resumen\})\
+\
+# ---------------- MAIN ----------------\
+if __name__ == "__main__":\
+    import uvicorn\
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "5000")), log_level="info")}

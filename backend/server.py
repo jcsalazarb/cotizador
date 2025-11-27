@@ -24,7 +24,7 @@ from pptx.util import Pt
 
 load_dotenv()
 
-# ========================================
+le# ========================================
 # ⏰ ZONA HORARIA COLOMBIA (UTC-5)
 # ========================================
 COLOMBIA_TZ = timezone(timedelta(hours=-5))
@@ -167,6 +167,10 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     bateria = next((x for x in equipos["baterias"] if x["id"] == data.get("bateria")), None) if data.get("bateria") else None
     if not panel or not inversor:
         raise ValueError("Panel o inversor no encontrado")
+    
+    # Obtener configuración de área
+    factorAreaEfectiva = equipos.get("configuracion", {}).get("factorAreaEfectiva", 1.2)
+    areaPanel = panel.get("area", 2.0)  # Default 2 m² si no existe
 
     eficiencia = 0.90
     consumoDiario = consumoMensual / 30
@@ -176,6 +180,9 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     generacionMensual = numeroPaneles * energiaPanelDia * 30
     generacionAnual = generacionMensual * 12
     numeroInversores = int(ceil(capacidadInstalada / (inversor["capacidad"] / 1000)))
+    
+    # Calcular área requerida para instalación
+    areaRequerida = round(numeroPaneles * areaPanel * factorAreaEfectiva, 2)
 
     # Costos básicos desde parámetros configurables
     soporteria = costos["soporteria_por_panel"]
@@ -260,12 +267,14 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     return {
         "fecha": now_colombia().isoformat(),
         "cotizacionId": "NASSA-" + str(int(now_colombia().timestamp())),
-        "panel": {"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"]},
+        "panel": {"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"], "area": areaPanel},
         "inversor": {"id": inversor["id"], "nombre": inversor["nombre"], "capacidad": inversor["capacidad"]},
         "bateria": {"id": bateria["id"], "nombre": bateria["nombre"]} if bateria else None,
         "numeroPaneles": numeroPaneles,
         "numeroInversores": numeroInversores,
         "capacidadInstalada": round(capacidadInstalada, 2),
+        "areaRequerida": areaRequerida,
+        "areaDisponibleCliente": float(data.get("areaDisponible", 0)),
         "generacionMensual": round(generacionMensual),
         "generacionAnual": round(generacionAnual),
         "valorTotalSistema": round(valorTotalSistema),
@@ -464,6 +473,7 @@ def build_placeholders(req: dict, resultado: dict) -> dict:
         # Especificaciones técnicas (8 letras máx)
         "{{CAP_KW}}": f"{resultado['capacidadInstalada']} kW",
         "{{GEN_MES}}": f"{resultado['generacionMensual']} kWh",
+        "{{AREA_REQ}}": f"{resultado['areaRequerida']} m²",
         
         # Análisis financiero (8 letras máx)
         "{{INVER}}": f"${resultado['valorTotalSistema']:,.0f}",

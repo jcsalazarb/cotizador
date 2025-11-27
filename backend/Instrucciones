@@ -1,0 +1,163 @@
+/Users/jcsalazarb/Documents/GitHub/cotizador/
+├── index.html                          # Frontend
+├── assets/
+│   ├── css/
+│   │   └── styles.css                 # Estilos personalizados
+│   ├── js/
+│   │   └── app.js                     # Lógica del frontend
+│   └── images/
+│       └── logo-nassa.png            # Logo de la empresa (NUEVO)
+├── Template/
+│   └── Template-Precottizacion.pptx  # Plantilla PPTX con TABLA_AHORROS
+├── backend/
+│   ├── server.py                      # Código completo del backend
+│   ├── requirements.txt               # Dependencias Python
+│   ├── .env                          # Variables de entorno (NO SUBIR A GIT)
+│   ├── .env.example                  # Ejemplo de configuración
+│   ├── .gitignore                    # Archivos a ignorar
+│   └── config/
+│       ├── equipos.json              # Catálogo de equipos
+│       └── ciudades.json             # HSP por ciudades
+└── README.md                         # Documentación del proyecto
+
+Verificar Estructura de Archivos
+d /Users/jcsalazarb/Documents/GitHub/cotizador
+
+# Crear carpetas faltantes
+mkdir -p assets/css assets/js assets/images
+mkdir -p backend/config
+mkdir -p Template
+
+# Verificar existencia de archivos
+ls -la backend/
+ls -la Template/
+ls -la assets/images/
+
+
+Instalar LibreOffice (Requerido para conversión PPTX→PDF)
+# Mac
+brew install --cask libreoffice
+
+# Verificar instalación
+/Applications/LibreOffice.app/Contents/MacOS/soffice --version
+
+
+
+Configurar Backend
+cd backend
+
+# Crear entorno virtual
+python3 -m venv venv
+
+# Activar entorno
+source venv/bin/activate  # Mac/Linux
+# venv\Scripts\activate   # Windows
+
+# Instalar dependencias
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Configurar variables de entorno
+cp .env.example .env
+nano .env  # Editar con tus credenciales reales
+
+
+
+
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn python-multipart jinja2 pydantic email-validator
+pip install python-pptx reportlab
+uvicorn server:app --host 0.0.0.0 --port 5000 --reload
+python server.py
+
+
+Servir Frontend Localmente
+# Opción 1: Python
+cd /Users/jcsalazarb/Documents/GitHub/cotizador
+python3 -m http.server 8000
+
+# Opción 2: Node.js (si tienes npx)
+npx http-server -p 8000
+
+# Abrir en navegador
+open http://localhost:8000
+
+Preparar Template PowerPoint
+Abre Template/Template-Precottizacion.pptx
+Inserta una tabla con 13 filas (1 header + 12 datos)
+Encabezados exactos:
+AÑO
+Valor_Kwh
+Producción_Anual_kWh
+Generación
+Depreciación
+Deducción
+Costo_Mtto
+Ahorro_del_Año
+Acumulado
+ROI
+Abre el Panel de Selección (menú Ver → Panel de Selección)
+Renombra la tabla a: TABLA_AHORROS
+Usa placeholders como {{NOMBRE}}, {{EMAIL}}, etc. en el texto
+Guarda y cierra
+
+Verificar Todo Funciona
+# 1. Backend ejecutándose
+curl http://localhost:5000/health
+# Respuesta esperada: {"status":"ok","timestamp":"..."}
+
+# 2. Equipos disponibles
+curl http://localhost:5000/api/equipos
+
+# 3. Template disponible
+curl http://localhost:5000/api/template/status
+# Respuesta esperada: {"available":true}
+
+# 4. Hacer cotización de prueba
+curl -X POST http://localhost:5000/api/cotizar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Juan Pérez",
+    "telefono": "+57 300 1234567",
+    "email": "juan@test.com",
+    "ciudad": "Bogotá",
+    "direccion": "Calle 123",
+    "consumoMensual": 350,
+    "valorFactura": 180000,
+    "valorKwh": 514,
+    "nic": "12345678",
+    "tipoVivienda": "casa",
+    "sistemaElectrico": "monofasico",
+    "porcentajeConsumodia": 70,
+    "tipoSistemaFV": "ongrid",
+    "panel": "panel1",
+    "inversor": "inv1"
+  }'
+
+  CHECKLIST FINAL
+ Backend ejecutándose en http://localhost:5000
+ Frontend ejecutándose en http://localhost:8000
+ Logo movido a assets/images/logo-nassa.png
+ Template Template-Precottizacion.pptx con TABLA_AHORROS configurada
+ Archivos JSON de configuración creados
+ Variables de entorno .env configuradas
+ LibreOffice instalado y funcionando
+ Contraseña de aplicación de Gmail configurada
+ Prueba de cotización exitosa
+
+ DESPLIEGUE EN PRODUCCIÓN
+Backend (Railway):
+railway login
+railway init
+railway up
+railway variables set SMTP_HOST=smtp.gmail.com
+railway variables set SMTP_USER=tu_email
+# ...configurar todas las variables
+
+Frontend (Vercel/Netlify):
+# Vercel
+vercel deploy
+
+# Netlify
+netlify deploy --prod

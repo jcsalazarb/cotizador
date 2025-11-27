@@ -1,4 +1,8 @@
 {
+  "configuracion": {
+    "factorAreaEfectiva": 1.2,
+    "descripcionFactorArea": "Factor multiplicador para espacio entre paneles y estructura (1.15-1.25 recomendado)"
+  },
   "paneles": [
     {
       "id": "panel1",
@@ -6,7 +10,8 @@
       "capacidad": 550,
       "precio": 850000,
       "descripcion": "Monocristalino, 25 años garantía",
-      "eficienciaPanel": 0.9
+      "eficienciaPanel": 0.9,
+      "area": 2.0
     },
     {
       "id": "panel2",
@@ -14,7 +19,8 @@
       "capacidad": 615,
       "precio": 850000,
       "descripcion": "Monocristalino Tiger Pro, alta eficiencia",
-      "eficienciaPanel": 0.9
+      "eficienciaPanel": 0.9,
+      "area": 2.0
     },
     {
       "id": "panel3",
@@ -22,7 +28,8 @@
       "capacidad": 670,
       "precio": 1050000,
       "descripcion": "Vertex S+, tecnología avanzada",
-      "eficienciaPanel": 0.9
+      "eficienciaPanel": 0.9,
+      "area": 2.0
     },
     {
       "id": "panel5",
@@ -30,7 +37,8 @@
       "capacidad": 580,
       "precio": 890000,
       "descripcion": "Monocristalino, tecnología PERCIUM+",
-      "eficienciaPanel": 0.9
+      "eficienciaPanel": 0.9,
+      "area": 2.0
     },
     {
       "id": "panel6",
@@ -38,7 +46,8 @@
       "capacidad": 550,
       "precio": 420000,
       "descripcion": "Panel bifacial con mayor generación",
-      "eficienciaPanel": 0.9
+      "eficienciaPanel": 0.9,
+      "area": 2.0
     },
     {
       "id": "panel7",
@@ -46,7 +55,8 @@
       "capacidad": 600,
       "precio": 920000,
       "descripcion": "Monocristalino Q.ANTUM DUO Z",
-      "eficienciaPanel": 0.9
+      "eficienciaPanel": 0.9,
+      "area": 2.0
     },
     {
       "id": "panel8",
@@ -54,7 +64,8 @@
       "capacidad": 625,
       "precio": 340000,
       "descripcion": "N-Type de 132 celulas reduce puntos calientes",
-      "eficienciaPanel": 0.95
+      "eficienciaPanel": 0.95,
+      "area": 2.0
     }
   ],
   "inversores": [
