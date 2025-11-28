@@ -1516,7 +1516,8 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         "umbral_92": round(umbral, 2),
         "condicion1_mayor_cero": areaDisponible > 0,
         "condicion2_menor_umbral": areaDisponible < umbral,
-        "generara_segunda_opcion": areaDisponible > 0 and areaDisponible < umbral
+        "generara_segunda_opcion": areaDisponible > 0 and areaDisponible < umbral,
+        "error_opcion2": None  # Se llenará si hay error
     }
     
     print(f"\n{'='*80}")
@@ -1603,7 +1604,9 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
                     print(f"   ✅ Segunda opción generada (fallback): {resultado_opcion2['numeroPaneles']} paneles")
                     print(f"   📦 Total PDFs generados: {len(pdf_paths)}")
             except Exception as e:
-                print(f"   ❌ ERROR GENERANDO SEGUNDA OPCIÓN: {e}")
+                error_msg = f"{type(e).__name__}: {str(e)}"
+                diagnostico["error_opcion2"] = error_msg
+                print(f"   ❌ ERROR GENERANDO SEGUNDA OPCIÓN: {error_msg}")
                 import traceback
                 traceback.print_exc()
                 # No lanzar excepción, continuar con una sola opción
