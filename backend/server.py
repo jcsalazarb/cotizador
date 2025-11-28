@@ -649,41 +649,124 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
     }
 
 def replace_text_in_shape(shape, mapping: dict):
-    """Reemplaza texto en un shape individual (text_frame)"""
+    """Reemplaza texto en un shape individual (text_frame) preservando formato"""
     if not hasattr(shape, 'has_text_frame') or not shape.has_text_frame:
         return
     
     for paragraph in shape.text_frame.paragraphs:
-        # Procesar cada run individualmente SIN reconstruir
-        for run in paragraph.runs:
-            original = run.text
-            if original and any(placeholder in original for placeholder in mapping.keys()):
-                # Reemplazar SOLO en este run
-                new_text = original
-                for placeholder, value in mapping.items():
-                    new_text = new_text.replace(placeholder, value)
-                run.text = new_text
+        # Obtener texto completo del párrafo para detectar placeholders divididos
+        full_text = "".join(r.text for r in paragraph.runs)
+        
+        # Verificar si hay placeholders en este párrafo
+        has_placeholders = any(placeholder in full_text for placeholder in mapping.keys())
+        if not has_placeholders:
+            continue
+        
+        # Reemplazar placeholders en el texto completo
+        replaced_text = full_text
+        for placeholder, value in mapping.items():
+            replaced_text = replaced_text.replace(placeholder, value)
+        
+        # Si no hubo cambios, continuar
+        if replaced_text == full_text:
+            continue
+        
+        # Guardar formato del primer run (el que generalmente tiene el formato base)
+        first_run = paragraph.runs[0] if paragraph.runs else None
+        if not first_run:
+            continue
+        
+        # Guardar propiedades de formato
+        font_name = first_run.font.name
+        font_size = first_run.font.size
+        font_bold = first_run.font.bold
+        font_color = first_run.font.color.rgb if first_run.font.color.type == 1 else None
+        
+        # Limpiar todos los runs existentes
+        for _ in range(len(paragraph.runs)):
+            p_element = paragraph._element
+            r_element = paragraph.runs[0]._element
+            p_element.remove(r_element)
+        
+        # Crear un nuevo run con el texto reemplazado y formato original
+        new_run = paragraph.add_run()
+        new_run.text = replaced_text
+        
+        # Aplicar formato original
+        new_run.font.name = font_name
+        if font_size:
+            new_run.font.size = font_size
+        if font_bold is not None:
+            new_run.font.bold = font_bold
+        if font_color:
+            new_run.font.color.rgb = font_color
 
 def replace_shape_text(shape, mapping: dict):
-    """Reemplaza texto en shapes - versión simplificada"""
+    """Reemplaza texto en shapes preservando formato y alineación"""
+    from pptx.enum.text import PP_ALIGN
+    
     replaced_count = 0
     
     # 1. Si tiene text_frame, procesar
     if hasattr(shape, 'has_text_frame') and shape.has_text_frame:
         replace_text_in_shape(shape, mapping)
     
-    # 2. Si es tabla, procesar celdas
+    # 2. Si es tabla, procesar celdas con cuidado especial en formato
     if hasattr(shape, 'has_table') and shape.has_table:
         for row in shape.table.rows:
             for cell in row.cells:
+                # Obtener texto original
                 original_text = cell.text
                 new_text = original_text
+                
+                # Reemplazar placeholders
                 for k, v in mapping.items():
                     if k in new_text:
                         new_text = new_text.replace(k, v)
                         replaced_count += 1
+                
+                # Si hubo cambios, actualizar celda
                 if new_text != original_text:
-                    cell.text = new_text
+                    # Guardar formato del primer párrafo/run
+                    first_paragraph = cell.text_frame.paragraphs[0] if cell.text_frame.paragraphs else None
+                    if first_paragraph and first_paragraph.runs:
+                        first_run = first_paragraph.runs[0]
+                        font_name = first_run.font.name
+                        font_size = first_run.font.size
+                        font_bold = first_run.font.bold
+                        font_color = first_run.font.color.rgb if first_run.font.color.type == 1 else None
+                        alignment = first_paragraph.alignment
+                    else:
+                        font_name = None
+                        font_size = None
+                        font_bold = None
+                        font_color = None
+                        alignment = None
+                    
+                    # Limpiar contenido
+                    cell.text = ""
+                    
+                    # Crear nuevo párrafo con formato
+                    p = cell.text_frame.paragraphs[0]
+                    run = p.add_run()
+                    run.text = new_text
+                    
+                    # Aplicar formato guardado
+                    if font_name:
+                        run.font.name = font_name
+                    if font_size:
+                        run.font.size = font_size
+                    if font_bold is not None:
+                        run.font.bold = font_bold
+                    if font_color:
+                        run.font.color.rgb = font_color
+                    
+                    # Determinar alineación según el contenido
+                    # Si el placeholder es de totales acumulados, alinear a la derecha
+                    if any(placeholder in original_text for placeholder in ['{{ACUM_DEP}}', '{{ACUM_DED}}', '{{ACUM_GEN}}', '{{TOT_ACUM}}']):
+                        p.alignment = PP_ALIGN.RIGHT
+                    elif alignment is not None:
+                        p.alignment = alignment
     
     return replaced_count
 
