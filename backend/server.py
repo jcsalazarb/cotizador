@@ -948,7 +948,7 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
     """
     import base64
     from sendgrid import SendGridAPIClient
-    from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+    from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition, ContentId
     
     SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
     EMAIL_FROM = os.getenv("EMAIL_FROM", "nassasolarprecotizacion@gmail.com")
@@ -977,7 +977,7 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
         <!-- Header con Gradiente -->
         <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #ea580c 100%); padding: 40px 30px; text-align: center; position: relative;">
             <div style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 20px; display: inline-block; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-                <img src="https://raw.githubusercontent.com/jcsalazarb/cotizador/main/assets/images/loggo-Nassa.png" alt="NASSA Solar Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;">
+                <img src="cid:logo_nassa" alt="NASSA Solar Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;">
                 <p style="margin: 8px 0 0 0; color: #92400e; font-size: 16px; font-weight: 600; letter-spacing: 2px;">
                     ENERGÍA INTELIGENTE
                 </p>
@@ -1139,6 +1139,20 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
         attachment.file_type = FileType("application/pdf")
         attachment.disposition = Disposition("attachment")
         attachments.append(attachment)
+    
+    # Adjuntar logo de NASSA como inline attachment (CID)
+    logo_path = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "loggo-Nassa.png")
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            logo_data = base64.b64encode(f.read()).decode()
+        
+        logo_attachment = Attachment()
+        logo_attachment.file_content = FileContent(logo_data)
+        logo_attachment.file_name = FileName("logo-nassa.png")
+        logo_attachment.file_type = FileType("image/png")
+        logo_attachment.disposition = Disposition("inline")
+        logo_attachment.content_id = ContentId("logo_nassa")
+        attachments.append(logo_attachment)
     
     # Crear mensaje
     message = Mail(
