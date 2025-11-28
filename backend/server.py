@@ -297,10 +297,13 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
         "TotalAcum": round(TotalAcum)
     }
 
-def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDisponible: float) -> dict:
+def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDisponible: float, cotizacion_id_base: str) -> dict:
     """
     Calcula cotización ajustada al área disponible del cliente.
     Reduce número de paneles para que quepan en el espacio real.
+    
+    Args:
+        cotizacion_id_base: ID base sin sufijo (ej: "NASSA-1234567890") para mantener consistencia
     """
     parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
     parametros = load_json(parametros_path)
@@ -420,7 +423,7 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     
     return {
         "fecha": now_colombia().isoformat(),
-        "cotizacionId": "NASSA-" + str(int(now_colombia().timestamp())) + "-OP2",
+        "cotizacionId": cotizacion_id_base + "-OP2",  # Usar el mismo ID base
         "panel": {"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"], "area": areaPanel},
         "inversor": {"id": inversor["id"], "nombre": inversor["nombre"], "capacidad": inversor["capacidad"]},
         "bateria": {"id": bateria["id"], "nombre": bateria["nombre"]} if bateria else None,
@@ -566,13 +569,13 @@ def fill_ahorros_table_in_ppt(prs, tabla_ahorros: list, max_years: int = None):
                             first_run = paragraph.runs[0]
                             first_run.text = value_text
                             first_run.font.name = "Arial"
-                            first_run.font.size = Pt(9)
+                            first_run.font.size = Pt(7)
                         else:
-                            # Si no hay runs, crear uno con formato Arial 9pt
+                            # Si no hay runs, crear uno con formato Arial 7pt
                             run = paragraph.add_run()
                             run.text = value_text
                             run.font.name = "Arial"
-                            run.font.size = Pt(9)
+                            run.font.size = Pt(7)
                         
                         # Cambiar alineación para columnas numéricas
                         if col_key in ["valorKwh", "produccionAnual", "generacion", "depreciacion", 
@@ -1571,7 +1574,10 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             
             try:
                 print(f"   � Calculando segunda opción...")
-                resultado_opcion2 = calcular_segunda_opcion(req.dict(), equipos, ciudades, areaDisponible)
+                print(f"   📊 Calculando segunda opción...")
+                # Extraer ID base sin sufijo para mantener consistencia
+                cotizacion_id_base = resultado_opcion1["cotizacionId"]  # "NASSA-1234567890"
+                resultado_opcion2 = calcular_segunda_opcion(req.dict(), equipos, ciudades, areaDisponible, cotizacion_id_base)
                 print(f"   ✅ Cálculo completado:")
                 print(f"      - Paneles reducidos: {resultado_opcion2['numeroPaneles']} (vs {resultado_opcion1['numeroPaneles']} original)")
                 print(f"      - Capacidad: {resultado_opcion2['capacidadInstalada']} kW (vs {resultado_opcion1['capacidadInstalada']} kW original)")
