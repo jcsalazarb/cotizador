@@ -700,15 +700,28 @@ def replace_text_in_shape(shape, mapping: dict):
                     if k in r.text:
                         r.text = r.text.replace(k, v)
 
+def iter_all_shapes(shapes):
+    """Itera sobre todos los shapes incluyendo anidados, retornando cada uno UNA SOLA VEZ"""
+    for shape in shapes:
+        yield shape
+        # Si el shape es un grupo, procesar sus hijos también
+        if hasattr(shape, 'shapes'):
+            try:
+                for sub_shape in iter_all_shapes(shape.shapes):
+                    yield sub_shape
+            except (AttributeError, TypeError):
+                pass
+
 def replace_shape_text(shape, mapping: dict):
-    """Reemplaza texto en shapes - incluye SmartArt y shapes anidados con formato de alineación"""
+    """Reemplaza texto en shapes - SIN recursión para evitar duplicación"""
     replaced_count = 0
     
-    # 1. Reemplazar en el shape principal
-    replace_text_in_shape(shape, mapping)
+    # 1. SOLO si el shape tiene text_frame directo, reemplazar
+    if hasattr(shape, 'has_text_frame') and shape.has_text_frame:
+        replace_text_in_shape(shape, mapping)
     
     # 2. Si es una tabla, procesar celdas con formato
-    if shape.has_table:
+    if hasattr(shape, 'has_table') and shape.has_table:
         for row in shape.table.rows:
             for cell in row.cells:
                 original_text = cell.text
@@ -727,26 +740,14 @@ def replace_shape_text(shape, mapping: dict):
                                 for run in paragraph.runs:
                                     run.font.size = Pt(10)
     
-    # 3. Si es un grupo, procesar shapes internos recursivamente
-    if hasattr(shape, 'shapes'):
-        try:
-            for sub_shape in shape.shapes:
-                replaced_count += replace_shape_text(sub_shape, mapping)
-        except (AttributeError, TypeError):
-            pass
-    
-    # 4. Si tiene text_frame, aplicar alineación a valores numéricos
+    # 3. Aplicar alineación a valores numéricos (DESPUÉS del reemplazo)
     if hasattr(shape, 'text_frame') and shape.text_frame:
         for paragraph in shape.text_frame.paragraphs:
             text_content = ''.join([run.text for run in paragraph.runs])
-            # Si el texto contiene valores monetarios o numéricos, alinear a la derecha
-            if any(placeholder in text_content for placeholder in ['{{ACUM_GEN}}', '{{ACUM_DEP}}', '{{ACUM_DED}}', '{{TOT_ACUM}}']):
-                paragraph.alignment = PP_ALIGN.RIGHT
-            #elif '$' in text_content or (',' in text_content and any(c.isdigit() for c in text_content)):
-            #    paragraph.alignment = PP_ALIGN.RIGHT
-    
-    # NOTA: NO procesamos XML directamente aquí para evitar duplicación
-    # El reemplazo en text_frame y SmartArt ya es suficiente
+            # Solo alinear si ya NO contiene placeholders (ya fueron reemplazados)
+            if not '{{' in text_content:
+                if any(marker in text_content for marker in ['$', 'COP', 'kW', '%', 'años', 'm²']):
+                    paragraph.alignment = PP_ALIGN.RIGHT
     
     return replaced_count
 
@@ -788,7 +789,8 @@ def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "") -> t
     
     for slide_idx, slide in enumerate(prs.slides):
         print(f"\n   📄 Procesando diapositiva {slide_idx + 1}...")
-        for shape in slide.shapes:
+        # Usar iter_all_shapes para obtener TODOS los shapes sin duplicación
+        for shape in iter_all_shapes(slide.shapes):
             count = replace_shape_text(shape, mapping)
             total_replaced += count
     
@@ -1511,7 +1513,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         pptx_path1, pdf_path1 = fill_template_and_convert(
             req.dict(), 
             resultado_opcion1,
-            opcion="" if not necesita_segunda_opcion else "OPCIÓN 1"
+            opcion="" if not necesita_segunda_opcion else "OPCIÓN 1 DE 2"
         )
         pdf_paths.append(pdf_path1)
         pptx_paths.append(pptx_path1)
