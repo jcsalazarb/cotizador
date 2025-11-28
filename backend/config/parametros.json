@@ -17,5 +17,11 @@
     "factor_primer_ano": 0.4,
     "incremento_anual_kwh": 0.035,
     "anos_proyeccion": 30
+  },
+  "parametros_sistema": {
+    "factor_area_efectiva": 1.2,
+    "umbral_segunda_opcion": 0.92,
+    "eficiencia_panel_default": 1.0,
+    "eficiencia_inversor_default": 1.0
   }
 }

@@ -40,6 +40,7 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_DIR = os.path.join(APP_DIR, "config")
 EQUIPOS_FILE = os.path.join(CONFIG_DIR, "equipos.json")
 CIUDADES_FILE = os.path.join(CONFIG_DIR, "ciudades.json")
+PARAMETROS_FILE = os.path.join(CONFIG_DIR, "parametros.json")
 TEMPLATE_DIR = os.path.join(APP_DIR, "..", "Template")
 TEMPLATE_PPTX = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion.pptx")
 TEMPLATE_PPTX_OP2 = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion2.pptx")
@@ -169,16 +170,22 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     if not panel or not inversor:
         raise ValueError("Panel o inversor no encontrado")
     
-    # Obtener configuración de área
-    factorAreaEfectiva = equipos.get("configuracion", {}).get("factorAreaEfectiva", 1.2)
+    # Obtener configuración de área desde parámetros
+    parametros_sistema = parametros.get("parametros_sistema", {})
+    factorAreaEfectiva = parametros_sistema.get("factor_area_efectiva", 1.2)
     areaPanel = panel.get("area", 2.0)  # Default 2 m² si no existe
 
-    eficiencia = 0.90
+    # Usar eficiencia del panel seleccionado
+    eficiencia_panel = panel.get("eficienciaPanel", parametros_sistema.get("eficiencia_panel_default", 1.0))
+    eficiencia_inversor = inversor.get("eficiencia", parametros_sistema.get("eficiencia_inversor_default", 1.0))
+    
     consumoDiario = consumoMensual / 30
-    energiaPanelDia = (panel["capacidad"] * eficiencia * hsp) / 1000
+    energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp) / 1000
     numeroPaneles = int(ceil((consumoDiario * 1.2) / energiaPanelDia))
     capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000
-    generacionMensual = numeroPaneles * energiaPanelDia * 30
+    
+    # Aplicar eficiencia del inversor en la generación
+    generacionMensual = numeroPaneles * energiaPanelDia * 30 * eficiencia_inversor
     generacionAnual = generacionMensual * 12
     numeroInversores = int(ceil(capacidadInstalada / (inversor["capacidad"] / 1000)))
     
@@ -322,17 +329,23 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
     bateria = next((x for x in equipos["baterias"] if x["id"] == data.get("bateria")), None) if data.get("bateria") else None
     
-    factorAreaEfectiva = equipos.get("configuracion", {}).get("factorAreaEfectiva", 1.2)
+    # Obtener parámetros del sistema
+    parametros_sistema = parametros.get("parametros_sistema", {})
+    factorAreaEfectiva = parametros_sistema.get("factor_area_efectiva", 1.2)
     areaPanel = panel.get("area", 2.0)
     
     # CALCULAR NÚMERO MÁXIMO DE PANELES QUE CABEN
     numeroPaneles = max(1, int(areaDisponible / (areaPanel * factorAreaEfectiva)))
     
-    # Recalcular todo con paneles ajustados
-    eficiencia = 0.90
-    energiaPanelDia = (panel["capacidad"] * eficiencia * hsp) / 1000
+    # Recalcular todo con paneles ajustados usando eficiencias específicas
+    eficiencia_panel = panel.get("eficienciaPanel", parametros_sistema.get("eficiencia_panel_default", 1.0))
+    eficiencia_inversor = inversor.get("eficiencia", parametros_sistema.get("eficiencia_inversor_default", 1.0))
+    
+    energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp) / 1000
     capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000
-    generacionMensual = numeroPaneles * energiaPanelDia * 30
+    
+    # Aplicar eficiencia del inversor en la generación
+    generacionMensual = numeroPaneles * energiaPanelDia * 30 * eficiencia_inversor
     generacionAnual = generacionMensual * 12
     numeroInversores = int(ceil(capacidadInstalada / (inversor["capacidad"] / 1000)))
     
@@ -1312,9 +1325,9 @@ def create_panel(panel: dict):
     if not all(k in panel for k in required):
         raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
     
-    # Agregar eficienciaPanel por defecto si no existe
+    # Agregar eficienciaPanel por defecto si no existe (100%)
     if "eficienciaPanel" not in panel:
-        panel["eficienciaPanel"] = 0.90
+        panel["eficienciaPanel"] = 1.0
     
     data["paneles"].append(panel)
     
@@ -1387,9 +1400,9 @@ def create_inversor(inversor: dict):
     if not all(k in inversor for k in required):
         raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
     
-    # Agregar eficiencia por defecto si no existe
+    # Agregar eficiencia por defecto si no existe (100%)
     if "eficiencia" not in inversor:
-        inversor["eficiencia"] = 0.95
+        inversor["eficiencia"] = 1.0
     
     # Validar tipo_sistema si se proporciona
     if "tipo_sistema" in inversor and inversor["tipo_sistema"] not in ["monofasico", "bifasico", "trifasico"]:
@@ -1516,6 +1529,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     """Generar cotización completa con 1 o 2 opciones según área disponible"""
     equipos = load_json(EQUIPOS_FILE)
     ciudades = load_json(CIUDADES_FILE)
+    parametros = load_json(PARAMETROS_FILE)
     
     try:
         # Calcular OPCIÓN 1 (ideal sin restricciones)
@@ -1525,10 +1539,14 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     except Exception as e:
         raise HTTPException(500, f"Error cálculo: {e}")
 
-    # Verificar si se necesita segunda opción (área disponible < 92% del área requerida)
+    # Verificar si se necesita segunda opción (área disponible < umbral del área requerida)
     areaDisponible = float(req.areaDisponible or 0)
     areaRequerida = resultado_opcion1["areaRequerida"]
-    umbral = areaRequerida * 0.92
+    
+    # Obtener umbral desde parámetros (default 92%)
+    parametros_sistema = parametros.get("parametros_sistema", {})
+    umbral_porcentaje = parametros_sistema.get("umbral_segunda_opcion", 0.92)
+    umbral = areaRequerida * umbral_porcentaje
     
     # Logs detallados para diagnóstico
     diagnostico = {
