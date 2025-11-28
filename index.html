@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Cotizador NASSA Solar</title>
+  <title>Cotizador Nassa Solar - Energía Renovable</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Opcional: Tailwind para consistencia con indexcanva -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -70,6 +70,32 @@
       border:2px solid #d9e1ea;border-radius:8px;
       background:#fafcfe;font-size:.9rem;
       transition:.15s;
+      color:#222;
+    }
+    select {
+      cursor:pointer;
+      appearance:auto;
+      -webkit-appearance:menulist;
+      -moz-appearance:menulist;
+      min-height:42px;
+    }
+    select option {
+      padding:8px 12px;
+      background:#fff;
+      color:#222;
+      font-size:.9rem;
+      min-height:32px;
+    }
+    select option:first-child {
+      color:#888;
+      font-style:italic;
+    }
+    select option:hover {
+      background:#e6f2ff;
+    }
+    select option:checked {
+      background:#0c5fa8;
+      color:#fff;
     }
     input:focus, select:focus {outline:none;border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(12,95,168,.15);}
     .submit-bar {padding:24px 32px;text-align:center;background:#f9fbfd;}
