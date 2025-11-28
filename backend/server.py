@@ -543,17 +543,34 @@ def fill_ahorros_table_in_ppt(prs, tabla_ahorros: list, max_years: int = None):
         año_data = tabla_ahorros[i]
         año = año_data.get("año", i + 1)
         
-        # Función auxiliar para formatear celdas con alineación derecha
+        # Función auxiliar para formatear celdas SIN modificar formato original
         def set_cell_value(col_key, value_text):
             if col_key in col_map:
                 cell = table.cell(row_idx, col_map[col_key])
-                cell.text = value_text
-                # Alinear a la derecha y establecer tamaño de fuente
+                
+                # En lugar de cell.text = value_text (que borra formato),
+                # reemplazar run por run preservando formato original
                 if cell.text_frame and cell.text_frame.paragraphs:
                     for paragraph in cell.text_frame.paragraphs:
-                        paragraph.alignment = PP_ALIGN.RIGHT
-                        for run in paragraph.runs:
-                            run.font.size = Pt(9)  # Tamaño de fuente 9pt
+                        # Guardar alineación original antes de modificar
+                        original_alignment = paragraph.alignment
+                        
+                        # Si hay runs, usar el primer run
+                        if paragraph.runs:
+                            # Limpiar texto de todos los runs
+                            for run in paragraph.runs:
+                                run.text = ""
+                            # Poner el nuevo valor en el primer run SIN cambiar su formato
+                            paragraph.runs[0].text = value_text
+                        else:
+                            # Si no hay runs, crear uno sin formato específico
+                            run = paragraph.add_run()
+                            run.text = value_text
+                        
+                        # Solo cambiar alineación para columnas numéricas
+                        if col_key in ["valorKwh", "produccionAnual", "generacion", "depreciacion", 
+                                     "deduccion", "costoMtto", "ahorroAño", "acumulado", "roi"]:
+                            paragraph.alignment = PP_ALIGN.RIGHT
         
         # Llenar columnas con valores formateados
         set_cell_value("año", str(año))
@@ -649,26 +666,48 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
     }
 
 def replace_text_in_shape(shape, mapping: dict):
-    """Reemplaza texto en un shape individual haciendo buscar-y-reemplazar simple"""
+    """Reemplaza texto en un shape individual manejando placeholders divididos entre runs"""
     if not hasattr(shape, 'has_text_frame') or not shape.has_text_frame:
         return
     
     for paragraph in shape.text_frame.paragraphs:
-        # Estrategia simple: reemplazar en cada run individualmente
-        # Esto preserva TODOS los formatos originales
+        # PASO 1: Intentar reemplazo simple run por run (caso ideal)
         for run in paragraph.runs:
-            if run.text:  # Solo si el run tiene texto
+            if run.text:
                 original_text = run.text
                 new_text = original_text
                 
-                # Reemplazar cada placeholder en este run
+                # Reemplazar placeholders completos dentro de este run
                 for placeholder, value in mapping.items():
                     if placeholder in new_text:
                         new_text = new_text.replace(placeholder, value)
                 
-                # Solo actualizar si hubo cambios
                 if new_text != original_text:
                     run.text = new_text
+        
+        # PASO 2: Verificar si quedan placeholders divididos entre runs
+        full_text = "".join(r.text for r in paragraph.runs)
+        
+        # Si hay placeholders en el texto completo pero no fueron reemplazados
+        has_unreplaced = any(placeholder in full_text for placeholder in mapping.keys())
+        
+        if has_unreplaced:
+            # Placeholder dividido entre runs - consolidar
+            replaced_text = full_text
+            for placeholder, value in mapping.items():
+                replaced_text = replaced_text.replace(placeholder, value)
+            
+            if replaced_text != full_text:
+                # Necesitamos consolidar: guardar formato del primer run
+                if paragraph.runs:
+                    first_run = paragraph.runs[0]
+                    
+                    # Limpiar todos los runs
+                    for run in paragraph.runs:
+                        run.text = ""
+                    
+                    # Poner todo el texto en el primer run
+                    first_run.text = replaced_text
 
 def replace_shape_text(shape, mapping: dict):
     """Reemplaza texto en shapes con estrategia simple de buscar-y-reemplazar"""
@@ -686,10 +725,7 @@ def replace_shape_text(shape, mapping: dict):
             for cell in row.cells:
                 # Procesar cada párrafo y run de la celda
                 for paragraph in cell.text_frame.paragraphs:
-                    # Guardar alineación original
-                    original_alignment = paragraph.alignment
-                    
-                    # Reemplazar en cada run
+                    # PASO 1: Intentar reemplazo simple run por run
                     for run in paragraph.runs:
                         if run.text:
                             original_text = run.text
@@ -704,10 +740,30 @@ def replace_shape_text(shape, mapping: dict):
                             # Actualizar solo si hubo cambios
                             if new_text != original_text:
                                 run.text = new_text
-                                
-                                # Si es un placeholder de totales, ajustar alineación
-                                if any(ph in original_text for ph in ['{{ACUM_DEP}}', '{{ACUM_DED}}', '{{ACUM_GEN}}', '{{TOT_ACUM}}']):
-                                    paragraph.alignment = PP_ALIGN.RIGHT
+                    
+                    # PASO 2: Verificar placeholders divididos
+                    full_text = "".join(r.text for r in paragraph.runs)
+                    has_unreplaced = any(placeholder in full_text for placeholder in mapping.keys())
+                    
+                    if has_unreplaced:
+                        # Placeholder dividido - consolidar
+                        replaced_text = full_text
+                        for k, v in mapping.items():
+                            replaced_text = replaced_text.replace(k, v)
+                            if k in full_text:
+                                replaced_count += 1
+                        
+                        if replaced_text != full_text and paragraph.runs:
+                            # Limpiar todos los runs
+                            for run in paragraph.runs:
+                                run.text = ""
+                            # Poner texto en el primer run
+                            paragraph.runs[0].text = replaced_text
+                    
+                    # Ajustar alineación para placeholders de totales
+                    cell_text = "".join(r.text for r in paragraph.runs)
+                    if any(ph in cell_text for ph in ['ACUM_DEP', 'ACUM_DED', 'ACUM_GEN', 'TOT_ACUM', '$']):
+                        paragraph.alignment = PP_ALIGN.RIGHT
     
     return replaced_count
 
@@ -904,9 +960,7 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
         <!-- Header con Gradiente -->
         <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #ea580c 100%); padding: 40px 30px; text-align: center; position: relative;">
             <div style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 20px; display: inline-block; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-                <h1 style="margin: 0; color: #ea580c; font-size: 32px; font-weight: 800; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">
-                    ☀️ NASSA SOLAR
-                </h1>
+                <img src="https://raw.githubusercontent.com/jcsalazarb/cotizador/main/assets/images/loggo-Nassa.png" alt="NASSA Solar Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;">
                 <p style="margin: 8px 0 0 0; color: #92400e; font-size: 16px; font-weight: 600; letter-spacing: 2px;">
                     ENERGÍA INTELIGENTE
                 </p>
