@@ -649,57 +649,29 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
     }
 
 def replace_text_in_shape(shape, mapping: dict):
-    """Reemplaza texto en un shape individual (text_frame) preservando formato"""
+    """Reemplaza texto en un shape individual haciendo buscar-y-reemplazar simple"""
     if not hasattr(shape, 'has_text_frame') or not shape.has_text_frame:
         return
     
     for paragraph in shape.text_frame.paragraphs:
-        # Obtener texto completo del párrafo para detectar placeholders divididos
-        full_text = "".join(r.text for r in paragraph.runs)
-        
-        # Verificar si hay placeholders en este párrafo
-        has_placeholders = any(placeholder in full_text for placeholder in mapping.keys())
-        if not has_placeholders:
-            continue
-        
-        # Reemplazar placeholders en el texto completo
-        replaced_text = full_text
-        for placeholder, value in mapping.items():
-            replaced_text = replaced_text.replace(placeholder, value)
-        
-        # Si no hubo cambios, continuar
-        if replaced_text == full_text:
-            continue
-        
-        # Guardar formato del primer run (el que generalmente tiene el formato base)
-        first_run = paragraph.runs[0] if paragraph.runs else None
-        if not first_run:
-            continue
-        
-        # Guardar propiedades de formato
-        font_name = first_run.font.name
-        font_size = first_run.font.size
-        font_bold = first_run.font.bold
-        font_color = first_run.font.color.rgb if first_run.font.color.type == 1 else None
-        
-        # Limpiar el texto de todos los runs existentes
+        # Estrategia simple: reemplazar en cada run individualmente
+        # Esto preserva TODOS los formatos originales
         for run in paragraph.runs:
-            run.text = ""
-        
-        # Usar el primer run para el nuevo texto (en lugar de crear uno nuevo)
-        first_run.text = replaced_text
-        
-        # Aplicar formato original
-        first_run.font.name = font_name
-        if font_size:
-            first_run.font.size = font_size
-        if font_bold is not None:
-            first_run.font.bold = font_bold
-        if font_color:
-            first_run.font.color.rgb = font_color
+            if run.text:  # Solo si el run tiene texto
+                original_text = run.text
+                new_text = original_text
+                
+                # Reemplazar cada placeholder en este run
+                for placeholder, value in mapping.items():
+                    if placeholder in new_text:
+                        new_text = new_text.replace(placeholder, value)
+                
+                # Solo actualizar si hubo cambios
+                if new_text != original_text:
+                    run.text = new_text
 
 def replace_shape_text(shape, mapping: dict):
-    """Reemplaza texto en shapes preservando formato y alineación"""
+    """Reemplaza texto en shapes con estrategia simple de buscar-y-reemplazar"""
     from pptx.enum.text import PP_ALIGN
     
     replaced_count = 0
@@ -708,62 +680,34 @@ def replace_shape_text(shape, mapping: dict):
     if hasattr(shape, 'has_text_frame') and shape.has_text_frame:
         replace_text_in_shape(shape, mapping)
     
-    # 2. Si es tabla, procesar celdas con cuidado especial en formato
+    # 2. Si es tabla, procesar cada celda con enfoque run-by-run
     if hasattr(shape, 'has_table') and shape.has_table:
         for row in shape.table.rows:
             for cell in row.cells:
-                # Obtener texto original
-                original_text = cell.text
-                new_text = original_text
-                
-                # Reemplazar placeholders
-                for k, v in mapping.items():
-                    if k in new_text:
-                        new_text = new_text.replace(k, v)
-                        replaced_count += 1
-                
-                # Si hubo cambios, actualizar celda
-                if new_text != original_text:
-                    # Guardar formato del primer párrafo/run
-                    first_paragraph = cell.text_frame.paragraphs[0] if cell.text_frame.paragraphs else None
-                    if first_paragraph and first_paragraph.runs:
-                        first_run = first_paragraph.runs[0]
-                        font_name = first_run.font.name
-                        font_size = first_run.font.size
-                        font_bold = first_run.font.bold
-                        font_color = first_run.font.color.rgb if first_run.font.color.type == 1 else None
-                        alignment = first_paragraph.alignment
-                    else:
-                        font_name = None
-                        font_size = None
-                        font_bold = None
-                        font_color = None
-                        alignment = None
+                # Procesar cada párrafo y run de la celda
+                for paragraph in cell.text_frame.paragraphs:
+                    # Guardar alineación original
+                    original_alignment = paragraph.alignment
                     
-                    # Limpiar contenido
-                    cell.text = ""
-                    
-                    # Crear nuevo párrafo con formato
-                    p = cell.text_frame.paragraphs[0]
-                    run = p.add_run()
-                    run.text = new_text
-                    
-                    # Aplicar formato guardado
-                    if font_name:
-                        run.font.name = font_name
-                    if font_size:
-                        run.font.size = font_size
-                    if font_bold is not None:
-                        run.font.bold = font_bold
-                    if font_color:
-                        run.font.color.rgb = font_color
-                    
-                    # Determinar alineación según el contenido
-                    # Si el placeholder es de totales acumulados, alinear a la derecha
-                    if any(placeholder in original_text for placeholder in ['{{ACUM_DEP}}', '{{ACUM_DED}}', '{{ACUM_GEN}}', '{{TOT_ACUM}}']):
-                        p.alignment = PP_ALIGN.RIGHT
-                    elif alignment is not None:
-                        p.alignment = alignment
+                    # Reemplazar en cada run
+                    for run in paragraph.runs:
+                        if run.text:
+                            original_text = run.text
+                            new_text = original_text
+                            
+                            # Reemplazar placeholders
+                            for k, v in mapping.items():
+                                if k in new_text:
+                                    new_text = new_text.replace(k, v)
+                                    replaced_count += 1
+                            
+                            # Actualizar solo si hubo cambios
+                            if new_text != original_text:
+                                run.text = new_text
+                                
+                                # Si es un placeholder de totales, ajustar alineación
+                                if any(ph in original_text for ph in ['{{ACUM_DEP}}', '{{ACUM_DED}}', '{{ACUM_GEN}}', '{{TOT_ACUM}}']):
+                                    paragraph.alignment = PP_ALIGN.RIGHT
     
     return replaced_count
 
