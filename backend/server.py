@@ -1506,6 +1506,18 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     # Verificar si se necesita segunda opción (área disponible < 92% del área requerida)
     areaDisponible = float(req.areaDisponible or 0)
     areaRequerida = resultado_opcion1["areaRequerida"]
+    umbral = areaRequerida * 0.92
+    
+    # Logs detallados para diagnóstico
+    diagnostico = {
+        "areaDisponible_raw": req.areaDisponible,
+        "areaDisponible_float": areaDisponible,
+        "areaRequerida": areaRequerida,
+        "umbral_92": round(umbral, 2),
+        "condicion1_mayor_cero": areaDisponible > 0,
+        "condicion2_menor_umbral": areaDisponible < umbral,
+        "generara_segunda_opcion": areaDisponible > 0 and areaDisponible < umbral
+    }
     
     print(f"\n{'='*80}")
     print(f"🔍 DIAGNÓSTICO COMPLETO - SEGUNDA OPCIÓN")
@@ -1516,12 +1528,13 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     print(f"   areaDisponible (float convertido): {areaDisponible}")
     print(f"\n📊 CÁLCULOS:")
     print(f"   Área requerida (opción 1): {areaRequerida} m²")
-    print(f"   Umbral 92%: {areaRequerida * 0.92:.2f} m²")
+    print(f"   Umbral 92%: {umbral:.2f} m²")
     print(f"\n✅ EVALUACIÓN DE CONDICIONES:")
     print(f"   [1] ¿Área disponible > 0?: {areaDisponible > 0}")
-    print(f"   [2] ¿Área disponible < umbral?: {areaDisponible < (areaRequerida * 0.92)}")
+    print(f"   [2] ¿Área disponible < umbral?: {areaDisponible < umbral}")
+    print(f"\n📋 DIAGNÓSTICO JSON: {diagnostico}")
     
-    necesita_segunda_opcion = areaDisponible > 0 and areaDisponible < (areaRequerida * 0.92)
+    necesita_segunda_opcion = areaDisponible > 0 and areaDisponible < umbral
     print(f"\n{'🎯 DECISIÓN FINAL: ' + ('✅ SÍ GENERA 2 OPCIONES' if necesita_segunda_opcion else '❌ NO, SOLO 1 OPCIÓN')}")
     print(f"{'='*80}\n")
     
@@ -1696,7 +1709,8 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         "mensaje": mensaje,
         "emailEnviado": email_enviado,
         "numOpciones": num_opciones,
-        "resumen": resumen_completo
+        "resumen": resumen_completo,
+        "diagnostico": diagnostico  # Agregar diagnóstico para debug
     })
 
 # ========================================
