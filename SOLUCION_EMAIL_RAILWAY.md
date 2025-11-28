@@ -1,4 +1,4 @@
-# Solución al problema de envío de emails en Railway
+Te# Solución al problema de envío de emails en Railway
 
 ## 🔴 Problema identificado
 Railway **bloquea el puerto 587** (SMTP STARTTLS) por políticas de seguridad contra spam. Esto es común en servicios de hosting gratuitos.

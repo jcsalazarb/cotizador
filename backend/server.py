@@ -544,34 +544,37 @@ def fill_ahorros_table_in_ppt(prs, tabla_ahorros: list, max_years: int = None):
         año_data = tabla_ahorros[i]
         año = año_data.get("año", i + 1)
         
-        # Función auxiliar para formatear celdas SIN modificar formato original
+        # Función auxiliar para formatear celdas con formato ARIAL 9pt consistente
         def set_cell_value(col_key, value_text):
             if col_key in col_map:
                 cell = table.cell(row_idx, col_map[col_key])
                 
-                # En lugar de cell.text = value_text (que borra formato),
-                # reemplazar run por run preservando formato original
+                # Aplicar formato Arial 9pt de forma explícita
                 if cell.text_frame and cell.text_frame.paragraphs:
                     for paragraph in cell.text_frame.paragraphs:
-                        # Guardar alineación original antes de modificar
-                        original_alignment = paragraph.alignment
-                        
                         # Si hay runs, usar el primer run
                         if paragraph.runs:
                             # Limpiar texto de todos los runs
                             for run in paragraph.runs:
                                 run.text = ""
-                            # Poner el nuevo valor en el primer run SIN cambiar su formato
-                            paragraph.runs[0].text = value_text
+                            # Poner el nuevo valor en el primer run y aplicar formato
+                            first_run = paragraph.runs[0]
+                            first_run.text = value_text
+                            first_run.font.name = "Arial"
+                            first_run.font.size = Pt(9)
                         else:
-                            # Si no hay runs, crear uno sin formato específico
+                            # Si no hay runs, crear uno con formato Arial 9pt
                             run = paragraph.add_run()
                             run.text = value_text
+                            run.font.name = "Arial"
+                            run.font.size = Pt(9)
                         
-                        # Solo cambiar alineación para columnas numéricas
+                        # Cambiar alineación para columnas numéricas
                         if col_key in ["valorKwh", "produccionAnual", "generacion", "depreciacion", 
                                      "deduccion", "costoMtto", "ahorroAño", "acumulado", "roi"]:
                             paragraph.alignment = PP_ALIGN.RIGHT
+                        else:
+                            paragraph.alignment = PP_ALIGN.CENTER
         
         # Llenar columnas con valores formateados
         set_cell_value("año", str(año))
