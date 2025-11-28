@@ -142,7 +142,7 @@
       "tipo_sistema": "trifasico"
     },
     {
-      "id": "INV8",
+      "id": "inv9",
       "nombre": "Inversor 3 kW 24V Hibrido BiF Must MPPT 80A",
       "capacidad": 3000,
       "precio": 1950000,
