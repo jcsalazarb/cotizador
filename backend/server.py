@@ -682,24 +682,21 @@ def replace_text_in_shape(shape, mapping: dict):
         font_bold = first_run.font.bold
         font_color = first_run.font.color.rgb if first_run.font.color.type == 1 else None
         
-        # Limpiar todos los runs existentes
-        for _ in range(len(paragraph.runs)):
-            p_element = paragraph._element
-            r_element = paragraph.runs[0]._element
-            p_element.remove(r_element)
+        # Limpiar el texto de todos los runs existentes
+        for run in paragraph.runs:
+            run.text = ""
         
-        # Crear un nuevo run con el texto reemplazado y formato original
-        new_run = paragraph.add_run()
-        new_run.text = replaced_text
+        # Usar el primer run para el nuevo texto (en lugar de crear uno nuevo)
+        first_run.text = replaced_text
         
         # Aplicar formato original
-        new_run.font.name = font_name
+        first_run.font.name = font_name
         if font_size:
-            new_run.font.size = font_size
+            first_run.font.size = font_size
         if font_bold is not None:
-            new_run.font.bold = font_bold
+            first_run.font.bold = font_bold
         if font_color:
-            new_run.font.color.rgb = font_color
+            first_run.font.color.rgb = font_color
 
 def replace_shape_text(shape, mapping: dict):
     """Reemplaza texto en shapes preservando formato y alineación"""
