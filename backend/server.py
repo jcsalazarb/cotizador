@@ -649,78 +649,30 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
     }
 
 def replace_text_in_shape(shape, mapping: dict):
-    """Reemplaza texto en un shape individual (text_frame) - VERSION MEJORADA"""
-    if not shape.has_text_frame:
+    """Reemplaza texto en un shape individual (text_frame)"""
+    if not hasattr(shape, 'has_text_frame') or not shape.has_text_frame:
         return
     
-    for p in shape.text_frame.paragraphs:
-        # Construir texto completo del párrafo
-        full_text = "".join([r.text for r in p.runs])
-        
-        # Verificar si algún placeholder existe
-        needs_replacement = any(k in full_text for k in mapping.keys())
-        
-        if needs_replacement:
-            # Reemplazar todos los placeholders
-            new_text = full_text
-            for k, v in mapping.items():
-                new_text = new_text.replace(k, v)
-            
-            # Guardar formato del primer run (si existe)
-            original_font = None
-            if len(p.runs) > 0:
-                original_font = p.runs[0].font
-            
-            # LIMPIAR TODOS LOS RUNS
-            for _ in range(len(p.runs)):
-                try:
-                    run = p.runs[0]
-                    p._element.remove(run._element)
-                except:
-                    break
-            
-            # Crear UN SOLO RUN con el texto reemplazado
-            new_run = p.add_run()
-            new_run.text = new_text
-            
-            # Restaurar formato si existía
-            if original_font:
-                try:
-                    new_run.font.name = original_font.name
-                    new_run.font.size = original_font.size
-                    new_run.font.bold = original_font.bold
-                    new_run.font.italic = original_font.italic
-                    new_run.font.color.rgb = original_font.color.rgb
-                except:
-                    pass
-        else:
-            # Sin placeholders, reemplazar run por run (preserva formato)
-            for r in p.runs:
-                for k, v in mapping.items():
-                    if k in r.text:
-                        r.text = r.text.replace(k, v)
-
-def iter_all_shapes(shapes):
-    """Itera sobre todos los shapes incluyendo anidados, retornando cada uno UNA SOLA VEZ"""
-    for shape in shapes:
-        yield shape
-        # Si el shape es un grupo, procesar sus hijos también
-        if hasattr(shape, 'shapes'):
-            try:
-                for sub_shape in iter_all_shapes(shape.shapes):
-                    yield sub_shape
-            except (AttributeError, TypeError):
-                pass
+    for paragraph in shape.text_frame.paragraphs:
+        # Procesar cada run individualmente SIN reconstruir
+        for run in paragraph.runs:
+            original = run.text
+            if original and any(placeholder in original for placeholder in mapping.keys()):
+                # Reemplazar SOLO en este run
+                new_text = original
+                for placeholder, value in mapping.items():
+                    new_text = new_text.replace(placeholder, value)
+                run.text = new_text
 
 def replace_shape_text(shape, mapping: dict):
-    """Reemplaza texto en shapes - SIN recursión para evitar duplicación"""
+    """Reemplaza texto en shapes - versión simplificada"""
     replaced_count = 0
     
-    # 1. SOLO si el shape tiene text_frame directo, reemplazar
+    # 1. Si tiene text_frame, procesar
     if hasattr(shape, 'has_text_frame') and shape.has_text_frame:
         replace_text_in_shape(shape, mapping)
     
-    # 2. Si es una tabla, procesar celdas con formato
+    # 2. Si es tabla, procesar celdas
     if hasattr(shape, 'has_table') and shape.has_table:
         for row in shape.table.rows:
             for cell in row.cells:
@@ -732,22 +684,6 @@ def replace_shape_text(shape, mapping: dict):
                         replaced_count += 1
                 if new_text != original_text:
                     cell.text = new_text
-                    # Aplicar alineación derecha si es valor numérico
-                    if '$' in new_text or ',' in new_text or new_text.replace('.', '').replace('-', '').isdigit():
-                        if cell.text_frame and cell.text_frame.paragraphs:
-                            for paragraph in cell.text_frame.paragraphs:
-                                paragraph.alignment = PP_ALIGN.RIGHT
-                                for run in paragraph.runs:
-                                    run.font.size = Pt(10)
-    
-    # 3. Aplicar alineación a valores numéricos (DESPUÉS del reemplazo)
-    if hasattr(shape, 'text_frame') and shape.text_frame:
-        for paragraph in shape.text_frame.paragraphs:
-            text_content = ''.join([run.text for run in paragraph.runs])
-            # Solo alinear si ya NO contiene placeholders (ya fueron reemplazados)
-            if not '{{' in text_content:
-                if any(marker in text_content for marker in ['$', 'COP', 'kW', '%', 'años', 'm²']):
-                    paragraph.alignment = PP_ALIGN.RIGHT
     
     return replaced_count
 
@@ -789,8 +725,8 @@ def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "") -> t
     
     for slide_idx, slide in enumerate(prs.slides):
         print(f"\n   📄 Procesando diapositiva {slide_idx + 1}...")
-        # Usar iter_all_shapes para obtener TODOS los shapes sin duplicación
-        for shape in iter_all_shapes(slide.shapes):
+        # Procesar cada shape directamente (sin recursión)
+        for shape in slide.shapes:
             count = replace_shape_text(shape, mapping)
             total_replaced += count
     
