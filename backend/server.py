@@ -42,6 +42,7 @@ EQUIPOS_FILE = os.path.join(CONFIG_DIR, "equipos.json")
 CIUDADES_FILE = os.path.join(CONFIG_DIR, "ciudades.json")
 TEMPLATE_DIR = os.path.join(APP_DIR, "..", "Template")
 TEMPLATE_PPTX = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion.pptx")
+TEMPLATE_PPTX_OP2 = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion2.pptx")
 
 # ========================================
 # 🔒 CONFIGURACIÓN DE SEGURIDAD
@@ -767,13 +768,17 @@ def replace_shape_text(shape, mapping: dict):
     
     return replaced_count
 
-def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "") -> tuple:
+def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "", template_path: str = None) -> tuple:
     """
     Llena template y convierte a PDF
     opcion: "" para una sola opción, "OPCIÓN 1" o "OPCIÓN 2 - Ajustada a área disponible"
+    template_path: Ruta al template PPTX (usa TEMPLATE_PPTX por defecto)
     """
-    if not os.path.isfile(TEMPLATE_PPTX):
-        raise RuntimeError("Template PPTX no encontrado")
+    # Usar template especificado o el por defecto
+    template_to_use = template_path if template_path else TEMPLATE_PPTX
+    
+    if not os.path.isfile(template_to_use):
+        raise RuntimeError(f"Template PPTX no encontrado: {template_to_use}")
     
     # Crear archivo temporal con nombre único que incluya timestamp
     timestamp_ms = int(datetime.now().timestamp() * 1000)
@@ -785,8 +790,9 @@ def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "") -> t
     os.close(fd_temp)
     
     # Copiar template original (FRESCO) al archivo temporal
-    shutil.copy(TEMPLATE_PPTX, filled_path)
+    shutil.copy(template_to_use, filled_path)
     print(f"\n📄 ===== GENERANDO PDF {opcion if opcion else '(ÚNICA OPCIÓN)'} =====")
+    print(f"   Template usado: {os.path.basename(template_to_use)}")
     print(f"   Template copiado a: {os.path.basename(filled_path)}")
     print(f"   Paneles: {resultado['numeroPaneles']}")
     print(f"   Capacidad: {resultado['capacidadInstalada']} kW")
@@ -1550,18 +1556,36 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
                 print(f"      - Área ajustada: {resultado_opcion2['areaRequerida']} m²")
                 print(f"      - Valor: ${resultado_opcion2['valorTotalSistema']:,.0f} (vs ${resultado_opcion1['valorTotalSistema']:,.0f} original)")
                 
-                print(f"   📄 Generando PDF de segunda opción...")
-                pptx_path2, pdf_path2 = fill_template_and_convert(
-                    req.dict(),
-                    resultado_opcion2,
-                    opcion="OPCIÓN 2 - Ajustada a área disponible"
-                )
-                pdf_paths.append(pdf_path2)
-                pptx_paths.append(pptx_path2)
-                opciones.append(resultado_opcion2)
-                num_opciones = 2
-                print(f"   ✅ Segunda opción generada: {resultado_opcion2['numeroPaneles']} paneles - {os.path.basename(pdf_path2)}")
-                print(f"   📦 Total PDFs generados: {len(pdf_paths)}")
+                print(f"   📄 Generando PDF de segunda opción con template diferente...")
+                
+                # Verificar que existe Template-PreCotizacion2.pptx
+                if os.path.isfile(TEMPLATE_PPTX_OP2):
+                    pptx_path2, pdf_path2 = fill_template_and_convert(
+                        req.dict(),
+                        resultado_opcion2,
+                        opcion="OPCIÓN 2 - Ajustada a área disponible",
+                        template_path=TEMPLATE_PPTX_OP2  # Usar template diferente
+                    )
+                    pdf_paths.append(pdf_path2)
+                    pptx_paths.append(pptx_path2)
+                    opciones.append(resultado_opcion2)
+                    num_opciones = 2
+                    print(f"   ✅ Segunda opción generada con Template-PreCotizacion2.pptx")
+                    print(f"   ✅ Resultado: {resultado_opcion2['numeroPaneles']} paneles - {os.path.basename(pdf_path2)}")
+                    print(f"   📦 Total PDFs generados: {len(pdf_paths)}")
+                else:
+                    print(f"   ⚠️ Template-PreCotizacion2.pptx NO ENCONTRADO - usando template principal")
+                    pptx_path2, pdf_path2 = fill_template_and_convert(
+                        req.dict(),
+                        resultado_opcion2,
+                        opcion="OPCIÓN 2 - Ajustada a área disponible"
+                    )
+                    pdf_paths.append(pdf_path2)
+                    pptx_paths.append(pptx_path2)
+                    opciones.append(resultado_opcion2)
+                    num_opciones = 2
+                    print(f"   ✅ Segunda opción generada (fallback): {resultado_opcion2['numeroPaneles']} paneles")
+                    print(f"   📦 Total PDFs generados: {len(pdf_paths)}")
             except Exception as e:
                 print(f"   ❌ ERROR GENERANDO SEGUNDA OPCIÓN: {e}")
                 import traceback
