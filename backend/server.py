@@ -356,46 +356,51 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     ahorroMensualEnergia = generacionMensual * valorKwh
     ahorroAnualEnergia = ahorroMensualEnergia * 12
     
-    # Fiscales (misma lógica)
-    tasaRenta = fiscales["tasa_renta"]
-    deduccionRentaBase = min(valorTotalSistema * fiscales["deduccion_renta_porcentaje"], valorFactura * 12 * fiscales["deduccion_renta_tope_anios"])
-    deduccionRentaEfectiva = deduccionRentaBase * tasaRenta
-    depreciacionAnual = (valorTotalSistema / fiscales["depreciacion_anios"]) * tasaRenta
-    ahorroAnualDepreciacion = depreciacionAnual
-    ahorroAnualDeduccion = deduccionRentaEfectiva / fiscales["deduccion_renta_aplicacion_anios"]
+    # Fiscales - usar nombres correctos del parametros.json
+    deduccionRentaBase = subtotalAntesIVA * fiscales["deduccion_renta_base_porcentaje"]
+    deduccionRentaEfectiva = deduccionRentaBase * fiscales["impuesto_renta_porcentaje"]
+    ahorroAnualDeduccion = (deduccionRentaEfectiva / fiscales["anos_deduccion"])
+    depreciacionAnual = subtotalAntesIVA / fiscales["anos_depreciacion"]
+    ahorroAnualDepreciacion = depreciacionAnual * fiscales["impuesto_renta_porcentaje"]
     
-    # Proyección 25 años (misma lógica)
-    tasaIncremento = proyeccion["tasa_incremento_costo_energia"]
-    tasaDegradacion = proyeccion["tasa_degradacion_paneles"]
-    eficienciaPrimerAño = proyeccion["eficiencia_primer_anio"]
+    # Proyección 30 años - usar nombres correctos
+    anos_proyeccion = proyeccion["anos_proyeccion"]
+    degradacion_anual = proyeccion["degradacion_anual_panel"]
+    factor_primer_ano = proyeccion["factor_primer_ano"]
+    incremento_anual = proyeccion["incremento_anual_kwh"]
+    anos_depreciacion = fiscales["anos_depreciacion"]
+    anos_deduccion = fiscales["anos_deduccion"]
     
     tabla = []
     acumxgen = acumxdeduc = acumxdepre = 0
     ahorroAcum = 0
     payback = None
+    costoMantBase = capacidadInstalada * mantenimientoAnual
+    alcanzado = False
     
-    for year in range(1, 26):
-        valorKwhAño = valorKwh * ((1 + tasaIncremento) ** (year - 1))
-        eficienciaAño = eficienciaPrimerAño if year == 1 else (1 - tasaDegradacion * (year - 1))
-        prodAnual = generacionAnual * eficienciaAño
-        ahorroGeneracion = prodAnual * valorKwhAño
+    for year in range(1, anos_proyeccion + 1):
+        valorKwhAño = valorKwh * ((1 + incremento_anual) ** (year - 1))
+        degradacion = ((1 - degradacion_anual) ** (year - 1))
+        factorInicio = factor_primer_ano if year == 1 else 1
+        prodAnual = generacionAnual * degradacion * factorInicio
+        ahorroGeneracion = min(prodAnual * valorKwhAño, valorFactura * 12 * ((1 + incremento_anual) ** (year - 1)))
         
-        ahorroDep = depreciacionAnual if year <= fiscales["depreciacion_anios"] else 0
-        ahorroDed = ahorroAnualDeduccion if year <= fiscales["deduccion_renta_aplicacion_anios"] else 0
-        costoMant = capacidadInstalada * mantenimientoAnual
+        ahorroDep = ahorroAnualDepreciacion if year <= anos_depreciacion else 0
+        ahorroDed = ahorroAnualDeduccion if year <= anos_deduccion else 0
+        costoMant = costoMantBase * ((1 + incremento_anual) ** (year - 1))
         
         ahorroTotal = ahorroGeneracion + ahorroDep + ahorroDed - costoMant
         ahorroAcum += ahorroTotal
+        roi = ((ahorroAcum - valorTotalSistema) / valorTotalSistema) * 100 if valorTotalSistema else 0
         
-        acumxgen += ahorroGeneracion
-        if year <= fiscales["deduccion_renta_aplicacion_anios"]:
-            acumxdeduc += ahorroDed
-        if year <= fiscales["depreciacion_anios"]:
-            acumxdepre += ahorroDep
-        
-        roi = (ahorroAcum / valorTotalSistema) * 100 if valorTotalSistema > 0 else 0
-        if payback is None and ahorroAcum >= valorTotalSistema:
+        if not alcanzado and ahorroAcum >= valorTotalSistema:
+            alcanzado = True
             payback = year
+        
+        if not alcanzado or year <= (payback or anos_proyeccion):
+            acumxgen += ahorroGeneracion
+            acumxdeduc += ahorroDed
+            acumxdepre += ahorroDep
         
         tabla.append({
             "año": year,
