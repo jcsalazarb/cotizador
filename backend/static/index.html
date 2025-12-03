@@ -827,9 +827,9 @@
                     return;
                 }
 
-                // Validar baterías si son requeridas
+                // Validar baterías si son requeridas (solo si selección manual)
                 const tipoSistema = datos.tipoSistemaFV;
-                if ((tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') && !datos.bateria) {
+                if (datos.seleccionManual === 'SI' && (tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') && !datos.bateria) {
                     mostrarNotificacion('⚠️ Debes seleccionar una batería para este tipo de sistema', 'error');
                     desbloquearFormulario();
                     return;
@@ -839,6 +839,16 @@
                 if (!datos.hspCalculado || datos.hspCalculado === '') {
                     calcularHSP(); // Intentar calcular automáticamente
                     datos.hspCalculado = document.getElementById('hspCalculado').value;
+                }
+                
+                // Si selección manual es NO, enviar campos vacíos (el backend usará defaults)
+                if (datos.seleccionManual === 'NO') {
+                    datos.panel = '';
+                    datos.inversor = '';
+                    // Solo enviar batería vacía si no es requerida
+                    if (datos.tipoSistemaFV !== 'offgrid' && datos.tipoSistemaFV !== 'hibrido_incluido') {
+                        datos.bateria = '';
+                    }
                 }
                 
                 // Convertir campos numéricos
