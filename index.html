@@ -80,22 +80,28 @@
       min-height:42px;
     }
     select option {
-      padding:8px 12px;
-      background:#fff;
-      color:#222;
-      font-size:.9rem;
+      padding:8px 12px !important;
+      background:#fff !important;
+      background-color:#fff !important;
+      color:#222 !important;
+      font-size:.9rem !important;
       min-height:32px;
+      line-height:1.5;
+      display:block;
     }
     select option:first-child {
-      color:#888;
+      color:#888 !important;
       font-style:italic;
     }
     select option:hover {
-      background:#e6f2ff;
+      background:#e6f2ff !important;
+      background-color:#e6f2ff !important;
     }
-    select option:checked {
-      background:#0c5fa8;
-      color:#fff;
+    select option:checked,
+    select option:selected {
+      background:#0c5fa8 !important;
+      background-color:#0c5fa8 !important;
+      color:#fff !important;
     }
     input:focus, select:focus {outline:none;border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(12,95,168,.15);}
     .submit-bar {padding:24px 32px;text-align:center;background:#f9fbfd;}
@@ -288,6 +294,14 @@
             <label>HSP (Opcional)</label>
             <input name="hspCalculado" type="number" min="0" max="9" step="0.1">
           </div>
+          <div>
+            <label>Legalización *</label>
+            <select name="legalizacion" id="legalizacion" required>
+              <option value="">Seleccione...</option>
+              <option value="SI">SI</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
         </div>
       </div>
       <!-- Equipos -->
@@ -295,14 +309,25 @@
         <h2>🔧 Equipos</h2>
         <div class="grid-2">
           <div>
+            <label>¿Seleccionar equipos manualmente? *</label>
+            <select name="seleccionManual" id="seleccionManual" required>
+              <option value="">Seleccione...</option>
+              <option value="NO">NO - Usar equipos recomendados</option>
+              <option value="SI">SI - Seleccionar manualmente</option>
+            </select>
+          </div>
+        </div>
+        <div id="equiposWrapper" style="display:none;margin-top:15px;">
+          <div class="grid-2">
+          <div>
             <label>Panel *</label>
-            <select name="panel" id="panel" required>
+            <select name="panel" id="panel">
               <option value="">Cargando...</option>
             </select>
           </div>
           <div>
             <label>Inversor *</label>
-            <select name="inversor" id="inversor" required>
+            <select name="inversor" id="inversor">
               <option value="">Cargando...</option>
             </select>
           </div>
@@ -311,6 +336,7 @@
             <select name="bateria" id="bateria">
               <option value="">Ninguna</option>
             </select>
+          </div>
           </div>
         </div>
       </div>
@@ -438,6 +464,27 @@
       const batSel = document.getElementById('bateria');
       batSel.required = requiere;
       document.getElementById('bateriaLabel').textContent = requiere ? 'Batería *' : 'Batería (Opcional)';
+    });
+
+    // Mostrar/ocultar selección manual de equipos
+    document.getElementById('seleccionManual').addEventListener('change', e => {
+      const wrapper = document.getElementById('equiposWrapper');
+      const panelSel = document.getElementById('panel');
+      const invSel = document.getElementById('inversor');
+      
+      if (e.target.value === 'SI') {
+        wrapper.style.display = 'block';
+        panelSel.required = true;
+        invSel.required = true;
+      } else {
+        wrapper.style.display = 'none';
+        panelSel.required = false;
+        invSel.required = false;
+        // Limpiar valores si tenían algo seleccionado
+        panelSel.value = '';
+        invSel.value = '';
+        document.getElementById('bateria').value = '';
+      }
     });
 
     // Form submit

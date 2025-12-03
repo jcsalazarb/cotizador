@@ -11,7 +11,8 @@
       "precio": 850000,
       "descripcion": "Monocristalino, 25 años garantía",
       "eficienciaPanel": 0.9,
-      "area": 2.0
+      "area": 2.0,
+      "default": true
     },
     {
       "id": "panel2",
@@ -76,7 +77,8 @@
       "precio": 2200000,
       "descripcion": "Monofásico, WiFi incluido",
       "eficiencia": 0.9,
-      "tipo_sistema": "monofasico"
+      "tipo_sistema": "monofasico",
+      "default": true
     },
     {
       "id": "inv2",
@@ -157,7 +159,8 @@
       "nombre": "Bateria LiFePO4 5.12kWh",
       "capacidad": 5120,
       "precio": 8500000,
-      "descripcion": "Litio, 6000 ciclos, 10 años"
+      "descripcion": "Litio, 6000 ciclos, 10 años",
+      "default": true
     },
     {
       "id": "bat2",

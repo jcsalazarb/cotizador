@@ -119,8 +119,10 @@ class CotizarRequest(BaseModel):
     porcentajeConsumodia: float = Field(..., ge=0, le=100)
     tipoSistemaFV: str = Field(..., pattern=r'^(ongrid|offgrid|hibrido_incluido|hibrido_opcional)$')
     hspCalculado: Optional[float] = Field(None, gt=0, lt=9)
-    panel: str = Field(..., pattern=r'^panel[1-9]\d?$')
-    inversor: str = Field(..., pattern=r'^inv[1-9]\d?$')
+    legalizacion: str = Field(..., pattern=r'^(SI|NO)$')
+    seleccionManual: str = Field(..., pattern=r'^(SI|NO)$')
+    panel: Optional[str] = Field(None, pattern=r'^panel[1-9]\d?$')
+    inversor: Optional[str] = Field(None, pattern=r'^inv[1-9]\d?$')
     bateria: Optional[str] = Field(None, pattern=r'^bat[1-9]\d?$')
     identificacion: Optional[str] = Field(None, max_length=20)
 
@@ -129,6 +131,14 @@ class CotizarRequest(BaseModel):
     def validar_bateria(cls, v, info):
         if info.data.get("tipoSistemaFV") in ("offgrid", "hibrido_incluido") and not v:
             raise ValueError("Batería requerida para el tipo de sistema seleccionado")
+        return v
+    
+    @field_validator("panel", "inversor")
+    @classmethod
+    def validar_equipos_manuales(cls, v, info):
+        # Si seleccionManual es SI, panel e inversor son obligatorios
+        if info.data.get("seleccionManual") == "SI" and not v:
+            raise ValueError("Panel e inversor son requeridos cuando se selecciona manualmente")
         return v
 
 # ========================================
@@ -143,6 +153,24 @@ def load_json(path: str) -> dict:
         raise HTTPException(404, f"Archivo no encontrado: {os.path.basename(path)}")
     except json.JSONDecodeError:
         raise HTTPException(500, f"JSON inválido: {os.path.basename(path)}")
+
+def obtener_equipos_defaults(equipos: dict) -> dict:
+    """Obtener equipos marcados como default en equipos.json"""
+    panel_default = next((p for p in equipos["paneles"] if p.get("default", False)), None)
+    inversor_default = next((i for i in equipos["inversores"] if i.get("default", False)), None)
+    bateria_default = next((b for b in equipos["baterias"] if b.get("default", False)), None)
+    
+    if not panel_default:
+        # Si no hay default, usar el primero
+        panel_default = equipos["paneles"][0] if equipos["paneles"] else None
+    if not inversor_default:
+        inversor_default = equipos["inversores"][0] if equipos["inversores"] else None
+    
+    return {
+        "panel": panel_default["id"] if panel_default else None,
+        "inversor": inversor_default["id"] if inversor_default else None,
+        "bateria": bateria_default["id"] if bateria_default else None
+    }
 
 # ========================================
 # 🧮 FUNCIÓN DE CÁLCULO
@@ -679,10 +707,8 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
         "{{AHO_MES}}": f"${resultado['ahorroMensualEnergia']:,.0f}",
         "{{RETORNO}}": f"{resultado['tiempoRetorno']} años",
         "{{PORC_PR}}": f"{resultado['porcentajeProduccionMensual']}%",
-        "{{ACUM_GEN}}": f"${resultado['acumxgen']:,.0f}",
-        "{{ACUM_DED}}": f"${resultado.get('acumxdeduc', 0):,.0f}",
-        "{{ACUM_DEP}}": f"${resultado.get('acumxdepre', 0):,.0f}",
-        "{{TOT_ACUM}}": f"${resultado['TotalAcum']:,.0f}",
+        # Condiciones comerciales (NEW)
+        "{{COND_COM}}": resultado.get("condicionesComerciales", ""),
         # Campos adicionales solicitados
         "{{NPISOS}}": str(req.get('numeroPisos', '1')),
         "{{HSPC}}": f"{req.get('hspCalculado') if req.get('hspCalculado') is not None else ''}",
@@ -787,7 +813,8 @@ def replace_shape_text(shape, mapping: dict):
                     
                     # Ajustar alineación para placeholders de totales
                     cell_text = "".join(r.text for r in paragraph.runs)
-                    if any(ph in cell_text for ph in ['ACUM_DEP', 'ACUM_DED', 'ACUM_GEN', 'TOT_ACUM', '$']):
+                    # Alinear celdas con valores monetarios a la derecha
+                    if '$' in cell_text:
                         paragraph.alignment = PP_ALIGN.RIGHT
     
     return replaced_count
@@ -1531,9 +1558,29 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     ciudades = load_json(CIUDADES_FILE)
     parametros = load_json(PARAMETROS_FILE)
     
+    # Preparar datos de solicitud
+    req_dict = req.dict()
+    
+    # Si seleccionManual es NO, usar equipos por defecto
+    if req.seleccionManual == "NO":
+        defaults = obtener_equipos_defaults(equipos)
+        req_dict["panel"] = defaults["panel"]
+        req_dict["inversor"] = defaults["inversor"]
+        # Solo asignar batería default si el sistema la requiere
+        if req.tipoSistemaFV in ("offgrid", "hibrido_incluido") and defaults["bateria"]:
+            req_dict["bateria"] = defaults["bateria"]
+    
+    # Determinar COND_COM según legalización
+    if req.legalizacion == "SI":
+        cond_com = "Anticipo 70%, 25% en producción, 5% legalizado"
+    else:
+        cond_com = "Anticipo 70%, 30% contraentrega"
+    
     try:
         # Calcular OPCIÓN 1 (ideal sin restricciones)
-        resultado_opcion1 = calcular_cotizacion(req.dict(), equipos, ciudades)
+        resultado_opcion1 = calcular_cotizacion(req_dict, equipos, ciudades)
+        # Agregar COND_COM al resultado
+        resultado_opcion1["condicionesComerciales"] = cond_com
     except ValueError as e:
         raise HTTPException(400, str(e))
     except Exception as e:
@@ -1588,7 +1635,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         # GENERAR OPCIÓN 1
         print(f"🔄 Generando Opción 1 {'(única)' if not necesita_segunda_opcion else '(de 2)'}...")
         pptx_path1, pdf_path1 = fill_template_and_convert(
-            req.dict(), 
+            req_dict, 
             resultado_opcion1,
             opcion="" if not necesita_segunda_opcion else "OPCIÓN 1 DE 2"
         )
@@ -1609,7 +1656,9 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
                 print(f"   📊 Calculando segunda opción...")
                 # Extraer ID base sin sufijo para mantener consistencia
                 cotizacion_id_base = resultado_opcion1["cotizacionId"]  # "NASSA-1234567890"
-                resultado_opcion2 = calcular_segunda_opcion(req.dict(), equipos, ciudades, areaDisponible, cotizacion_id_base)
+                resultado_opcion2 = calcular_segunda_opcion(req_dict, equipos, ciudades, areaDisponible, cotizacion_id_base)
+                # Agregar COND_COM también a la opción 2
+                resultado_opcion2["condicionesComerciales"] = cond_com
                 print(f"   ✅ Cálculo completado:")
                 print(f"      - Paneles reducidos: {resultado_opcion2['numeroPaneles']} (vs {resultado_opcion1['numeroPaneles']} original)")
                 print(f"      - Capacidad: {resultado_opcion2['capacidadInstalada']} kW (vs {resultado_opcion1['capacidadInstalada']} kW original)")
@@ -1621,7 +1670,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
                 # Verificar que existe Template-PreCotizacion2.pptx
                 if os.path.isfile(TEMPLATE_PPTX_OP2):
                     pptx_path2, pdf_path2 = fill_template_and_convert(
-                        req.dict(),
+                        req_dict,
                         resultado_opcion2,
                         opcion="OPCIÓN 2 - Ajustada a área disponible",
                         template_path=TEMPLATE_PPTX_OP2  # Usar template diferente
@@ -1636,7 +1685,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
                 else:
                     print(f"   ⚠️ Template-PreCotizacion2.pptx NO ENCONTRADO - usando template principal")
                     pptx_path2, pdf_path2 = fill_template_and_convert(
-                        req.dict(),
+                        req_dict,
                         resultado_opcion2,
                         opcion="OPCIÓN 2 - Ajustada a área disponible"
                     )
