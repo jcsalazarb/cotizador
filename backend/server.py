@@ -166,26 +166,39 @@ def obtener_equipos_defaults(equipos: dict, sistema_electrico: str = None) -> di
     
     Returns:
         Dict con IDs de panel, inversor y batería por defecto
+        
+    Algoritmo de selección (4 niveles de prioridad):
+        1. Equipo marcado como default=True y compatible con sistema_electrico
+        2. Primer equipo compatible (si no hay default para ese tipo)
+        3. Equipo marcado como default=True (ignorando compatibilidad)
+        4. Primer equipo disponible (fallback final)
     """
+    # Panel: Buscar default o primer disponible
     panel_default = next((p for p in equipos["paneles"] if p.get("default", False)), None)
-    bateria_default = next((b for b in equipos["baterias"] if b.get("default", False)), None)
-    
     if not panel_default:
-        # Si no hay default, usar el primero
         panel_default = equipos["paneles"][0] if equipos["paneles"] else None
+        if panel_default:
+            print(f"⚠️ No hay panel default, usando primer disponible: {panel_default.get('id')}")
+    
+    # Batería: Buscar default o primera disponible
+    bateria_default = next((b for b in equipos["baterias"] if b.get("default", False)), None)
+    if not bateria_default:
+        bateria_default = equipos["baterias"][0] if equipos["baterias"] else None
+        if bateria_default:
+            print(f"⚠️ No hay batería default, usando primera disponible: {bateria_default.get('id')}")
     
     # FIX #3 y #4: Selección inteligente de inversor según sistema eléctrico
     inversor_default = None
     
     if sistema_electrico:
-        # 1. Buscar inversor default que sea compatible con el sistema eléctrico
+        # NIVEL 1: Buscar inversor default=True compatible con sistema_electrico
         inversor_default = next(
             (i for i in equipos["inversores"] 
              if i.get("default", False) and i.get("tipo_sistema") == sistema_electrico),
             None
         )
         
-        # 2. Si no hay default compatible, buscar el PRIMER inversor compatible
+        # NIVEL 2: Si no hay default compatible, buscar PRIMER inversor compatible
         if not inversor_default:
             print(f"⚠️ No hay inversor default para {sistema_electrico}, buscando primer compatible...")
             inversor_default = next(
@@ -193,9 +206,9 @@ def obtener_equipos_defaults(equipos: dict, sistema_electrico: str = None) -> di
                 None
             )
             
-        # 3. Si aún no hay inversor compatible, usar cualquier default
+        # NIVEL 3: Si aún no hay compatible, usar cualquier default (sin importar tipo)
         if not inversor_default:
-            print(f"⚠️ No hay inversores compatibles con {sistema_electrico}, usando default general...")
+            print(f"⚠️⚠️ No hay inversores compatibles con {sistema_electrico}, usando default general...")
             inversor_default = next(
                 (i for i in equipos["inversores"] if i.get("default", False)),
                 None
@@ -204,11 +217,11 @@ def obtener_equipos_defaults(equipos: dict, sistema_electrico: str = None) -> di
         # Sin sistema eléctrico especificado, usar default general
         inversor_default = next((i for i in equipos["inversores"] if i.get("default", False)), None)
     
-    # 4. Fallback final: primer inversor disponible
+    # NIVEL 4: Fallback final - primer inversor disponible
     if not inversor_default:
         inversor_default = equipos["inversores"][0] if equipos["inversores"] else None
         if inversor_default:
-            print(f"⚠️ Usando primer inversor disponible como fallback: {inversor_default.get('id')}")
+            print(f"⚠️⚠️⚠️ Usando primer inversor disponible como fallback: {inversor_default.get('id')}")
     
     return {
         "panel": panel_default["id"] if panel_default else None,

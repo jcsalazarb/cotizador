@@ -21,7 +21,8 @@
       "precio": 850000,
       "descripcion": "Monocristalino Tiger Pro, alta eficiencia",
       "eficienciaPanel": 0.9,
-      "area": 2.0
+      "area": 2.0,
+      "default": false
     },
     {
       "id": "panel3",
@@ -30,7 +31,8 @@
       "precio": 1050000,
       "descripcion": "Vertex S+, tecnología avanzada",
       "eficienciaPanel": 0.9,
-      "area": 2.0
+      "area": 2.0,
+      "default": false
     },
     {
       "id": "panel5",
@@ -39,7 +41,8 @@
       "precio": 890000,
       "descripcion": "Monocristalino, tecnología PERCIUM+",
       "eficienciaPanel": 0.9,
-      "area": 2.0
+      "area": 2.0,
+      "default": false
     },
     {
       "id": "panel6",
@@ -48,7 +51,8 @@
       "precio": 420000,
       "descripcion": "Panel bifacial con mayor generación",
       "eficienciaPanel": 0.9,
-      "area": 2.0
+      "area": 2.0,
+      "default": false
     },
     {
       "id": "panel7",
@@ -57,7 +61,8 @@
       "precio": 920000,
       "descripcion": "Monocristalino Q.ANTUM DUO Z",
       "eficienciaPanel": 0.9,
-      "area": 2.0
+      "area": 2.0,
+      "default": false
     },
     {
       "id": "panel8",
@@ -66,7 +71,8 @@
       "precio": 340000,
       "descripcion": "N-Type de 132 celulas reduce puntos calientes",
       "eficienciaPanel": 0.95,
-      "area": 2.0
+      "area": 2.0,
+      "default": false
     }
   ],
   "inversores": [
@@ -87,7 +93,8 @@
       "precio": 3500000,
       "descripcion": "Bifásico, optimizadores incluidos",
       "eficiencia": 0.93,
-      "tipo_sistema": "bifasico"
+      "tipo_sistema": "bifasico",
+      "default": false
     },
     {
       "id": "inv3",
@@ -96,7 +103,8 @@
       "precio": 6800000,
       "descripcion": "Trifásico, grado industrial",
       "eficiencia": 0.9,
-      "tipo_sistema": "trifasico"
+      "tipo_sistema": "trifasico",
+      "default": false
     },
     {
       "id": "inv4",
@@ -105,7 +113,8 @@
       "precio": 5200000,
       "descripcion": "Monofásico, tecnología austriaca",
       "eficiencia": 0.9,
-      "tipo_sistema": "monofasico"
+      "tipo_sistema": "monofasico",
+      "default": false
     },
     {
       "id": "inv5",
@@ -114,7 +123,8 @@
       "precio": 4100000,
       "descripcion": "Híbrido, compatible con baterías",
       "eficiencia": 0.9,
-      "tipo_sistema": "bifasico"
+      "tipo_sistema": "bifasico",
+      "default": false
     },
     {
       "id": "inv6",
@@ -123,7 +133,8 @@
       "precio": 1500000,
       "descripcion": "Ideal para sistemas residenciales pequeños",
       "eficiencia": 0.9,
-      "tipo_sistema": "monofasico"
+      "tipo_sistema": "monofasico",
+      "default": false
     },
     {
       "id": "inv7",
@@ -132,7 +143,8 @@
       "precio": 2200000,
       "descripcion": "Para sistemas residenciales medianos",
       "eficiencia": 0.9,
-      "tipo_sistema": "monofasico"
+      "tipo_sistema": "monofasico",
+      "default": false
     },
     {
       "id": "inv8",
@@ -141,7 +153,8 @@
       "precio": 4500000,
       "descripcion": "Para sistemas comerciales y grandes residenciales",
       "eficiencia": 0.9,
-      "tipo_sistema": "trifasico"
+      "tipo_sistema": "trifasico",
+      "default": false
     },
     {
       "id": "inv9",
@@ -150,7 +163,8 @@
       "precio": 1950000,
       "descripcion": "Configurable 110V/220V Pot.Max:2500 W",
       "eficiencia": 0.9,
-      "tipo_sistema": "bifasico"
+      "tipo_sistema": "bifasico",
+      "default": false
     }
   ],
   "baterias": [
@@ -167,42 +181,48 @@
       "nombre": "Bateria LiFePO4 10.24kWh",
       "capacidad": 10240,
       "precio": 15800000,
-      "descripcion": "Litio, 6000 ciclos, 10 años"
+      "descripcion": "Litio, 6000 ciclos, 10 años",
+      "default": false
     },
     {
       "id": "bat3",
       "nombre": "Bateria LiFePO4 15.36kWh",
       "capacidad": 15360,
       "precio": 22500000,
-      "descripcion": "Litio, 6000 ciclos, 10 años"
+      "descripcion": "Litio, 6000 ciclos, 10 años",
+      "default": false
     },
     {
       "id": "bat4",
       "nombre": "Bateria Pylontech 7.4kWh",
       "capacidad": 7400,
       "precio": 12200000,
-      "descripcion": "Litio modular, expandible"
+      "descripcion": "Litio modular, expandible",
+      "default": false
     },
     {
       "id": "bat5",
       "nombre": "Bateria BYD 13.8kWh",
       "capacidad": 13800,
       "precio": 19500000,
-      "descripcion": "Litio premium, alta densidad"
+      "descripcion": "Litio premium, alta densidad",
+      "default": false
     },
     {
       "id": "bat6",
       "nombre": "Batería Litio 5kWh",
       "capacidad": 5000,
       "precio": 4500000,
-      "descripcion": "Batería de litio de alta duración"
+      "descripcion": "Batería de litio de alta duración",
+      "default": false
     },
     {
       "id": "bat7",
       "nombre": "Batería Litio 10kWh",
       "capacidad": 10000,
       "precio": 8500000,
-      "descripcion": "Mayor capacidad de almacenamiento"
+      "descripcion": "Mayor capacidad de almacenamiento",
+      "default": false
     }
   ]
 }

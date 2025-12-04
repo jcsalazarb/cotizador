@@ -393,8 +393,7 @@
                     if (selectSistemaElectrico) {
                         selectSistemaElectrico.value = defaults.sistemaElectrico;
                         console.log(`   ✅ Sistema Eléctrico: ${defaults.sistemaElectrico}`);
-                        // FIX #2 y #4: Cargar inversores compatibles automáticamente
-                        await cargarEquipos(defaults.sistemaElectrico);
+                        // NOTA: Los inversores se cargarán en DOMContentLoaded después de aplicar defaults
                     }
                 }
                 
@@ -1037,11 +1036,15 @@
             // Cargar y aplicar valores por defecto inteligentes
             await aplicarValoresDefault();
             
-            // Cargar equipos iniciales con inversores ocultos (null = sin filtro de sistema)
-            await cargarEquipos(null);
+            // FIX #2 y #4: Cargar equipos CON el sistema eléctrico default
+            // Obtener el sistema eléctrico que se aplicó por default
+            const selectSistemaElectrico = document.getElementById('sistemaElectrico');
+            const sistemaElectricoDefault = selectSistemaElectrico ? selectSistemaElectrico.value : 'bifasico';
+            
+            console.log(`🔧 Cargando inversores para sistema default: ${sistemaElectricoDefault}`);
+            await cargarEquipos(sistemaElectricoDefault);
             
             // Agregar listener para cambio de sistema eléctrico
-            const selectSistemaElectrico = document.getElementById('sistemaElectrico');
             if (selectSistemaElectrico) {
                 selectSistemaElectrico.addEventListener('change', async function() {
                     const sistemaElectrico = this.value;
