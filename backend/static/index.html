@@ -344,6 +344,8 @@
                                 break;
                             }
                         }
+                        // FIX #1: Calcular HSP automáticamente después de seleccionar ciudad
+                        calcularHSP();
                     }
                 }
                 
@@ -391,6 +393,8 @@
                     if (selectSistemaElectrico) {
                         selectSistemaElectrico.value = defaults.sistemaElectrico;
                         console.log(`   ✅ Sistema Eléctrico: ${defaults.sistemaElectrico}`);
+                        // FIX #2 y #4: Cargar inversores compatibles automáticamente
+                        await cargarEquipos(defaults.sistemaElectrico);
                     }
                 }
                 

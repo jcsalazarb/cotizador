@@ -155,17 +155,60 @@ def load_json(path: str) -> dict:
     except json.JSONDecodeError:
         raise HTTPException(500, f"JSON inválido: {os.path.basename(path)}")
 
-def obtener_equipos_defaults(equipos: dict) -> dict:
-    """Obtener equipos marcados como default en equipos.json"""
+def obtener_equipos_defaults(equipos: dict, sistema_electrico: str = None) -> dict:
+    """
+    Obtener equipos marcados como default en equipos.json
+    
+    Args:
+        equipos: Diccionario con paneles, inversores y baterías
+        sistema_electrico: Tipo de sistema eléctrico (monofasico, bifasico, trifasico)
+                          Si se proporciona, filtra inversores compatibles
+    
+    Returns:
+        Dict con IDs de panel, inversor y batería por defecto
+    """
     panel_default = next((p for p in equipos["paneles"] if p.get("default", False)), None)
-    inversor_default = next((i for i in equipos["inversores"] if i.get("default", False)), None)
     bateria_default = next((b for b in equipos["baterias"] if b.get("default", False)), None)
     
     if not panel_default:
         # Si no hay default, usar el primero
         panel_default = equipos["paneles"][0] if equipos["paneles"] else None
+    
+    # FIX #3 y #4: Selección inteligente de inversor según sistema eléctrico
+    inversor_default = None
+    
+    if sistema_electrico:
+        # 1. Buscar inversor default que sea compatible con el sistema eléctrico
+        inversor_default = next(
+            (i for i in equipos["inversores"] 
+             if i.get("default", False) and i.get("tipo_sistema") == sistema_electrico),
+            None
+        )
+        
+        # 2. Si no hay default compatible, buscar el PRIMER inversor compatible
+        if not inversor_default:
+            print(f"⚠️ No hay inversor default para {sistema_electrico}, buscando primer compatible...")
+            inversor_default = next(
+                (i for i in equipos["inversores"] if i.get("tipo_sistema") == sistema_electrico),
+                None
+            )
+            
+        # 3. Si aún no hay inversor compatible, usar cualquier default
+        if not inversor_default:
+            print(f"⚠️ No hay inversores compatibles con {sistema_electrico}, usando default general...")
+            inversor_default = next(
+                (i for i in equipos["inversores"] if i.get("default", False)),
+                None
+            )
+    else:
+        # Sin sistema eléctrico especificado, usar default general
+        inversor_default = next((i for i in equipos["inversores"] if i.get("default", False)), None)
+    
+    # 4. Fallback final: primer inversor disponible
     if not inversor_default:
         inversor_default = equipos["inversores"][0] if equipos["inversores"] else None
+        if inversor_default:
+            print(f"⚠️ Usando primer inversor disponible como fallback: {inversor_default.get('id')}")
     
     return {
         "panel": panel_default["id"] if panel_default else None,
@@ -1858,12 +1901,22 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     
     # Si seleccionManual es NO, usar equipos por defecto
     if req.seleccionManual == "NO":
-        defaults = obtener_equipos_defaults(equipos)
+        # FIX #4: Pasar sistema eléctrico para selección inteligente de inversor
+        defaults = obtener_equipos_defaults(equipos, req.sistemaElectrico)
         req_dict["panel"] = defaults["panel"]
         req_dict["inversor"] = defaults["inversor"]
+        
+        # Log para debugging
+        print(f"🔧 Selección automática de equipos:")
+        print(f"   Sistema eléctrico: {req.sistemaElectrico}")
+        print(f"   Panel default: {defaults['panel']}")
+        print(f"   Inversor default: {defaults['inversor']}")
+        
         # Solo asignar batería default si el sistema la requiere
         if req.tipoSistemaFV in ("offgrid", "hibrido_incluido") and defaults["bateria"]:
             req_dict["bateria"] = defaults["bateria"]
+            print(f"   Batería default: {defaults['bateria']}")
+    
     
     # Determinar COND_COM según legalización
     if req.legalizacion == "SI":
