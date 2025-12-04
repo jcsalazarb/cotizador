@@ -841,13 +841,13 @@
                     datos.hspCalculado = document.getElementById('hspCalculado').value;
                 }
                 
-                // Si selección manual es NO, enviar campos vacíos (el backend usará defaults)
+                // Si selección manual es NO, enviar null (el backend usará defaults)
                 if (datos.seleccionManual === 'NO') {
-                    datos.panel = '';
-                    datos.inversor = '';
-                    // Solo enviar batería vacía si no es requerida
+                    datos.panel = null;
+                    datos.inversor = null;
+                    // Solo enviar batería null si no es requerida
                     if (datos.tipoSistemaFV !== 'offgrid' && datos.tipoSistemaFV !== 'hibrido_incluido') {
-                        datos.bateria = '';
+                        datos.bateria = null;
                     }
                 }
                 
