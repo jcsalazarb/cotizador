@@ -1319,6 +1319,46 @@ def admin_panel():
 def health():
     return {"status": "ok", "timestamp": now_colombia().isoformat()}
 
+@app.get("/debug/equipos-file", tags=["Debug"])
+def debug_equipos_file():
+    """Endpoint temporal para diagnosticar problema con equipos.json"""
+    import hashlib
+    try:
+        with open(EQUIPOS_FILE, 'r', encoding='utf-8') as f:
+            content = f.read()
+            data = json.loads(content)
+        
+        # Hash del archivo para verificar versión
+        file_hash = hashlib.md5(content.encode()).hexdigest()[:8]
+        
+        # Contar equipos con campo default
+        paneles_con_default = sum(1 for p in data['paneles'] if 'default' in p)
+        inversores_con_default = sum(1 for i in data['inversores'] if 'default' in i)
+        baterias_con_default = sum(1 for b in data['baterias'] if 'default' in b)
+        
+        return {
+            "file_path": EQUIPOS_FILE,
+            "file_exists": os.path.exists(EQUIPOS_FILE),
+            "file_hash": file_hash,
+            "file_size": os.path.getsize(EQUIPOS_FILE),
+            "file_mtime": os.path.getmtime(EQUIPOS_FILE),
+            "paneles": {
+                "total": len(data['paneles']),
+                "con_campo_default": paneles_con_default
+            },
+            "inversores": {
+                "total": len(data['inversores']),
+                "con_campo_default": inversores_con_default
+            },
+            "baterias": {
+                "total": len(data['baterias']),
+                "con_campo_default": baterias_con_default
+            },
+            "sample_inversor": data['inversores'][1] if len(data['inversores']) > 1 else None
+        }
+    except Exception as e:
+        return {"error": str(e), "file_path": EQUIPOS_FILE}
+
 @app.get("/api/equipos", tags=["Equipos"])
 def equipos_publicos(sistemaElectrico: str = None):
     """
