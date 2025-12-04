@@ -41,6 +41,7 @@ CONFIG_DIR = os.path.join(APP_DIR, "config")
 EQUIPOS_FILE = os.path.join(CONFIG_DIR, "equipos.json")
 CIUDADES_FILE = os.path.join(CONFIG_DIR, "ciudades.json")
 PARAMETROS_FILE = os.path.join(CONFIG_DIR, "parametros.json")
+ESTADISTICAS_FILE = os.path.join(CONFIG_DIR, "estadisticas.json")
 TEMPLATE_DIR = os.path.join(APP_DIR, "..", "Template")
 TEMPLATE_PPTX = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion.pptx")
 TEMPLATE_PPTX_OP2 = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion2.pptx")
@@ -1551,6 +1552,285 @@ def delete_bateria(bateria_id: str):
     except Exception as e:
         raise HTTPException(500, f"Error al guardar: {e}")
 
+# --- GESTIÓN DE EQUIPOS DEFAULT ---
+@app.put("/api/admin/paneles/{panel_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def set_panel_default(panel_id: str):
+    """Marcar un panel como default (desmarca los demás)"""
+    data = load_json(EQUIPOS_FILE)
+    
+    # Verificar que existe el panel
+    panel = next((p for p in data["paneles"] if p["id"] == panel_id), None)
+    if not panel:
+        raise HTTPException(404, f"Panel {panel_id} no encontrado")
+    
+    # Desmarcar todos los paneles como default
+    for p in data["paneles"]:
+        p["default"] = False
+    
+    # Marcar el seleccionado como default
+    panel["default"] = True
+    
+    try:
+        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "mensaje": f"Panel {panel_id} marcado como default"}
+    except Exception as e:
+        raise HTTPException(500, f"Error al guardar: {e}")
+
+@app.put("/api/admin/inversores/{inversor_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def set_inversor_default(inversor_id: str):
+    """Marcar un inversor como default (desmarca los demás)"""
+    data = load_json(EQUIPOS_FILE)
+    
+    # Verificar que existe el inversor
+    inversor = next((i for i in data["inversores"] if i["id"] == inversor_id), None)
+    if not inversor:
+        raise HTTPException(404, f"Inversor {inversor_id} no encontrado")
+    
+    # Desmarcar todos los inversores como default
+    for i in data["inversores"]:
+        i["default"] = False
+    
+    # Marcar el seleccionado como default
+    inversor["default"] = True
+    
+    try:
+        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "mensaje": f"Inversor {inversor_id} marcado como default"}
+    except Exception as e:
+        raise HTTPException(500, f"Error al guardar: {e}")
+
+@app.put("/api/admin/baterias/{bateria_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def set_bateria_default(bateria_id: str):
+    """Marcar una batería como default (desmarca las demás)"""
+    data = load_json(EQUIPOS_FILE)
+    
+    # Verificar que existe la batería
+    bateria = next((b for b in data["baterias"] if b["id"] == bateria_id), None)
+    if not bateria:
+        raise HTTPException(404, f"Batería {bateria_id} no encontrada")
+    
+    # Desmarcar todas las baterías como default
+    for b in data["baterias"]:
+        b["default"] = False
+    
+    # Marcar la seleccionada como default
+    bateria["default"] = True
+    
+    try:
+        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "mensaje": f"Batería {bateria_id} marcada como default"}
+    except Exception as e:
+        raise HTTPException(500, f"Error al guardar: {e}")
+
+# --- GESTIÓN DE CIUDADES ---
+@app.get("/api/admin/ciudades", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def get_ciudades_admin():
+    """Obtener todas las ciudades con HSP (admin)"""
+    data = load_json(CIUDADES_FILE)
+    # Convertir dict a lista para mejor manejo en frontend
+    ciudades_list = []
+    for ciudad_key, ciudad_data in data.items():
+        if ciudad_key != "default":
+            ciudades_list.append({
+                "key": ciudad_key,
+                "nombre": ciudad_data.get("nombre", ciudad_key.replace("_", " ").title()),
+                "hsp": ciudad_data.get("hsp", 5.0)
+            })
+    return ciudades_list
+
+@app.post("/api/admin/ciudades", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def create_ciudad(ciudad: dict):
+    """Crear nueva ciudad con HSP"""
+    data = load_json(CIUDADES_FILE)
+    
+    # Validar campos requeridos
+    if "nombre" not in ciudad or "hsp" not in ciudad:
+        raise HTTPException(400, "Campos requeridos: nombre, hsp")
+    
+    # Normalizar nombre para key (lowercase, underscores)
+    ciudad_key = ciudad["nombre"].lower().replace(" ", "_").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("ñ", "n")
+    
+    # Verificar que no existe
+    if ciudad_key in data:
+        raise HTTPException(400, f"La ciudad {ciudad['nombre']} ya existe")
+    
+    # Agregar ciudad
+    data[ciudad_key] = {
+        "nombre": ciudad["nombre"],
+        "hsp": float(ciudad["hsp"])
+    }
+    
+    try:
+        with open(CIUDADES_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "mensaje": f"Ciudad {ciudad['nombre']} creada exitosamente", "key": ciudad_key}
+    except Exception as e:
+        raise HTTPException(500, f"Error al guardar: {e}")
+
+@app.put("/api/admin/ciudades/{ciudad_key}", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def update_ciudad(ciudad_key: str, ciudad: dict):
+    """Actualizar ciudad existente"""
+    data = load_json(CIUDADES_FILE)
+    
+    if ciudad_key not in data:
+        raise HTTPException(404, f"Ciudad {ciudad_key} no encontrada")
+    
+    if ciudad_key == "default":
+        raise HTTPException(400, "No se puede modificar la ciudad 'default'")
+    
+    # Validar campos
+    if "hsp" in ciudad:
+        data[ciudad_key]["hsp"] = float(ciudad["hsp"])
+    if "nombre" in ciudad:
+        data[ciudad_key]["nombre"] = ciudad["nombre"]
+    
+    try:
+        with open(CIUDADES_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "mensaje": f"Ciudad {ciudad_key} actualizada exitosamente"}
+    except Exception as e:
+        raise HTTPException(500, f"Error al guardar: {e}")
+
+@app.delete("/api/admin/ciudades/{ciudad_key}", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def delete_ciudad(ciudad_key: str):
+    """Eliminar ciudad"""
+    data = load_json(CIUDADES_FILE)
+    
+    if ciudad_key not in data:
+        raise HTTPException(404, f"Ciudad {ciudad_key} no encontrada")
+    
+    if ciudad_key == "default":
+        raise HTTPException(400, "No se puede eliminar la ciudad 'default'")
+    
+    del data[ciudad_key]
+    
+    try:
+        with open(CIUDADES_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "mensaje": f"Ciudad {ciudad_key} eliminada exitosamente"}
+    except Exception as e:
+        raise HTTPException(500, f"Error al guardar: {e}")
+
+# --- SISTEMA DE TRACKING Y VALORES POR DEFECTO ---
+@app.post("/api/track-seleccion", tags=["Analytics"])
+async def track_seleccion(request: Request):
+    """Registrar selecciones de una cotización para análisis de frecuencia (sin autenticación)"""
+    try:
+        data = await request.json()
+        
+        # Cargar estadísticas existentes
+        if os.path.exists(ESTADISTICAS_FILE):
+            estadisticas = load_json(ESTADISTICAS_FILE)
+        else:
+            estadisticas = {"cotizaciones": []}
+        
+        # Agregar nuevo registro con timestamp
+        registro = {
+            "timestamp": now_colombia().isoformat(),
+            "ciudad": data.get("ciudad", ""),
+            "tipoSistemaFV": data.get("tipoSistemaFV", ""),
+            "tipo_propiedad": data.get("tipo_propiedad", ""),
+            "legalizacion": data.get("legalizacion", ""),
+            "seleccionManual": data.get("seleccionManual", "")
+        }
+        
+        estadisticas["cotizaciones"].append(registro)
+        
+        # Guardar (limitamos a las últimas 500 cotizaciones para no saturar)
+        if len(estadisticas["cotizaciones"]) > 500:
+            estadisticas["cotizaciones"] = estadisticas["cotizaciones"][-500:]
+        
+        with open(ESTADISTICAS_FILE, "w", encoding="utf-8") as f:
+            json.dump(estadisticas, f, ensure_ascii=False, indent=2)
+        
+        return {"status": "success", "mensaje": "Selección registrada"}
+    except Exception as e:
+        # No fallar si hay error en tracking (no es crítico)
+        print(f"Error en tracking: {e}")
+        return {"status": "error", "mensaje": str(e)}
+
+@app.get("/api/valores-default", tags=["Analytics"])
+def get_valores_default():
+    """Obtener valores más frecuentes de los últimos 30 días (público, sin autenticación)"""
+    try:
+        if not os.path.exists(ESTADISTICAS_FILE):
+            # Valores por defecto fijos si no hay estadísticas
+            return {
+                "ciudad": "santa_marta",
+                "tipoSistemaFV": "ongrid",
+                "tipo_propiedad": "residencial",
+                "legalizacion": "NO",
+                "seleccionManual": "NO",
+                "source": "defaults"
+            }
+        
+        estadisticas = load_json(ESTADISTICAS_FILE)
+        cotizaciones = estadisticas.get("cotizaciones", [])
+        
+        if not cotizaciones:
+            # Valores por defecto fijos
+            return {
+                "ciudad": "santa_marta",
+                "tipoSistemaFV": "ongrid",
+                "tipo_propiedad": "residencial",
+                "legalizacion": "NO",
+                "seleccionManual": "NO",
+                "source": "defaults"
+            }
+        
+        # Filtrar últimos 30 días
+        fecha_limite = now_colombia() - timedelta(days=30)
+        cotizaciones_recientes = []
+        
+        for cot in cotizaciones:
+            try:
+                timestamp = datetime.fromisoformat(cot["timestamp"])
+                if timestamp >= fecha_limite:
+                    cotizaciones_recientes.append(cot)
+            except:
+                continue
+        
+        # Si no hay datos recientes, usar todos los datos disponibles
+        if not cotizaciones_recientes:
+            cotizaciones_recientes = cotizaciones[-50:]  # Últimas 50
+        
+        # Calcular frecuencias
+        from collections import Counter
+        
+        ciudades = Counter([c.get("ciudad", "") for c in cotizaciones_recientes if c.get("ciudad")])
+        tipos_sistema = Counter([c.get("tipoSistemaFV", "") for c in cotizaciones_recientes if c.get("tipoSistemaFV")])
+        tipos_propiedad = Counter([c.get("tipo_propiedad", "") for c in cotizaciones_recientes if c.get("tipo_propiedad")])
+        legalizaciones = Counter([c.get("legalizacion", "") for c in cotizaciones_recientes if c.get("legalizacion")])
+        selecciones_manual = Counter([c.get("seleccionManual", "") for c in cotizaciones_recientes if c.get("seleccionManual")])
+        
+        # Obtener valores más comunes
+        resultado = {
+            "ciudad": ciudades.most_common(1)[0][0] if ciudades else "santa_marta",
+            "tipoSistemaFV": tipos_sistema.most_common(1)[0][0] if tipos_sistema else "ongrid",
+            "tipo_propiedad": tipos_propiedad.most_common(1)[0][0] if tipos_propiedad else "residencial",
+            "legalizacion": legalizaciones.most_common(1)[0][0] if legalizaciones else "NO",
+            "seleccionManual": selecciones_manual.most_common(1)[0][0] if selecciones_manual else "NO",
+            "source": "analytics",
+            "sample_size": len(cotizaciones_recientes)
+        }
+        
+        return resultado
+        
+    except Exception as e:
+        print(f"Error en valores-default: {e}")
+        # En caso de error, retornar defaults fijos
+        return {
+            "ciudad": "santa_marta",
+            "tipoSistemaFV": "ongrid",
+            "tipo_propiedad": "residencial",
+            "legalizacion": "NO",
+            "seleccionManual": "NO",
+            "source": "defaults"
+        }
+
 @app.post("/api/cotizar", tags=["Cotización"])
 async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_limit)):
     """Generar cotización completa con 1 o 2 opciones según área disponible"""
@@ -1798,6 +2078,35 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             mensaje = "✅ Cotización generada exitosamente. Revisa tu email."
     else:
         mensaje = "✅ Cotización generada exitosamente. ⚠️ El email no pudo enviarse."
+    
+    # TRACKING AUTOMÁTICO: Registrar selección para estadísticas (sin bloquear si falla)
+    try:
+        if os.path.exists(ESTADISTICAS_FILE):
+            estadisticas = load_json(ESTADISTICAS_FILE)
+        else:
+            estadisticas = {"cotizaciones": []}
+        
+        registro = {
+            "timestamp": now_colombia().isoformat(),
+            "ciudad": req.ciudad,
+            "tipoSistemaFV": req.tipoSistemaFV,
+            "tipo_propiedad": req.tipoVivienda,
+            "legalizacion": req.legalizacion,
+            "seleccionManual": req.seleccionManual
+        }
+        
+        estadisticas["cotizaciones"].append(registro)
+        
+        # Limitar a 500 registros
+        if len(estadisticas["cotizaciones"]) > 500:
+            estadisticas["cotizaciones"] = estadisticas["cotizaciones"][-500:]
+        
+        with open(ESTADISTICAS_FILE, "w", encoding="utf-8") as f:
+            json.dump(estadisticas, f, ensure_ascii=False, indent=2)
+        
+        print(f"📊 Tracking: Selección registrada exitosamente")
+    except Exception as e:
+        print(f"⚠️ Error en tracking (no crítico): {e}")
     
     return JSONResponse({
         "status": "success",

@@ -319,6 +319,78 @@
                 console.error('❌ Error poblando select de ciudades:', error);
             }
         }
+
+        // Función para cargar y aplicar valores por defecto inteligentes
+        async function aplicarValoresDefault() {
+            try {
+                console.log('🧠 Cargando valores por defecto inteligentes...');
+                const response = await fetch(`${API_BASE_URL}/valores-default`);
+                const defaults = await response.json();
+                
+                console.log('📊 Valores por defecto recibidos:', defaults);
+                console.log(`   Fuente: ${defaults.source === 'analytics' ? '📈 Analytics (últimas ' + defaults.sample_size + ' cotizaciones)' : '📋 Defaults fijos'}`);
+                
+                // Aplicar ciudad por defecto
+                if (defaults.ciudad) {
+                    const selectCiudad = document.getElementById('ciudad');
+                    // Convertir de snake_case a Title Case
+                    const ciudadDisplay = defaults.ciudad.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    if (selectCiudad) {
+                        // Buscar la opción que coincida
+                        for (let option of selectCiudad.options) {
+                            if (option.value.toLowerCase() === ciudadDisplay.toLowerCase()) {
+                                option.selected = true;
+                                console.log(`   ✅ Ciudad: ${ciudadDisplay}`);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Aplicar tipo de sistema FV
+                if (defaults.tipoSistemaFV) {
+                    const selectTipoSistema = document.getElementById('tipoSistemaFV');
+                    if (selectTipoSistema) {
+                        selectTipoSistema.value = defaults.tipoSistemaFV;
+                        console.log(`   ✅ Tipo Sistema FV: ${defaults.tipoSistemaFV}`);
+                    }
+                }
+                
+                // Aplicar tipo de propiedad
+                if (defaults.tipo_propiedad) {
+                    const selectTipoPropiedad = document.getElementById('tipoVivienda');
+                    if (selectTipoPropiedad) {
+                        selectTipoPropiedad.value = defaults.tipo_propiedad;
+                        console.log(`   ✅ Tipo Propiedad: ${defaults.tipo_propiedad}`);
+                    }
+                }
+                
+                // Aplicar legalización
+                if (defaults.legalizacion) {
+                    const selectLegalizacion = document.getElementById('legalizacion');
+                    if (selectLegalizacion) {
+                        selectLegalizacion.value = defaults.legalizacion;
+                        console.log(`   ✅ Legalización: ${defaults.legalizacion}`);
+                    }
+                }
+                
+                // Aplicar selección manual
+                if (defaults.seleccionManual) {
+                    const selectSeleccionManual = document.getElementById('seleccionManual');
+                    if (selectSeleccionManual) {
+                        selectSeleccionManual.value = defaults.seleccionManual;
+                        console.log(`   ✅ Selección Manual: ${defaults.seleccionManual}`);
+                        // Trigger el evento change para mostrar/ocultar equipos
+                        toggleSeleccionEquipos();
+                    }
+                }
+                
+                console.log('✅ Valores por defecto aplicados exitosamente');
+            } catch (error) {
+                console.error('⚠️ Error cargando valores por defecto (no crítico):', error);
+                // No mostrar error al usuario, los defaults fijos ya están en el HTML
+            }
+        }
 	
 
         // Función para calcular HSP automáticamente
@@ -939,6 +1011,9 @@
             
             // Cargar ciudades desde el backend
             await cargarCiudades();
+            
+            // Cargar y aplicar valores por defecto inteligentes
+            await aplicarValoresDefault();
             
             // Cargar equipos iniciales con inversores ocultos (null = sin filtro de sistema)
             await cargarEquipos(null);
