@@ -1734,7 +1734,9 @@ async def track_seleccion(request: Request):
             "tipoSistemaFV": data.get("tipoSistemaFV", ""),
             "tipo_propiedad": data.get("tipo_propiedad", ""),
             "legalizacion": data.get("legalizacion", ""),
-            "seleccionManual": data.get("seleccionManual", "")
+            "seleccionManual": data.get("seleccionManual", ""),
+            "sistemaElectrico": data.get("sistemaElectrico", ""),
+            "porcentajeConsumodia": data.get("porcentajeConsumodia", 50)
         }
         
         estadisticas["cotizaciones"].append(registro)
@@ -1762,8 +1764,10 @@ def get_valores_default():
                 "ciudad": "santa_marta",
                 "tipoSistemaFV": "ongrid",
                 "tipo_propiedad": "residencial",
-                "legalizacion": "NO",
+                "legalizacion": "SI",
                 "seleccionManual": "NO",
+                "sistemaElectrico": "bifasico",
+                "porcentajeConsumodia": 50,
                 "source": "defaults"
             }
         
@@ -1776,8 +1780,10 @@ def get_valores_default():
                 "ciudad": "santa_marta",
                 "tipoSistemaFV": "ongrid",
                 "tipo_propiedad": "residencial",
-                "legalizacion": "NO",
+                "legalizacion": "SI",
                 "seleccionManual": "NO",
+                "sistemaElectrico": "bifasico",
+                "porcentajeConsumodia": 50,
                 "source": "defaults"
             }
         
@@ -1805,14 +1811,21 @@ def get_valores_default():
         tipos_propiedad = Counter([c.get("tipo_propiedad", "") for c in cotizaciones_recientes if c.get("tipo_propiedad")])
         legalizaciones = Counter([c.get("legalizacion", "") for c in cotizaciones_recientes if c.get("legalizacion")])
         selecciones_manual = Counter([c.get("seleccionManual", "") for c in cotizaciones_recientes if c.get("seleccionManual")])
+        sistemas_electricos = Counter([c.get("sistemaElectrico", "") for c in cotizaciones_recientes if c.get("sistemaElectrico")])
+        porcentajes_consumo = [c.get("porcentajeConsumodia", 50) for c in cotizaciones_recientes if c.get("porcentajeConsumodia") is not None]
+        
+        # Calcular promedio de porcentaje de consumo día
+        porcentaje_promedio = round(sum(porcentajes_consumo) / len(porcentajes_consumo)) if porcentajes_consumo else 50
         
         # Obtener valores más comunes
         resultado = {
             "ciudad": ciudades.most_common(1)[0][0] if ciudades else "santa_marta",
             "tipoSistemaFV": tipos_sistema.most_common(1)[0][0] if tipos_sistema else "ongrid",
             "tipo_propiedad": tipos_propiedad.most_common(1)[0][0] if tipos_propiedad else "residencial",
-            "legalizacion": legalizaciones.most_common(1)[0][0] if legalizaciones else "NO",
+            "legalizacion": legalizaciones.most_common(1)[0][0] if legalizaciones else "SI",
             "seleccionManual": selecciones_manual.most_common(1)[0][0] if selecciones_manual else "NO",
+            "sistemaElectrico": sistemas_electricos.most_common(1)[0][0] if sistemas_electricos else "bifasico",
+            "porcentajeConsumodia": porcentaje_promedio,
             "source": "analytics",
             "sample_size": len(cotizaciones_recientes)
         }
@@ -1826,8 +1839,10 @@ def get_valores_default():
             "ciudad": "santa_marta",
             "tipoSistemaFV": "ongrid",
             "tipo_propiedad": "residencial",
-            "legalizacion": "NO",
+            "legalizacion": "SI",
             "seleccionManual": "NO",
+            "sistemaElectrico": "bifasico",
+            "porcentajeConsumodia": 50,
             "source": "defaults"
         }
 
@@ -2092,7 +2107,9 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             "tipoSistemaFV": req.tipoSistemaFV,
             "tipo_propiedad": req.tipoVivienda,
             "legalizacion": req.legalizacion,
-            "seleccionManual": req.seleccionManual
+            "seleccionManual": req.seleccionManual,
+            "sistemaElectrico": req.sistemaElectrico,
+            "porcentajeConsumodia": req.porcentajeConsumodia
         }
         
         estadisticas["cotizaciones"].append(registro)

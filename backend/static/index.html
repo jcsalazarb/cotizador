@@ -385,6 +385,24 @@
                     }
                 }
                 
+                // Aplicar sistema eléctrico
+                if (defaults.sistemaElectrico) {
+                    const selectSistemaElectrico = document.getElementById('sistemaElectrico');
+                    if (selectSistemaElectrico) {
+                        selectSistemaElectrico.value = defaults.sistemaElectrico;
+                        console.log(`   ✅ Sistema Eléctrico: ${defaults.sistemaElectrico}`);
+                    }
+                }
+                
+                // Aplicar porcentaje de consumo día
+                if (defaults.porcentajeConsumodia) {
+                    const selectPorcentajeConsumo = document.getElementById('porcentajeConsumodia');
+                    if (selectPorcentajeConsumo) {
+                        selectPorcentajeConsumo.value = defaults.porcentajeConsumodia.toString();
+                        console.log(`   ✅ % Consumo Día: ${defaults.porcentajeConsumodia}%`);
+                    }
+                }
+                
                 console.log('✅ Valores por defecto aplicados exitosamente');
             } catch (error) {
                 console.error('⚠️ Error cargando valores por defecto (no crítico):', error);
