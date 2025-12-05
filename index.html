@@ -320,13 +320,13 @@
         <div id="equiposWrapper" style="display:none;margin-top:15px;">
           <div class="grid-2">
           <div>
-            <label>Panel *</label>
+            <label id="panelLabel">Panel</label>
             <select name="panel" id="panel">
               <option value="">Cargando...</option>
             </select>
           </div>
           <div>
-            <label>Inversor *</label>
+            <label id="inversorLabel">Inversor</label>
             <select name="inversor" id="inversor">
               <option value="">Cargando...</option>
             </select>
@@ -471,15 +471,21 @@
       const wrapper = document.getElementById('equiposWrapper');
       const panelSel = document.getElementById('panel');
       const invSel = document.getElementById('inversor');
+      const panelLabel = document.getElementById('panelLabel');
+      const invLabel = document.getElementById('inversorLabel');
       
       if (e.target.value === 'SI') {
         wrapper.style.display = 'block';
         panelSel.required = true;
         invSel.required = true;
+        panelLabel.textContent = 'Panel *';
+        invLabel.textContent = 'Inversor *';
       } else {
         wrapper.style.display = 'none';
         panelSel.required = false;
         invSel.required = false;
+        panelLabel.textContent = 'Panel';
+        invLabel.textContent = 'Inversor';
         // Limpiar valores si tenían algo seleccionado
         panelSel.value = '';
         invSel.value = '';
