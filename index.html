@@ -418,11 +418,13 @@
       const invLabel = document.getElementById('inversorLabel');
       const wrapper = document.getElementById('equiposWrapper');
       
-      // Si el valor actual es "NO" (default), asegurar que required está en false
+      // Si el valor actual es "NO" (default), asegurar que required está en false y disabled en true
       if (seleccionManual.value === 'NO' || seleccionManual.value === '') {
         wrapper.style.display = 'none';
         panelSel.required = false;
         invSel.required = false;
+        panelSel.disabled = true;  // ✅ Desactivar para que no participen en validación
+        invSel.disabled = true;
         panelLabel.textContent = 'Panel';
         invLabel.textContent = 'Inversor';
       }
@@ -499,12 +501,16 @@
         wrapper.style.display = 'block';
         panelSel.required = true;
         invSel.required = true;
+        panelSel.disabled = false;  // ✅ Activar para que participen en validación
+        invSel.disabled = false;
         panelLabel.textContent = 'Panel *';
         invLabel.textContent = 'Inversor *';
       } else {
         wrapper.style.display = 'none';
         panelSel.required = false;
         invSel.required = false;
+        panelSel.disabled = true;  // ✅ Desactivar para que NO participen en validación
+        invSel.disabled = true;
         panelLabel.textContent = 'Panel';
         invLabel.textContent = 'Inversor';
         // Limpiar valores si tenían algo seleccionado
