@@ -247,7 +247,12 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     valorFactura = float(data["valorFactura"])
     valorKwh = float(data["valorKwh"])
     ciudad_key = data["ciudad"].lower().strip().replace(" ", "_")
-    hsp = float(data.get("hspCalculado") or ciudades.get(ciudad_key, ciudades.get("default", 4.5)))
+    
+    # FIX: Compatibilidad con nuevo formato de ciudades.json (objeto con .hsp)
+    ciudad_data = ciudades.get(ciudad_key, ciudades.get("default", 4.5))
+    # Si es un objeto, extraer .hsp, sino usar el valor directo (retrocompatibilidad)
+    hsp_value = ciudad_data.get("hsp") if isinstance(ciudad_data, dict) else ciudad_data
+    hsp = float(data.get("hspCalculado") or hsp_value)
 
     panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
@@ -408,7 +413,12 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     valorFactura = float(data["valorFactura"])
     valorKwh = float(data["valorKwh"])
     ciudad_key = data["ciudad"].lower().strip().replace(" ", "_")
-    hsp = float(data.get("hspCalculado") or ciudades.get(ciudad_key, ciudades.get("default", 4.5)))
+    
+    # FIX: Compatibilidad con nuevo formato de ciudades.json (objeto con .hsp)
+    ciudad_data = ciudades.get(ciudad_key, ciudades.get("default", 4.5))
+    # Si es un objeto, extraer .hsp, sino usar el valor directo (retrocompatibilidad)
+    hsp_value = ciudad_data.get("hsp") if isinstance(ciudad_data, dict) else ciudad_data
+    hsp = float(data.get("hspCalculado") or hsp_value)
 
     panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
