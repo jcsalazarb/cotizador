@@ -1,1092 +1,658 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cotizador Solar Nassa - Energía Renovable</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>Cotizador Nassa Solar - Energía Renovable</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Opcional: Tailwind para consistencia con indexcanva -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="icon" type="image/png" href="assets/images/logo-nassa.png" />
   <style>
-        body { box-sizing: border-box; }
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
-        .pulse { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .equipo-card { transition: all 0.3s ease; }
-        .equipo-card:hover { transform: translateY(-2px); }
-        .equipo-selected { border: 2px solid #fbbf24; background: rgba(251, 191, 36, 0.1); }        
-        /* Estilos de impresión */
-        @media print {
-            body { background: white !important; }
-            .gradient-bg { background: white !important; }
-            header, .no-print { display: none !important; }
-            #modalResultado { 
-                display: block !important; 
-                position: static !important;
-                background: white !important;
-            }
-            #modalResultado > div {
-                max-height: none !important;
-                overflow: visible !important;
-                box-shadow: none !important;
-            }
-            #modalContenido {
-                max-height: none !important;
-                overflow: visible !important;
-            }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-            thead { display: table-header-group; }
-            tfoot { display: table-footer-group; }
-        }
-    </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
- </head>
- <body class="gradient-bg min-h-full"><!-- Header Principal -->
-  <header class="text-center py-8 px-4">
-   <div class="bg-white rounded-xl mb-4 shadow-2xl p-6 inline-block pulse">
-     <img src="/static/images/loggo-Nassa.png" alt="NASSA SOLAR" class="mx-auto h-24 w-auto">
-   </div>
-   <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">🌞 Cotizador Solar Profesional</h1>
-   <p class="text-xl text-white font-semibold mb-4 drop-shadow-sm">Cotización técnica completa con envío automático por email</p>
-    <div class="glass rounded-xl p-4 mb-6 max-w-md mx-auto">
-    <p class="text-white font-semibold mb-3">📞 Contacto Directo</p><a href="tel:+573136909723" class="block text-blue-900 hover:text-blue-700 font-bold text-lg mb-3 transition-colors"> 📱 (057) 313 690 9723 </a> <button onclick="abrirWhatsApp()" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center"> <span class="mr-2">💬</span> Chatear por WhatsApp </button>
+    :root {
+      --color-primary:#052c4c;
+      --color-secondary:#ffb300;
+      --color-accent:#0c5fa8;
+      --color-bg:#f5f7fa;
+    }
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      background: var(--color-bg);
+      color:#222;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    header {
+      background:linear-gradient(90deg,var(--color-primary),var(--color-accent));
+      color:#fff;
+      padding:18px 24px;
+      display:flex;
+      align-items:center;
+      gap:24px;
+      flex-wrap:wrap;
+    }
+    header img.logo {
+      width:140px;
+      height:auto;
+      object-fit:contain;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));
+    }
+    .brand-title {font-size:1.6rem;font-weight:600;margin:0;}
+    .contact-info {display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem;}
+    .contact-info a {color:#b199ff;text-decoration:none;}
+    .contact-info a:hover {text-decoration:underline;}
+    .container {
+      width:100%;
+      max-width:1100px;
+      margin:24px auto 120px;
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 6px 20px rgba(0,0,0,.12);
+      overflow:hidden;
+    }
+    .section {padding:28px 32px;border-bottom:1px solid #eceff3;}
+    .section:last-child {border-bottom:none;}
+    .section h2 {
+      margin:0 0 18px;
+      font-size:1.1rem;
+      font-weight:600;
+      color:var(--color-accent);
+      display:flex;
+      align-items:center;
+      gap:6px;
+      text-transform:uppercase;
+      letter-spacing:.5px;
+    }
+    form .grid-2 {display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;}
+    label {font-size:.75rem;font-weight:600;letter-spacing:.5px;color:#444;margin-bottom:4px;}
+    input, select {
+      width:100%;padding:11px 12px;
+      border:2px solid #d9e1ea;border-radius:8px;
+      background:#fafcfe;font-size:.9rem;
+      transition:.15s;
+      color:#222;
+    }
+    select {
+      cursor:pointer;
+      appearance:auto;
+      -webkit-appearance:menulist;
+      -moz-appearance:menulist;
+      min-height:42px;
+    }
+    select option {
+      padding:8px 12px !important;
+      background:#fff !important;
+      background-color:#fff !important;
+      color:#222 !important;
+      font-size:.9rem !important;
+      min-height:32px;
+      line-height:1.5;
+      display:block;
+    }
+    select option:first-child {
+      color:#888 !important;
+      font-style:italic;
+    }
+    select option:hover {
+      background:#e6f2ff !important;
+      background-color:#e6f2ff !important;
+    }
+    select option:checked,
+    select option:selected {
+      background:#0c5fa8 !important;
+      background-color:#0c5fa8 !important;
+      color:#fff !important;
+    }
+    input:focus, select:focus {outline:none;border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(12,95,168,.15);}
+    .submit-bar {padding:24px 32px;text-align:center;background:#f9fbfd;}
+    button[type=submit] {
+      background:linear-gradient(90deg,var(--color-accent),var(--color-secondary));
+      border:none;color:#fff;font-weight:600;
+      padding:14px 36px;font-size:1rem;
+      border-radius:10px;cursor:pointer;
+      box-shadow:0 6px 16px rgba(12,95,168,.35);
+      transition:.25s;
+    }
+    button[type=submit]:hover {transform:translateY(-3px);}
+    button[type=submit]:disabled {opacity:.55;transform:none;cursor:not-allowed;}
+    #resultadoWrapper {display:none;padding:32px;}
+    #resultadoWrapper.active {display:block;}
+    .cards {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin:24px 0;}
+    .card {
+      background:#fff;border:1px solid #e2e8f0;
+      border-radius:12px;padding:16px 18px;
+      position:relative;overflow:hidden;
+    }
+    .card:before {
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(12,95,168,.08),rgba(255,179,0,.08));
+      opacity:.55;pointer-events:none;
+    }
+    .card h3 {margin:0 0 6px;font-size:.7rem;font-weight:700;letter-spacing:.7px;color:#0c5fa8;}
+    .card .value {font-size:1.3rem;font-weight:600;color:#052c4c;}
+    table {width:100%;border-collapse:collapse;margin-top:8px;font-size:.75rem;}
+    thead th {
+      background:var(--color-primary);color:#fff;
+      font-weight:600;padding:8px 10px;white-space:nowrap;
+    }
+    tbody td {padding:7px 10px;border-bottom:1px solid #e5eaf0;}
+    tbody tr:hover {background:#f0f5fa;}
+    .floating-tools {
+      position:fixed;right:18px;bottom:18px;
+      display:flex;flex-direction:column;gap:12px;z-index:50;
+    }
+    .tool-btn {
+      background:#fff;border:1px solid #ced6e0;
+      color:#052c4c;border-radius:50%;width:54px;height:54px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:.7rem;font-weight:600;text-decoration:none;
+      box-shadow:0 6px 16px rgba(0,0,0,.18);
+      transition:.25s;
+    }
+    .tool-btn:hover {background:var(--color-accent);color:#fff;border-color:var(--color-accent);}
+    footer {
+      background:var(--color-primary);
+      color:#dfe9f4;font-size:.7rem;
+      padding:18px 24px;text-align:center;
+      margin-top:auto;
+    }
+    .crm-modal {
+      position:fixed;inset:0;background:rgba(0,0,0,.55);
+      display:none;align-items:center;justify-content:center;z-index:100;
+    }
+    .crm-modal.active {display:flex;}
+    .crm-content {
+      background:#fff;width:clamp(320px,90vw,680px);
+      max-height:80vh;overflow:auto;
+      border-radius:14px;padding:24px 28px;
+      box-shadow:0 12px 36px rgba(0,0,0,.35);
+    }
+    .close-crm {float:right;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#052c4c;}
+    .empty {text-align:center;padding:32px;color:#777;font-size:.85rem;}
+    @media (max-width:780px){header{justify-content:center;text-align:center}.contact-info{justify-content:center}}
+  </style>
+</head>
+<body class="gradient-bg min-h-full"><!-- Header Principal -->
+  <header class="text-center py-8 px-4"></header>
+    <div class="bg-white rounded-xl mb-4 shadow-2xl p-6 inline-block pulse"><img src="assets/images/loggo-Nassa.png" alt="NASSA SOLAR Logo" class="mx-auto h-28 w-auto" onerror="this.src=''; this.alt='Logo NASSA SOLAR'; this.style.display='none';">
     </div>
-  </header><!-- Formulario Principal -->
-  <main class="max-w-6xl mx-auto px-4 pb-8">
-   <div class="glass rounded-2xl p-6 md:p-8 shadow-2xl">
-    <form id="formularioCotizacion" class="space-y-8"><!-- Datos Personales -->
-     <section>
-      <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span> Información Personal</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-       <div><label for="nombre" class="block text-sm font-medium text-blue-100 mb-2">Nombre Completo *</label> <input type="text" id="nombre" name="nombre" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu nombre completo">
-       </div>
-       <div><label for="telefono" class="block text-sm font-medium text-blue-100 mb-2">Teléfono/WhatsApp *</label> <input type="tel" id="telefono" name="telefono" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="+57 300 123 4567">
-       </div>
-       <div><label for="email" class="block text-sm font-medium text-blue-100 mb-2">Correo Electrónico *</label> <input type="email" id="email" name="email" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="tu@email.com">
-       </div>
-        <div><label for="ciudad" class="block text-sm font-medium text-blue-100 mb-2">Ciudad *</label> <select id="ciudad" name="ciudad" required onchange="calcularHSP()" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona tu ciudad</option> </select>
-  </div>
-       <div><label for="identificacion" class="block text-sm font-medium text-blue-100 mb-2">Identificación</label> <input type="text" id="identificacion" name="identificacion" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de cédula (opcional)">
-       </div>
-       <div><label for="direccion" class="block text-sm font-medium text-blue-100 mb-2">Dirección *</label> <input type="text" id="direccion" name="direccion" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu dirección completa">
-       </div>
+      <h1 class="brand-title">COTIZADOR FOTOVOLTAICO</h1>
+      <div class="contact-info">
+        <span>Tel: <a href="tel:+573136909723">+57 313 690 9723</a></span>
+        <span>Email: <a href="mailto:nassasolarprecotizaciones@gmail.com">nassasolarprecotizaciones@gmail.com</a></span>
+        <span>WhatsApp: <a href="https://wa.me/573136909723" target="_blank">Chat</a></span>
+        <span>Web: <a href="https://www.nassasolar.com" target="_blank">nassasolar.com</a></span>
       </div>
-     </section><!-- Información Técnica -->
-     <section>
-      <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span> Información Técnica y Consumo</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-       <div><label for="consumoMensual" class="block text-sm font-medium text-blue-100 mb-2">Consumo Mensual (kWh) *</label> <input type="number" id="consumoMensual" name="consumoMensual" required min="50" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="300">
-        <p class="text-xs text-blue-200 mt-1">Revisa tu factura de luz</p>
-       </div>
-       <div><label for="valorFactura" class="block text-sm font-medium text-blue-100 mb-2">Valor Factura Mensual ($) *</label> <input type="number" id="valorFactura" name="valorFactura" required min="50000" step="1000" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="150000">
-       </div>
-       <div><label for="nic" class="block text-sm font-medium text-blue-100 mb-2">NIC (Número de Instalación) *</label> <input type="text" id="nic" name="nic" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de tu medidor">
-        <p class="text-xs text-blue-200 mt-1">Aparece en tu factura de luz</p>
-       </div>
-       <div><label for="valorKwh" class="block text-sm font-medium text-blue-100 mb-2">Valor kWh ($) *</label> <input type="number" id="valorKwh" name="valorKwh" required min="100" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="500">
-        <p class="text-xs text-blue-200 mt-1">Costo por kWh en tu factura</p>
-       </div>
-       <div><label for="tipoVivienda" class="block text-sm font-medium text-blue-100 mb-2">Tipo de Propiedad *</label> <select id="tipoVivienda" name="tipoVivienda" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona una opción</option> <option value="casa">Casa</option> <option value="apartamento">Apartamento</option> <option value="local">Local Comercial</option> <option value="empresa">Empresa</option> </select>
-       </div>
-       <div><label for="areaDisponible" class="block text-sm font-medium text-blue-100 mb-2">Área Disponible Techo (m²)</label> <input type="number" id="areaDisponible" name="areaDisponible" min="10" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="50">
-        <p class="text-xs text-blue-200 mt-1">Aproximado está bien</p>
-       </div>
-       <div><label for="numeroPisos" class="block text-sm font-medium text-blue-100 mb-2">Número de Pisos *</label> <select id="numeroPisos" name="numeroPisos" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="1">1 Piso</option> <option value="2">2 Pisos</option> <option value="3">3 Pisos</option> <option value="4">4+ Pisos</option> </select>
-       </div>
-       <div><label for="sistemaElectrico" class="block text-sm font-medium text-blue-100 mb-2">Sistema Eléctrico *</label> <select id="sistemaElectrico" name="sistemaElectrico" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="monofasico">Monofásico (110V/220V)</option> <option value="bifasico">Bifásico (220V)</option> <option value="trifasico">Trifásico (220V/440V)</option> </select>
-       </div>
-       <div><label for="porcentajeConsumodia" class="block text-sm font-medium text-blue-100 mb-2">% Consumo en el Día *</label> <select id="porcentajeConsumodia" name="porcentajeConsumodia" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="30">30% - Uso principalmente nocturno</option> <option value="50">50% - Uso equilibrado día/noche</option> <option value="70">70% - Uso principalmente diurno</option> <option value="90">90% - Uso casi exclusivo diurno</option> </select>
-       </div>
-       <div><label for="tipoSistemaFV" class="block text-sm font-medium text-blue-100 mb-2">Tipo de Sistema FV *</label> <select id="tipoSistemaFV" name="tipoSistemaFV" required onchange="mostrarOpcionesBaterias()" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="ongrid">ON-GRID CONECTADO A RED</option> <option value="offgrid">OFF-GRID AUTONOMO CON BATERIAS</option> <option value="hibrido_incluido">HIBRIDO INCLUIDO BATERIAS</option> <option value="hibrido_opcional">HIBRIDO OPCIONAL BATERIAS</option> </select>
-       </div>
-       <div><label for="hspCalculado" class="block text-sm font-medium text-blue-100 mb-2">HSP Calculado</label> <input type="number" id="hspCalculado" name="hspCalculado" readonly step="0.1" class="w-full px-4 py-3 bg-gray-600 bg-opacity-50 border border-white border-opacity-30 rounded-lg text-gray-300 cursor-not-allowed" placeholder="Se calcula automáticamente">
-        <p class="text-xs text-blue-200 mt-1">Horas Sol Pico para tu ciudad</p>
-       </div>
-       <div><label for="legalizacion" class="block text-sm font-medium text-blue-100 mb-2">Legalización *</label> <select id="legalizacion" name="legalizacion" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="SI">SI</option> <option value="NO">NO</option> </select>
-        <p class="text-xs text-blue-200 mt-1">Determina las condiciones comerciales</p>
-       </div>
-      </div>
-     </section><!-- Selección de Equipos -->
-     <section>
-      <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span> Selección de Equipos</h2>
-      <div class="mb-6">
-       <label for="seleccionManual" class="block text-sm font-medium text-blue-100 mb-2">¿Seleccionar equipos manualmente? *</label>
-       <select id="seleccionManual" name="seleccionManual" required onchange="toggleSeleccionEquipos()" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">
-         <option value="">Selecciona</option>
-         <option value="NO">NO - Usar equipos recomendados</option>
-         <option value="SI">SI - Seleccionar manualmente</option>
-       </select>
-       <p class="text-xs text-blue-200 mt-1">Si seleccionas NO, usaremos los equipos recomendados automáticamente</p>
-      </div>
-      <div id="equiposManualWrapper" style="display:none;"><!-- Paneles Solares -->
-      <div class="mb-6">
-       <h3 class="text-lg font-semibold text-blue-100 mb-4">🔋 Paneles Solares *</h3>
-       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="opcionesPaneles"><!-- Se llenan dinámicamente -->
-       </div>
-      </div><!-- Inversores -->
-      <div class="mb-6">
-       <h3 class="text-lg font-semibold text-blue-100 mb-4">⚡ Inversores *</h3>
-       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="opcionesInversores"><!-- Se llenan dinámicamente -->
-       </div>
-      </div><!-- Baterías (solo si aplica) -->
-      <div class="mb-6" id="seccionBaterias" style="display: none;">
-       <h3 class="text-lg font-semibold text-blue-100 mb-4">🔋 Baterías</h3>
-       <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="opcionesBaterias"><!-- Se llenan dinámicamente -->
-       </div>
-      </div>
-      </div><!-- Cierre equiposManualWrapper -->
-    </section><!-- Botón de Cotización -->
-    <div class="text-center"><button type="submit" class="px-12 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-yellow-900 font-bold text-xl rounded-full transition-all duration-300 transform hover:scale-105 shadow-2xl"> 🚀 GENERAR COTIZACIÓN TÉCNICA </button>
     </div>
+  </header>
+
+  <div class="container">
+    <form id="cotizadorForm" autocomplete="off" novalidate>
+      <!-- Datos cliente -->
+      <div class="section">
+        <h2>📋 Datos Cliente</h2>
+        <div class="grid-2">
+          <div>
+            <label>Nombre *</label>
+            <input name="nombre" required minlength="3">
+          </div>
+          <div>
+            <label>Email *</label>
+            <input name="email" type="email" required>
+          </div>
+          <div>
+            <label>Teléfono *</label>
+            <input name="telefono" required placeholder="+57 300 0000000">
+          </div>
+          <div>
+            <label>Identificación</label>
+            <input name="identificacion">
+          </div>
+          <div>
+            <label>Ciudad *</label>
+            <select name="ciudad" id="ciudad" required>
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+          <div>
+            <label>Dirección *</label>
+            <input name="direccion" required>
+          </div>
+        </div>
+      </div>
+      <!-- Consumo -->
+      <div class="section">
+        <h2>⚡ Consumo</h2>
+        <div class="grid-2">
+          <div>
+            <label>Consumo Mensual (kWh) *</label>
+            <input name="consumoMensual" type="number" min="50" required>
+          </div>
+          <div>
+            <label>Valor Factura Mensual (COP) *</label>
+            <input name="valorFactura" type="number" min="10000" required>
+          </div>
+          <div>
+            <label>Valor kWh (COP) *</label>
+            <input name="valorKwh" type="number" min="100" required>
+          </div>
+          <div>
+            <label>NIC *</label>
+            <input name="nic" minlength="5" required>
+          </div>
+        </div>
+      </div>
+      <!-- Instalación -->
+      <div class="section">
+        <h2>🏠 Instalación</h2>
+        <div class="grid-2">
+          <div>
+            <label>Tipo Vivienda *</label>
+            <select name="tipoVivienda" required>
+              <option value="">Seleccione...</option>
+              <option value="casa">Casa</option>
+              <option value="apartamento">Apartamento</option>
+              <option value="local">Local</option>
+              <option value="empresa">Empresa</option>
+            </select>
+          </div>
+          <div>
+            <label>Sistema Eléctrico *</label>
+            <select name="sistemaElectrico" required>
+              <option value="">Seleccione...</option>
+              <option value="monofasico">Monofásico</option>
+              <option value="bifasico">Bifásico</option>
+              <option value="trifasico">Trifásico</option>
+            </select>
+          </div>
+          <div>
+            <label>Área Disponible (m²)</label>
+            <input name="areaDisponible" type="number" min="0" value="0">
+          </div>
+          <div>
+            <label>Número Pisos</label>
+            <select name="numeroPisos">
+              <option>1</option><option>2</option><option>3</option>
+              <option>4</option><option>5</option><option>6</option>
+            </select>
+          </div>
+          <div>
+            <label>% Consumo Día *</label>
+            <input name="porcentajeConsumodia" type="number" min="0" max="100" value="70" required>
+          </div>
+          <div>
+            <label>Tipo Sistema FV *</label>
+            <select name="tipoSistemaFV" id="tipoSistemaFV" required>
+              <option value="">Seleccione...</option>
+              <option value="ongrid">On-Grid</option>
+              <option value="offgrid">Off-Grid</option>
+              <option value="hibrido_incluido">Híbrido c/batería</option>
+              <option value="hibrido_opcional">Híbrido opcional</option>
+            </select>
+          </div>
+          <div>
+            <label>HSP (Opcional)</label>
+            <input name="hspCalculado" type="number" min="0" max="9" step="0.1">
+          </div>
+          <div>
+            <label>Legalización *</label>
+            <select name="legalizacion" id="legalizacion" required>
+              <option value="">Seleccione...</option>
+              <option value="SI">SI</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Equipos -->
+      <div class="section">
+        <h2>🔧 Equipos</h2>
+        <div class="grid-2">
+          <div>
+            <label>¿Seleccionar equipos manualmente? *</label>
+            <select name="seleccionManual" id="seleccionManual" required>
+              <option value="NO" selected>NO - Usar equipos recomendados</option>
+              <option value="SI">SI - Seleccionar manualmente</option>
+            </select>
+          </div>
+        </div>
+        <div id="equiposWrapper" style="display:none;margin-top:15px;">
+          <div class="grid-2">
+          <div>
+            <label id="panelLabel">Panel</label>
+            <select name="panel" id="panel">
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+          <div>
+            <label id="inversorLabel">Inversor</label>
+            <select name="inversor" id="inversor">
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+          <div>
+            <label id="bateriaLabel">Batería (Opcional)</label>
+            <select name="bateria" id="bateria">
+              <option value="">Ninguna</option>
+            </select>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="submit-bar">
+        <button id="btnSubmit" type="submit">Generar Cotización</button>
+      </div>
     </form>
-   </div><!-- Beneficios -->
-   <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div class="glass rounded-xl p-6">
-     <div class="flex items-center mb-3">
-      <div class="text-3xl mr-3">
-       🛡️
+
+    <div id="resultadoWrapper">
+      <h2 style="margin:0;font-size:1.2rem;color:var(--color-primary);font-weight:700;">Resultado de Cotización</h2>
+      <p id="mensajeResultado" style="margin:6px 0 18px;font-size:.85rem;color:#444;"></p>
+
+      <div class="cards">
+        <div class="card"><h3>ID COTIZACIÓN</h3><div class="value" id="cotizacionId">-</div></div>
+        <div class="card"><h3>INVERSIÓN TOTAL</h3><div class="value" id="inversionTotal">-</div></div>
+        <div class="card"><h3>AHORRO MENSUAL</h3><div class="value" id="ahorroMensual">-</div></div>
+        <div class="card"><h3>RETORNO</h3><div class="value" id="tiempoRetorno">-</div></div>
+        <div class="card"><h3>CAPACIDAD INSTALADA</h3><div class="value" id="capacidadInstalada">-</div></div>
+        <div class="card"><h3>GENERACIÓN MENSUAL</h3><div class="value" id="generacionMensual">-</div></div>
       </div>
-      <h3 class="text-white font-semibold">Respaldo Total</h3>
-     </div>
-     <p class="text-blue-200 text-sm">Acompañamiento y respaldo permanente en la gestión ante el operador de red y en la obtención de los beneficios tributarios. Monitoreo permanente.</p>
-    </div>
-    <div class="glass rounded-xl p-6">
-     <div class="flex items-center mb-3">
-      <div class="text-3xl mr-3">
-       💰
+
+      <h3 style="margin:10px 0 6px;font-size:.85rem;letter-spacing:.5px;color:var(--color-accent);">PROYECCIÓN (Primeros 10 años)</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+          <tr>
+            <th>Año</th><th>Valor kWh</th><th>Prod. Anual</th><th>Generación</th><th>Deprec.</th>
+            <th>Deducción</th><th>Mtto</th><th>Ahorro Año</th><th>Acumulado</th><th>ROI %</th>
+          </tr>
+          </thead>
+          <tbody id="tablaAhorrosBody"></tbody>
+        </table>
       </div>
-      <h3 class="text-white font-semibold">Ahorra hasta el 100%</h3>
-     </div>
-     <p class="text-blue-200 text-sm">Reduce significativamente o elimina por completo tu factura de energía eléctrica con nuestro sistema solar de alta eficiencia.</p>
     </div>
-    <div class="glass rounded-xl p-6">
-     <div class="flex items-center mb-3">
-      <div class="text-3xl mr-3">
-       ✅
-      </div>
-      <h3 class="text-white font-semibold">Garantía Real</h3>
-     </div>
-     <p class="text-blue-200 text-sm">Garantía de equipos, materiales y mano de obra reales y certificados, logrando una certificación RETIE sin contratiempos. Garantía completa del sistema con respaldo técnico especializado y mantenimiento preventivo incluido.</p>
-    </div>
-    <div class="glass rounded-xl p-6">
-     <div class="flex items-center mb-3">
-      <div class="text-3xl mr-3">
-       🏆
-      </div>
-      <h3 class="text-white font-semibold">+10 Años</h3>
-     </div>
-     <p class="text-blue-200 text-sm">Más de una década de experiencia comprobada en el sector de energía solar con cientos de proyectos exitosos.</p>
-    </div>
-   </div>
-  </main><!-- Modal de Resultado -->
-  <div id="modalResultado" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-   <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-    <div class="p-6 border-b border-gray-200">
-     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold text-gray-900">🎉 ¡Cotización Técnica Completa!</h2><button onclick="cerrarModal()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">×</button>
-     </div>
-    </div>
-    <div id="contenidoResultado" class="p-6"><!-- El contenido se genera dinámicamente -->
-    </div>
-   </div>
   </div>
+
+  <!-- Herramientas flotantes -->
+  <div class="floating-tools">
+    <a class="tool-btn" href="https://wa.me/573136909723" target="_blank" title="WhatsApp">Chat</a>
+    <a class="tool-btn" href="tel:+573136909723" title="Llamar">LLamada</a>
+    <!button class="tool-btn" type="button" id="openCrm" title="CRM">CRM</button>
+  </div>
+
+  <!!-- Modal CRM local -->
+  <!div class="crm-modal" id="crmModal">
+    <!div class="crm-content">
+      <!button class="close-crm" id="closeCrm">&times;</button>
+      <!h3 style="margin:0 0 12px;font-size:1rem;color:var(--color-primary);">Cotizaciones (Local)</h3>
+      <!div id="crmList"></div>
+    <!/div>
+  <!/div>
+
+  <footer>
+    © <span id="year"></span> NASSA Solar. Todos los derechos reservados.
+  </footer>
+
   <script>
-        // Variables globales para acceso directo
-        let datosCliente = {};
-        let cotizacionActual = {};
-        const API_BASE_URL = window.location.origin + '/api';
-        
-        async function cargarEquipos(sistemaElectrico = null) {
-            try {
-                // Construir URL con filtro si se proporciona sistema eléctrico
-                let url = `${API_BASE_URL}/equipos`;
-                
-                // Si sistemaElectrico es null (carga inicial), no cargar inversores
-                if (sistemaElectrico === null) {
-                    console.log('🔄 Carga inicial: solo paneles y baterías (inversores ocultos)');
-                } else if (sistemaElectrico) {
-                    url += `?sistemaElectrico=${sistemaElectrico}`;
-                    console.log('🔄 Cargando equipos filtrados para sistema:', sistemaElectrico);
-                } else {
-                    console.log('🔄 Cargando equipos desde:', url);
-                }
-                
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📦 Datos recibidos:', data);
-                
-                // Validar que los datos tienen la estructura esperada
-                if (!data.paneles || !data.inversores || !data.baterias) {
-                    throw new Error('Estructura de datos inválida');
-                }
-                
-                // Guardar equipos globalmente
-                window.configuracionEquipos = {
-                    paneles: data.paneles,
-                    // Si es carga inicial (null), forzar array vacío de inversores
-                    inversores: sistemaElectrico === null ? [] : data.inversores,
-                    baterias: data.baterias
-                };
-                // Exponer también como variable global no-window (compatibilidad con código existente)
-                configuracionEquipos = window.configuracionEquipos;
-                
-                console.log('✅ Equipos guardados:', {
-                    paneles: configuracionEquipos.paneles.length,
-                    inversores: configuracionEquipos.inversores.length,
-                    baterias: configuracionEquipos.baterias.length
-                });
-                
-                // Cargar opciones de equipos en el DOM
-                cargarOpcionesEquipos();
-                console.log('✅ Equipos cargados y mostrados en UI');
-            } catch (error) {
-                console.error('❌ Error cargando equipos:', error);
-                mostrarNotificacion('⚠️ Error cargando equipos: ' + error.message, 'error');
-            }
-        }
-        
-        async function cargarCiudades() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/ciudades`);
-                const hspciudades = await response.json();
-                window.hspCiudades = hspciudades;
-                // Exponer como variable global para compatibilidad
-                hspCiudades = window.hspCiudades;
-                console.log('✅ Ciudades cargadas desde API:', Object.keys(hspciudades).length, 'ciudades');
-                
-                // Poblar el select de ciudades
-                poblarSelectCiudades(hspciudades);
-            } catch (error) {
-                console.error('❌ Error cargando ciudades:', error);
-                mostrarNotificacion('⚠️ Error cargando ciudades', 'error');
-            }
-        }
-        
-        // Función para poblar dinámicamente el select de ciudades
-        function poblarSelectCiudades(ciudades) {
-            try {
-                const selectCiudad = document.getElementById('ciudad');
-                
-                if (!selectCiudad) {
-                    console.error('❌ No se encontró el elemento select#ciudad');
-                    return;
-                }
-                
-                console.log('📋 Poblando select de ciudades...');
-                
-                // Limpiar opciones existentes (excepto la primera "Selecciona tu ciudad")
-                while (selectCiudad.options.length > 1) {
-                    selectCiudad.remove(1);
-                }
-                
-                // Obtener lista de ciudades (excluyendo "default")
-                const listaCiudades = Object.keys(ciudades)
-                    .filter(key => key !== 'default')
-                    .map(key => {
-                        // Usar el nombre del objeto o convertir de snake_case a Title Case
-                        const nombreMostrar = ciudades[key]?.nombre || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        return {
-                            value: nombreMostrar,
-                            key: key
-                        };
-                    })
-                    .sort((a, b) => a.value.localeCompare(b.value, 'es'));
-                
-                console.log(`📋 ${listaCiudades.length} ciudades para agregar`);
-                
-                // Agregar opciones al select
-                listaCiudades.forEach((ciudad, index) => {
-                    const option = document.createElement('option');
-                    option.value = ciudad.value;
-                    option.textContent = ciudad.value;
-                    selectCiudad.appendChild(option);
-                    
-                    // Log solo las primeras 5 para no saturar la consola
-                    if (index < 5) {
-                        console.log(`  ➕ ${ciudad.value}`);
-                    }
-                });
-                
-                console.log(`✅ ${listaCiudades.length} ciudades agregadas al select`);
-            } catch (error) {
-                console.error('❌ Error poblando select de ciudades:', error);
-            }
-        }
+    const API_BASE_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:5000/api'
+      : 'https://tu-backend-produccion/api';
 
-        // Función para cargar y aplicar valores por defecto inteligentes
-        async function aplicarValoresDefault() {
-            try {
-                console.log('🧠 Cargando valores por defecto inteligentes...');
-                const response = await fetch(`${API_BASE_URL}/valores-default`);
-                const defaults = await response.json();
-                
-                console.log('📊 Valores por defecto recibidos:', defaults);
-                console.log(`   Fuente: ${defaults.source === 'analytics' ? '📈 Analytics (últimas ' + defaults.sample_size + ' cotizaciones)' : '📋 Defaults fijos'}`);
-                
-                // Aplicar ciudad por defecto
-                if (defaults.ciudad) {
-                    const selectCiudad = document.getElementById('ciudad');
-                    // Convertir de snake_case a Title Case
-                    const ciudadDisplay = defaults.ciudad.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    if (selectCiudad) {
-                        // Buscar la opción que coincida
-                        for (let option of selectCiudad.options) {
-                            if (option.value.toLowerCase() === ciudadDisplay.toLowerCase()) {
-                                option.selected = true;
-                                console.log(`   ✅ Ciudad: ${ciudadDisplay}`);
-                                break;
-                            }
-                        }
-                        // FIX #1: Calcular HSP automáticamente después de seleccionar ciudad
-                        calcularHSP();
-                    }
-                }
-                
-                // Aplicar tipo de sistema FV
-                if (defaults.tipoSistemaFV) {
-                    const selectTipoSistema = document.getElementById('tipoSistemaFV');
-                    if (selectTipoSistema) {
-                        selectTipoSistema.value = defaults.tipoSistemaFV;
-                        console.log(`   ✅ Tipo Sistema FV: ${defaults.tipoSistemaFV}`);
-                    }
-                }
-                
-                // Aplicar tipo de propiedad
-                if (defaults.tipo_propiedad) {
-                    const selectTipoPropiedad = document.getElementById('tipoVivienda');
-                    if (selectTipoPropiedad) {
-                        selectTipoPropiedad.value = defaults.tipo_propiedad;
-                        console.log(`   ✅ Tipo Propiedad: ${defaults.tipo_propiedad}`);
-                    }
-                }
-                
-                // Aplicar legalización
-                if (defaults.legalizacion) {
-                    const selectLegalizacion = document.getElementById('legalizacion');
-                    if (selectLegalizacion) {
-                        selectLegalizacion.value = defaults.legalizacion;
-                        console.log(`   ✅ Legalización: ${defaults.legalizacion}`);
-                    }
-                }
-                
-                // Aplicar selección manual
-                if (defaults.seleccionManual) {
-                    const selectSeleccionManual = document.getElementById('seleccionManual');
-                    if (selectSeleccionManual) {
-                        selectSeleccionManual.value = defaults.seleccionManual;
-                        console.log(`   ✅ Selección Manual: ${defaults.seleccionManual}`);
-                        // Trigger el evento change para mostrar/ocultar equipos
-                        toggleSeleccionEquipos();
-                    }
-                }
-                
-                // Aplicar sistema eléctrico
-                if (defaults.sistemaElectrico) {
-                    const selectSistemaElectrico = document.getElementById('sistemaElectrico');
-                    if (selectSistemaElectrico) {
-                        selectSistemaElectrico.value = defaults.sistemaElectrico;
-                        console.log(`   ✅ Sistema Eléctrico: ${defaults.sistemaElectrico}`);
-                        // NOTA: Los inversores se cargarán en DOMContentLoaded después de aplicar defaults
-                    }
-                }
-                
-                // Aplicar porcentaje de consumo día
-                if (defaults.porcentajeConsumodia) {
-                    const selectPorcentajeConsumo = document.getElementById('porcentajeConsumodia');
-                    if (selectPorcentajeConsumo) {
-                        selectPorcentajeConsumo.value = defaults.porcentajeConsumodia.toString();
-                        console.log(`   ✅ % Consumo Día: ${defaults.porcentajeConsumodia}%`);
-                    }
-                }
-                
-                console.log('✅ Valores por defecto aplicados exitosamente');
-            } catch (error) {
-                console.error('⚠️ Error cargando valores por defecto (no crítico):', error);
-                // No mostrar error al usuario, los defaults fijos ya están en el HTML
-            }
-        }
-	
+    // Cargar datos iniciales
+    async function init() {
+      document.getElementById('year').textContent = new Date().getFullYear();
+      await cargarCiudades();
+      await cargarEquipos();
+      restaurarCRM();
+      
+      // Inicializar estado de campos de equipos según valor default
+      initEquiposState();
+    }
 
-        // Función para calcular HSP automáticamente
-        function calcularHSP() {
-            if (typeof hspCiudades === 'undefined' || !hspCiudades) {
-                console.warn('⚠️ HSP ciudades no cargado aún');
-                return;
-            }
-            
-            const ciudad = document.getElementById('ciudad').value.toLowerCase().trim();
-            // Normalizar: reemplazar espacios por guiones bajos
-            const ciudadNormalizada = ciudad.replace(/\s+/g, '_');
-            
-            // Valor por defecto (compatibilidad con ambos formatos)
-            let hsp = (hspCiudades.default?.hsp || hspCiudades.default) || 4.5;
-            
-            // Buscar coincidencia exacta primero
-            if (hspCiudades[ciudadNormalizada] !== undefined) {
-                // Compatibilidad: objeto {nombre, hsp} o número directo
-                hsp = hspCiudades[ciudadNormalizada].hsp || hspCiudades[ciudadNormalizada];
-                console.log(`✅ HSP encontrado para ${ciudad}: ${hsp}`);
-            } else {
-                // Buscar coincidencia parcial
-                let encontrado = false;
-                for (const [key, value] of Object.entries(hspCiudades)) {
-                    if (key !== 'default' && (ciudadNormalizada.includes(key) || key.includes(ciudadNormalizada))) {
-                        // Compatibilidad: objeto {nombre, hsp} o número directo
-                        hsp = value.hsp || value;
-                        console.log(`✅ HSP encontrado (parcial) para ${ciudad}: ${hsp}`);
-                        encontrado = true;
-                        break;
-                    }
-                }
-                if (!encontrado) {
-                    console.log(`⚠️ Ciudad no encontrada, usando default: ${hsp}`);
-                }
-            }
-            
-            document.getElementById('hspCalculado').value = hsp;
-            console.log(`📊 HSP asignado: ${hsp} para ciudad: ${ciudad}`);
-        }
+    // Inicializar estado de required en campos de equipos
+    function initEquiposState() {
+      const seleccionManual = document.getElementById('seleccionManual');
+      const panelSel = document.getElementById('panel');
+      const invSel = document.getElementById('inversor');
+      const panelLabel = document.getElementById('panelLabel');
+      const invLabel = document.getElementById('inversorLabel');
+      const wrapper = document.getElementById('equiposWrapper');
+      
+      // Si el valor actual es "NO" (default), asegurar que required está en false y disabled en true
+      if (seleccionManual.value === 'NO' || seleccionManual.value === '') {
+        wrapper.style.display = 'none';
+        panelSel.required = false;
+        invSel.required = false;
+        panelSel.disabled = true;  // ✅ Desactivar para que no participen en validación
+        invSel.disabled = true;
+        panelLabel.textContent = 'Panel';
+        invLabel.textContent = 'Inversor';
+      }
+    }
 
-        // Función para mostrar/ocultar opciones de baterías
-        function mostrarOpcionesBaterias() {
-            const tipoSistema = document.getElementById('tipoSistemaFV').value;
-            const seccionBaterias = document.getElementById('seccionBaterias');
-            
-            if (tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') {
-                seccionBaterias.style.display = 'block';
-                // Hacer baterías obligatorias
-                document.querySelectorAll('input[name="bateria"]').forEach(input => {
-                    input.required = true;
-                });
-            } else if (tipoSistema === 'hibrido_opcional') {
-                seccionBaterias.style.display = 'block';
-                // Baterías opcionales
-                document.querySelectorAll('input[name="bateria"]').forEach(input => {
-                    input.required = false;
-                });
-            } else {
-                seccionBaterias.style.display = 'none';
-                // Limpiar selección de baterías
-                document.querySelectorAll('input[name="bateria"]').forEach(input => {
-                    input.checked = false;
-                    input.required = false;
-                });
-            }
-        }
-        
-        // Función para mostrar/ocultar selección manual de equipos
-        function toggleSeleccionEquipos() {
-            const seleccionManual = document.getElementById('seleccionManual').value;
-            const wrapper = document.getElementById('equiposManualWrapper');
-            
-            if (seleccionManual === 'SI') {
-                wrapper.style.display = 'block';
-                // Hacer equipos obligatorios
-                document.querySelectorAll('input[name="panel"]').forEach(input => {
-                    input.required = true;
-                });
-                document.querySelectorAll('input[name="inversor"]').forEach(input => {
-                    input.required = true;
-                });
-                // Batería se maneja con mostrarOpcionesBaterias()
-            } else {
-                wrapper.style.display = 'none';
-                // Limpiar selecciones y REMOVER required
-                document.querySelectorAll('input[name="panel"]').forEach(input => {
-                    input.checked = false;
-                    input.required = false;
-                });
-                document.querySelectorAll('input[name="inversor"]').forEach(input => {
-                    input.checked = false;
-                    input.required = false;
-                });
-                document.querySelectorAll('input[name="bateria"]').forEach(input => {
-                    input.checked = false;
-                    input.required = false; // IMPORTANTE: remover required cuando está oculto
-                });
-            }
-        }
-        
-        // Función para crear tarjetas de equipos
-        function crearTarjetaEquipo(equipo, tipo) {
-            // Convertir el ID a minúsculas para que coincida con el backend
-            const equipoIdLower = equipo.id.toLowerCase();
-            return `
-                <div class="equipo-card glass rounded-xl p-4 cursor-pointer" onclick="seleccionarEquipo('${equipoIdLower}', '${tipo}')">
-                    <input type="radio" name="${tipo}" value="${equipoIdLower}" id="${equipoIdLower}" class="hidden" ${tipo !== 'bateria' ? 'required' : ''}>
-                    <div class="text-center">
-                        <h4 class="text-white font-bold text-lg mb-2">${equipo.nombre}</h4>
-                        <div class="text-yellow-400 text-2xl font-bold mb-2">
-                            ${tipo === 'bateria' ? (equipo.capacidad/1000).toFixed(1) + ' kWh' : 
-                              tipo === 'inversor' ? (equipo.capacidad/1000) + ' kW' : 
-                              equipo.capacidad + ' W'}
-                        </div>
-                        <p class="text-blue-200 text-sm mb-3">${equipo.descripcion}</p>
-                        <div class="text-green-400 font-bold text-lg">
-                            ✅ Disponible
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Función para seleccionar equipo
-        function seleccionarEquipo(equipoId, tipo) {
-            // Limpiar selecciones anteriores
-            document.querySelectorAll(`input[name="${tipo}"]`).forEach(input => {
-                input.checked = false;
-                input.parentElement.classList.remove('equipo-selected');
-            });
-            
-            // Seleccionar nuevo equipo
-            const input = document.getElementById(equipoId);
-            input.checked = true;
-            input.parentElement.classList.add('equipo-selected');
-        }
-
-        // Función para cargar opciones de equipos
-        function cargarOpcionesEquipos() {
-            console.log('🔄 Intentando cargar opciones de equipos...');
-            
-            if (typeof configuracionEquipos === 'undefined' || !configuracionEquipos) {
-                console.error('❌ configuracionEquipos no definida');
-                mostrarNotificacion('⚠️ Configuración de equipos no disponible', 'error');
-                return;
-            }
-            
-            console.log('📋 Configuración disponible:', configuracionEquipos);
-            
-            // Cargar paneles
-            const contenedorPaneles = document.getElementById('opcionesPaneles');
-            if (!contenedorPaneles) {
-                console.error('❌ Contenedor de paneles no encontrado');
-                return;
-            }
-            contenedorPaneles.innerHTML = configuracionEquipos.paneles
-                .map(panel => crearTarjetaEquipo(panel, 'panel')).join('');
-            console.log(`✅ ${configuracionEquipos.paneles.length} paneles cargados`);
-
-            // Cargar inversores (si hay, o mostrar mensaje)
-            const contenedorInversores = document.getElementById('opcionesInversores');
-            if (!contenedorInversores) {
-                console.error('❌ Contenedor de inversores no encontrado');
-                return;
-            }
-            
-            if (configuracionEquipos.inversores.length === 0) {
-                // No hay inversores (probablemente aún no se ha seleccionado sistema eléctrico)
-                contenedorInversores.innerHTML = '<div class="col-span-3 text-center text-white bg-yellow-500 bg-opacity-30 p-4 rounded-lg">⚠️ Selecciona un tipo de sistema eléctrico para ver los inversores compatibles</div>';
-                console.log('⚠️ No hay inversores para mostrar');
-            } else {
-                contenedorInversores.innerHTML = configuracionEquipos.inversores
-                    .map(inversor => crearTarjetaEquipo(inversor, 'inversor')).join('');
-                console.log(`✅ ${configuracionEquipos.inversores.length} inversores cargados`);
-            }
-
-            // Cargar baterías
-            const contenedorBaterias = document.getElementById('opcionesBaterias');
-            if (!contenedorBaterias) {
-                console.error('❌ Contenedor de baterías no encontrado');
-                return;
-            }
-            contenedorBaterias.innerHTML = configuracionEquipos.baterias
-                .map(bateria => crearTarjetaEquipo(bateria, 'bateria')).join('');
-            console.log(`✅ ${configuracionEquipos.baterias.length} baterías cargadas`);
-        }
-
-        // Función para abrir WhatsApp
-        function abrirWhatsApp() {
-            const numeroEmpresa = "573136909723";
-            const mensaje = "¡Hola! 👋 Me interesa obtener información sobre sistemas de energía solar. ¿Podrían ayudarme con una cotización personalizada?";
-            const url = `https://wa.me/${numeroEmpresa}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank', 'noopener,noreferrer');
-        }
-
-        // Función para mostrar resultado completo
-        function mostrarResultadoCompleto(cotizacion) {
-            const contenido = document.getElementById('contenidoResultado');
-            
-            // Verificar que el elemento existe
-            if (!contenido) {
-                console.error('❌ No se encontró el elemento contenidoResultado');
-                mostrarNotificacion('❌ Error mostrando resultado: elemento no encontrado', 'error');
-                return;
-            }
-            
-            // Crear tabla de ahorros para los primeros 10 años con datos corregidos
-            const tablaAhorros10 = cotizacion.tablaAhorros.slice(0, 10).map(item => `
-                <tr class="border-b">
-                    <td class="py-2 px-4">${item.año}</td>
-                    <td class="py-2 px-4">$${Math.round(item.valorKwhAño).toLocaleString()}</td>
-                    <td class="py-2 px-4">${Math.round(item.produccionAnual).toLocaleString()} kWh</td>
-                    <td class="py-2 px-4">$${Math.round(item.ahorroGeneracion).toLocaleString()}</td>
-                    <td class="py-2 px-4">$${Math.round(item.ahorroDep || 0).toLocaleString()}</td>
-                    <td class="py-2 px-4">$${Math.round(item.ahorroDed || 0).toLocaleString()}</td>
-                    <td class="py-2 px-4">$${Math.round(item.costoMant || 0).toLocaleString()}</td>
-                    <td class="py-2 px-4 font-bold">$${Math.round(item.ahorroTotalAño).toLocaleString()}</td>
-                    <td class="py-2 px-4">$${Math.round(item.ahorroAcumulado).toLocaleString()}</td>
-                    <td class="py-2 px-4 ${item.roi > 0 ? 'text-green-600' : 'text-red-600'}">${item.roi.toFixed(1)}%</td>
-                </tr>
-            `).join('');
-
-            contenido.innerHTML = `
-                <div class="space-y-6">
-                    <!-- Logo y Header -->
-                    <div class="text-center mb-6">
-                        <img src="/static/images/loggo-Nassa.png" alt="NASSA SOLAR" class="mx-auto h-20 w-auto mb-4">
-                    </div>
-                    
-                    <!-- Resumen Ejecutivo -->
-                    <div class="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-xl border-l-4 border-blue-500">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">📊 Resumen Ejecutivo</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div>
-                                <div class="text-2xl font-bold text-blue-600">${cotizacion.capacidadInstalada} kW</div>
-                                <div class="text-sm text-gray-600">Capacidad Instalada</div>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-bold text-green-600">${cotizacion.generacionMensual} kWh</div>
-                                <div class="text-sm text-gray-600">Generación Mensual</div>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-bold text-purple-600">$${cotizacion.ahorroAnualEnergia.toLocaleString()}</div>
-                                <div class="text-sm text-gray-600">Ahorro Anual</div>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-bold text-orange-600">${cotizacion.tiempoRetorno} años</div>
-                                <div class="text-sm text-gray-600">Tiempo Retorno</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Variables Solicitadas -->
-                    <div class="bg-purple-50 p-6 rounded-xl border-l-4 border-purple-500">
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">🎯 Variables Calculadas (Solicitadas)</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div><strong>1. Porcentaje Producción Mensual:</strong> ${cotizacion.porcentajeProduccionMensual}%</div>
-                            <div><strong>2. Ahorro Total Depreciación (3 años):</strong> $${cotizacion.ahorroTotalDepreciacion.toLocaleString()}</div>
-                            <div><strong>3. Ahorro Total Deducción (5 años):</strong> $${cotizacion.ahorroTotalDeduccion.toLocaleString()}</div>
-                            <div><strong>8a. Acum. Generación hasta PayBack:</strong> $${cotizacion.acumxgen.toLocaleString()}</div>
-                            <div><strong>8b. Acum. Deducción hasta PayBack:</strong> $${cotizacion.acumxdeduc.toLocaleString()}</div>
-                            <div><strong>8c. Acum. Depreciación hasta PayBack:</strong> $${cotizacion.acumxdepre.toLocaleString()}</div>
-                        </div>
-                        <div class="mt-4 p-4 bg-yellow-100 rounded-lg">
-                            <div class="text-lg font-bold text-center">
-                                <strong>9. TOTAL ACUM (suma a+b+c):</strong> 
-                                <span class="text-2xl text-green-600">$${cotizacion.TotalAcum.toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Datos del Cliente -->
-                    <div class="bg-gray-50 p-6 rounded-xl">
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">👤 Información del Cliente</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                            <div><strong>Nombre:</strong> ${cotizacion.nombre}</div>
-                            <div><strong>Teléfono:</strong> ${cotizacion.telefono}</div>
-                            <div><strong>Email:</strong> ${cotizacion.email}</div>
-                            <div><strong>Ciudad:</strong> ${cotizacion.ciudad}</div>
-                            <div><strong>Dirección:</strong> ${cotizacion.direccion}</div>
-                            <div><strong>Tipo Sistema:</strong> ${cotizacion.tipoSistemaFV}</div>
-                            <div><strong>HSP:</strong> ${cotizacion.hspCalculado}</div>
-                            <div><strong>Fecha:</strong> ${cotizacion.fecha} ${cotizacion.hora}</div>
-                            <div><strong>ID:</strong> ${cotizacion.cotizacionId}</div>
-                        </div>
-                    </div>
-
-                    <!-- Dimensionamiento del Sistema -->
-                    <div class="bg-yellow-50 p-6 rounded-xl">
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">🔧 Dimensionamiento del Sistema</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 class="font-semibold mb-2">Equipos Seleccionados:</h4>
-                                <ul class="space-y-1 text-sm">
-                                    <li>• ${cotizacion.numeroPaneles} x ${cotizacion.panelSeleccionado.nombre}</li>
-                                    <li>• ${cotizacion.numeroInversores} x ${cotizacion.inversorSeleccionado.nombre}</li>
-                                    ${cotizacion.bateriaSeleccionada ? `<li>• 1 x ${cotizacion.bateriaSeleccionada.nombre}</li>` : ''}
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold mb-2">Especificaciones Técnicas:</h4>
-                                <ul class="space-y-1 text-sm">
-                                    <li>• Capacidad: ${cotizacion.capacidadInstalada} kW</li>
-                                    <li>• Generación Anual: ${cotizacion.generacionAnual} kWh</li>
-                                    <li>• Tipo Sistema: ${cotizacion.tipoSistemaFV}</li>
-                                    <li>• Consumo Diurno: ${cotizacion.porcentajeConsumodia}%</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Inversión y Beneficios -->
-                    <div class="bg-blue-50 p-6 rounded-xl">
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">💰 Inversión Total del Sistema</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="text-center">
-                                <div class="text-4xl font-bold text-blue-600 mb-2">$${cotizacion.valorTotalSistema.toLocaleString()}</div>
-                                <div class="text-lg text-gray-700">Valor Total del Sistema</div>
-                                <div class="text-sm text-gray-600 mt-2">Subtotal antes IVA: $${cotizacion.subtotalAntesIVA.toLocaleString()}</div>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold mb-2">Beneficios Tributarios (Base: Subtotal antes IVA):</h4>
-                                <table class="w-full text-sm">
-                                    <tr><td>Deducción Renta Base (50%):</td><td class="text-right">$${cotizacion.deduccionRentaBase.toLocaleString()}</td></tr>
-                                    <tr><td>Deducción Efectiva (35%):</td><td class="text-right text-green-600">$${cotizacion.deduccionRentaEfectiva.toLocaleString()}</td></tr>
-                                    <tr><td>Depreciación Anual (3 años):</td><td class="text-right text-green-600">$${cotizacion.depreciacionAnual.toLocaleString()}</td></tr>
-                                    <tr><td>Ahorro Fiscal Depreciación:</td><td class="text-right text-green-600">$${cotizacion.ahorroAnualDepreciacion.toLocaleString()}</td></tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tabla Completa de Ahorros -->
-                    <div class="bg-green-50 p-6 rounded-xl">
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">📈 Tabla Detallada de Ahorros (10 años)</h3>
-                        <div class="mb-4 text-sm text-gray-700 bg-yellow-100 p-3 rounded-lg">
-                            <strong>⚠️ Consideraciones:</strong><br>
-                            • Año 1: Solo 6 meses de inyección | Degradación: -3.5% anual | Inflación kWh: +5.5% anual<br>
-                            • Depreciación: 3 años | Deducción 50%: 5 años | Mantenimiento: incremento anual igual kWh
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-xs">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="py-2 px-2 text-left">Año</th>
-                                        <th class="py-2 px-2 text-left">Valor kWh</th>
-                                        <th class="py-2 px-2 text-left">Producción</th>
-                                        <th class="py-2 px-2 text-left">Ahorro Gen.</th>
-                                        <th class="py-2 px-2 text-left">Depreciación</th>
-                                        <th class="py-2 px-2 text-left">Deducción</th>
-                                        <th class="py-2 px-2 text-left">Mantenimiento</th>
-                                        <th class="py-2 px-2 text-left">Total Año</th>
-                                        <th class="py-2 px-2 text-left">Acumulado</th>
-                                        <th class="py-2 px-2 text-left">ROI</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${tablaAhorros10}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Botones de acción -->
-                    <div class="flex flex-wrap gap-4 justify-center pt-4 no-print">
-                        <button onclick="abrirWhatsApp()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
-                            <span class="text-xl">💬</span> WhatsApp
-                        </button>
-                        <button onclick="window.print()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
-                            <span class="text-xl">🖨️</span> Imprimir
-                        </button>
-                        <button onclick="nuevaCotizacion()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
-                            <span class="text-xl">🔄</span> Nueva Cotización
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Mostrar modal con verificación
-            const modal = document.getElementById('modalResultado');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                console.log('✅ Modal mostrado correctamente');
-            } else {
-                console.error('❌ No se encontró el modal de resultado');
-                mostrarNotificacion('❌ Error mostrando modal de resultado', 'error');
-            }
-        }
-
-        // Función para mostrar notificaciones
-        function mostrarNotificacion(mensaje, tipo, duracion = null) {
-            const notif = document.createElement('div');
-            const colores = {
-                'success': 'bg-green-500',
-                'error': 'bg-red-500',
-                'info': 'bg-blue-500'
-            };
-            
-            notif.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 max-w-sm ${colores[tipo] || 'bg-gray-500'} text-white`;
-            notif.innerHTML = mensaje;
-            document.body.appendChild(notif);
-            
-            // Duración personalizable: success 8s, otros 4s por defecto
-            const tiempoMostrar = duracion || (tipo === 'success' ? 8000 : 4000);
-            
-            setTimeout(() => {
-                if (document.body.contains(notif)) {
-                    document.body.removeChild(notif);
-                }
-            }, tiempoMostrar);
-        }
-
-        // Función para cerrar modal
-        function cerrarModal() {
-            document.getElementById('modalResultado').classList.add('hidden');
-            document.getElementById('modalResultado').classList.remove('flex');
-        }
-        
-        // Funciones para bloquear/desbloquear formulario
-        function bloquearFormulario() {
-            const form = document.getElementById('formularioCotizacion');
-            const inputs = form.querySelectorAll('input, select, button, textarea');
-            inputs.forEach(input => {
-                input.disabled = true;
-                input.classList.add('opacity-50', 'cursor-not-allowed');
-            });
-            // Cambiar texto del botón submit
-            const btnSubmit = form.querySelector('button[type="submit"]');
-            if (btnSubmit) {
-                btnSubmit.innerHTML = '⏳ GENERANDO COTIZACIÓN...';
-            }
-        }
-        
-        function desbloquearFormulario() {
-            const form = document.getElementById('formularioCotizacion');
-            const inputs = form.querySelectorAll('input, select, button, textarea');
-            inputs.forEach(input => {
-                input.disabled = false;
-                input.classList.remove('opacity-50', 'cursor-not-allowed');
-            });
-            // Restaurar texto del botón submit
-            const btnSubmit = form.querySelector('button[type="submit"]');
-            if (btnSubmit) {
-                btnSubmit.innerHTML = '🚀 GENERAR COTIZACIÓN TÉCNICA';
-            }
-        }
-
-        // Función para nueva cotización
-        function nuevaCotizacion() {
-            cerrarModal();
-            document.getElementById('formularioCotizacion').reset();
-            document.getElementById('hspCalculado').value = '';
-            document.getElementById('seccionBaterias').style.display = 'none';
-            document.querySelectorAll('.equipo-selected').forEach(el => el.classList.remove('equipo-selected'));
-            desbloquearFormulario(); // Asegurar que esté desbloqueado
-            // No limpiar el template cargado
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // Manejo del formulario
-        document.getElementById('formularioCotizacion').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            console.log('🚀 Formulario enviado');
-            
-            try {
-                // IMPORTANTE: Capturar datos ANTES de bloquear el formulario
-                // (los inputs deshabilitados no se incluyen en FormData)
-                const formData = new FormData(this);
-                const datos = Object.fromEntries(formData);
-                
-                console.log('📋 Datos del formulario:', datos);
-                
-                // Ahora sí bloquear el formulario
-                bloquearFormulario();
-                mostrarNotificacion('🔄 Procesando cotización... Por favor espere.', 'info');
-                
-                // Validar campos requeridos
-                let camposRequeridos = ['nombre', 'telefono', 'email', 'ciudad', 'direccion', 'consumoMensual', 
-                                        'valorFactura', 'tipoVivienda', 'nic', 'valorKwh', 'numeroPisos', 
-                                        'sistemaElectrico', 'porcentajeConsumodia', 'tipoSistemaFV', 'legalizacion', 'seleccionManual'];
-                
-                // Si selección manual es SI, panel e inversor son requeridos
-                if (datos.seleccionManual === 'SI') {
-                    camposRequeridos.push('panel', 'inversor');
-                }
-                
-                const camposFaltantes = camposRequeridos.filter(campo => !datos[campo]);
-                
-                if (camposFaltantes.length > 0) {
-                    console.log('❌ Campos faltantes:', camposFaltantes);
-                    mostrarNotificacion('⚠️ Campos faltantes: ' + camposFaltantes.join(', '), 'error');
-                    desbloquearFormulario(); // Desbloquear si hay error
-                    return;
-                }
-
-                // Validar que se haya seleccionado un sistema eléctrico
-                if (!datos.sistemaElectrico) {
-                    mostrarNotificacion('⚠️ Debes seleccionar el tipo de sistema eléctrico', 'error');
-                    desbloquearFormulario();
-                    return;
-                }
-                
-                // Validar que se haya seleccionado un inversor (solo si selección manual)
-                if (datos.seleccionManual === 'SI' && !datos.inversor) {
-                    mostrarNotificacion('⚠️ Debes seleccionar un inversor compatible con tu sistema eléctrico', 'error');
-                    desbloquearFormulario();
-                    return;
-                }
-
-                // Validar baterías si son requeridas (solo si selección manual)
-                const tipoSistema = datos.tipoSistemaFV;
-                if (datos.seleccionManual === 'SI' && (tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') && !datos.bateria) {
-                    mostrarNotificacion('⚠️ Debes seleccionar una batería para este tipo de sistema', 'error');
-                    desbloquearFormulario();
-                    return;
-                }
-
-                // Validar que HSP esté calculado
-                if (!datos.hspCalculado || datos.hspCalculado === '') {
-                    calcularHSP(); // Intentar calcular automáticamente
-                    datos.hspCalculado = document.getElementById('hspCalculado').value;
-                }
-                
-                // Si selección manual es NO, enviar null (el backend usará defaults)
-                if (datos.seleccionManual === 'NO') {
-                    datos.panel = null;
-                    datos.inversor = null;
-                    // Solo enviar batería null si no es requerida
-                    if (datos.tipoSistemaFV !== 'offgrid' && datos.tipoSistemaFV !== 'hibrido_incluido') {
-                        datos.bateria = null;
-                    }
-                }
-                
-                // Convertir campos numéricos
-                datos.consumoMensual = parseFloat(datos.consumoMensual);
-                datos.valorFactura = parseFloat(datos.valorFactura);
-                datos.valorKwh = parseFloat(datos.valorKwh);
-                datos.porcentajeConsumodia = parseFloat(datos.porcentajeConsumodia);
-                datos.areaDisponible = datos.areaDisponible ? parseFloat(datos.areaDisponible) : 0;
-                datos.hspCalculado = datos.hspCalculado ? parseFloat(datos.hspCalculado) : null;
-                
-                // Guardar datos globalmente
-                datosCliente = datos;
-                console.log('✅ Datos preparados para enviar al backend');
-                console.log('📊 VALORES CRÍTICOS PARA SEGUNDA OPCIÓN:');
-                console.log(`   - areaDisponible: ${datos.areaDisponible} m²`);
-                console.log(`   - consumoMensual: ${datos.consumoMensual} kWh`);
-                console.log(`   - Tipo: ${typeof datos.areaDisponible}`);
-                
-                // Enviar al backend
-                console.log('🔄 Enviando cotización al backend...');
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/cotizar`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(datos)
-                    });
-                    
-                    if (!response.ok) {
-                        const error = await response.json();
-                        console.error('❌ Error del servidor:', error);
-                        console.error('❌ Status:', response.status);
-                        throw new Error(JSON.stringify(error.detail || error) || 'Error en el servidor');
-                    }
-                    
-                    const resultado = await response.json();
-                    console.log('✅ Respuesta del backend:', resultado);
-                    
-                    if (!resultado || !resultado.resumen) {
-                        throw new Error('Respuesta inválida del servidor');
-                    }
-                    
-                    cotizacionActual = resultado.resumen;
-                    
-                    // Registrar cotización en local storage (opcional)
-                    try {
-                        localStorage.setItem('ultimaCotizacion', JSON.stringify(resultado.resumen));
-                    } catch (e) {
-                        console.warn('No se pudo guardar en localStorage:', e);
-                    }
-                    
-                    console.log('✅ Cotización recibida del backend');
-                    
-                    // Desbloquear formulario después de éxito
-                    desbloquearFormulario();
-                    
-                    // Mostrar resultado
-                    mostrarNotificacion(`✅ ${resultado.mensaje || 'Cotización generada y email enviado exitosamente'}`, 'success');
-                    mostrarResultadoCompleto(resultado.resumen);
-                    
-                } catch (calcError) {
-                    console.error('❌ Error en cotización:', calcError);
-                    desbloquearFormulario(); // Desbloquear en caso de error
-                    mostrarNotificacion('❌ Error: ' + calcError.message, 'error');
-                    return;
-                }
-                
-            } catch (error) {
-                console.error('❌ Error en manejo del formulario:', error);
-                desbloquearFormulario(); // Desbloquear en caso de error general
-                mostrarNotificacion('❌ Error procesando formulario: ' + error.message, 'error');
-            }
+    async function cargarCiudades() {
+      try {
+        const res = await fetch(\`\${API_BASE_URL}/ciudades\`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const sel = document.getElementById('ciudad');
+        sel.innerHTML = '<option value="">Seleccione...</option>';
+        Object.keys(data).forEach(c => {
+          if (c !== 'default') {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c.charAt(0).toUpperCase()+c.slice(1);
+            sel.appendChild(opt);
+          }
         });
+      } catch (e) {
+        console.warn('No se pudo cargar ciudades', e);
+      }
+    }
 
-        // Función auxiliar para esperar
-        function esperar(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        // Inicializar al cargar la página
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Mostrar mensaje de carga
-            mostrarNotificacion('🔄 Cargando sistema...', 'info');
-            
-            // Cargar ciudades desde el backend
-            await cargarCiudades();
-            
-            // Cargar y aplicar valores por defecto inteligentes
-            await aplicarValoresDefault();
-            
-            // FIX #2 y #4: Cargar equipos CON el sistema eléctrico default
-            // Obtener el sistema eléctrico que se aplicó por default
-            const selectSistemaElectrico = document.getElementById('sistemaElectrico');
-            const sistemaElectricoDefault = selectSistemaElectrico ? selectSistemaElectrico.value : 'bifasico';
-            
-            console.log(`🔧 Cargando inversores para sistema default: ${sistemaElectricoDefault}`);
-            await cargarEquipos(sistemaElectricoDefault);
-            
-            // Agregar listener para cambio de sistema eléctrico
-            if (selectSistemaElectrico) {
-                selectSistemaElectrico.addEventListener('change', async function() {
-                    const sistemaElectrico = this.value;
-                    
-                    if (!sistemaElectrico) {
-                        // Limpiar inversores si no hay selección
-                        const contenedorInversores = document.getElementById('opcionesInversores');
-                        if (contenedorInversores) {
-                            contenedorInversores.innerHTML = '<div class="col-span-3 text-center text-white bg-yellow-500 bg-opacity-30 p-4 rounded-lg">⚠️ Selecciona un tipo de sistema eléctrico para ver los inversores compatibles</div>';
-                        }
-                        return;
-                    }
-                    
-                    console.log('🔄 Sistema eléctrico seleccionado:', sistemaElectrico);
-                    mostrarNotificacion('🔄 Cargando inversores compatibles...', 'info');
-                    
-                    try {
-                        // Recargar equipos con filtro
-                        await cargarEquipos(sistemaElectrico);
-                        
-                        // Verificar si hay inversores disponibles
-                        if (configuracionEquipos.inversores.length === 0) {
-                            mostrarNotificacion(`⚠️ No hay inversores disponibles para sistema ${sistemaElectrico}`, 'warning');
-                        } else {
-                            mostrarNotificacion(`✅ ${configuracionEquipos.inversores.length} inversor(es) compatible(s) cargado(s)`, 'success');
-                        }
-                    } catch (error) {
-                        console.error('❌ Error recargando equipos:', error);
-                        mostrarNotificacion('❌ Error al cargar inversores compatibles', 'error');
-                    }
-                });
-                
-                console.log('✅ Listener de sistema eléctrico agregado');
-            } else {
-                console.warn('⚠️ No se encontró el campo sistemaElectrico');
-            }
-            
-            mostrarNotificacion('✅ Sistema listo - Conectado al backend', 'success');
+    async function cargarEquipos() {
+      try {
+        const res = await fetch(\`\${API_BASE_URL}/equipos\`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const panelSel = document.getElementById('panel');
+        const invSel = document.getElementById('inversor');
+        const batSel = document.getElementById('bateria');
+        panelSel.innerHTML = '<option value="">Seleccione...</option>';
+        data.paneles.forEach(p=>{
+          const o=document.createElement('option');
+          o.value=p.id;o.textContent=\`\${p.nombre} (\${p.capacidad}W)\`;
+          panelSel.appendChild(o);
         });
-    </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995ba4e985f49876',t:'MTc2MTY2NzIwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        invSel.innerHTML = '<option value="">Seleccione...</option>';
+        data.inversores.forEach(i=>{
+          const o=document.createElement('option');
+            o.value=i.id;o.textContent=\`\${i.nombre} (\${i.capacidad}W)\`;
+          invSel.appendChild(o);
+        });
+        batSel.innerHTML = '<option value="">Ninguna</option>';
+        data.baterias.forEach(b=>{
+          const o=document.createElement('option');
+          o.value=b.id;o.textContent=\`\${b.nombre} (\${b.capacidad}Wh)\`;
+          batSel.appendChild(o);
+        });
+      } catch (e) {
+        console.warn('No se pudo cargar equipos', e);
+      }
+    }
+
+    // Validación dinámica batería
+    document.getElementById('tipoSistemaFV').addEventListener('change', e => {
+      const requiere = ['offgrid','hibrido_incluido'].includes(e.target.value);
+      const batSel = document.getElementById('bateria');
+      batSel.required = requiere;
+      document.getElementById('bateriaLabel').textContent = requiere ? 'Batería *' : 'Batería (Opcional)';
+    });
+
+    // Mostrar/ocultar selección manual de equipos
+    document.getElementById('seleccionManual').addEventListener('change', e => {
+      const wrapper = document.getElementById('equiposWrapper');
+      const panelSel = document.getElementById('panel');
+      const invSel = document.getElementById('inversor');
+      const panelLabel = document.getElementById('panelLabel');
+      const invLabel = document.getElementById('inversorLabel');
+      
+      if (e.target.value === 'SI') {
+        wrapper.style.display = 'block';
+        panelSel.required = true;
+        invSel.required = true;
+        panelSel.disabled = false;  // ✅ Activar para que participen en validación
+        invSel.disabled = false;
+        panelLabel.textContent = 'Panel *';
+        invLabel.textContent = 'Inversor *';
+      } else {
+        wrapper.style.display = 'none';
+        panelSel.required = false;
+        invSel.required = false;
+        panelSel.disabled = true;  // ✅ Desactivar para que NO participen en validación
+        invSel.disabled = true;
+        panelLabel.textContent = 'Panel';
+        invLabel.textContent = 'Inversor';
+        // Limpiar valores si tenían algo seleccionado
+        panelSel.value = '';
+        invSel.value = '';
+        document.getElementById('bateria').value = '';
+      }
+    });
+
+    // Form submit
+    document.getElementById('cotizadorForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.textContent = 'Procesando...';
+
+      const fd = new FormData(e.target);
+      const data = {};
+      fd.forEach((v,k)=>{
+        if(['consumoMensual','valorFactura','valorKwh','areaDisponible','porcentajeConsumodia','hspCalculado'].includes(k)) {
+          data[k] = v ? parseFloat(v) : (k==='areaDisponible'?0:null);
+        } else data[k] = v || null;
+      });
+      if(!data.bateria) delete data.bateria;
+      if(!data.hspCalculado) delete data.hspCalculado;
+      if(!data.identificacion) delete data.identificacion;
+
+      try {
+        const res = await fetch(\`\${API_BASE_URL}/cotizar\`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(data)
+        });
+        const json = await res.json();
+        if(!res.ok) throw new Error(json.detail || 'Error en cotización');
+        pintarResultado(json);
+        guardarCRM(json.resumen, data);
+      } catch (err) {
+        alert('Error: '+err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generar Cotización';
+      }
+    });
+
+    function pintarResultado(resp) {
+      const r = resp.resumen;
+      document.getElementById('mensajeResultado').textContent = resp.mensaje;
+      document.getElementById('cotizacionId').textContent = r.cotizacionId;
+      document.getElementById('inversionTotal').textContent = formMoneda(r.valorTotalSistema);
+      document.getElementById('ahorroMensual').textContent = formMoneda(r.ahorroMensualEnergia);
+      document.getElementById('tiempoRetorno').textContent = r.tiempoRetorno+' años';
+      document.getElementById('capacidadInstalada').textContent = r.capacidadInstalada+' kW';
+      document.getElementById('generacionMensual').textContent = r.generacionMensual.toLocaleString('es-CO')+' kWh';
+
+      const tb = document.getElementById('tablaAhorrosBody');
+      tb.innerHTML = '';
+      r.tablaAhorros.forEach(a=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.año}</td>
+          <td>${formMoneda(a.valorKwhAño)}</td>
+          <td>${a.produccionAnual.toLocaleString('es-CO')}</td>
+          <td>${formMoneda(a.ahorroGeneracion)}</td>
+          <td>${formMoneda(a.ahorroDep)}</td>
+          <td>${formMoneda(a.ahorroDed)}</td>
+            <td>${formMoneda(a.costoMant)}</td>
+          <td>${formMoneda(a.ahorroTotalAño)}</td>
+          <td>${formMoneda(a.ahorroAcumulado)}</td>
+          <td>${a.roi.toFixed(2)}%</td>`;
+        tb.appendChild(tr);
+      });
+
+      document.getElementById('resultadoWrapper').classList.add('active');
+      document.getElementById('resultadoWrapper').scrollIntoView({behavior:'smooth'});
+    }
+
+    function formMoneda(n) {
+      return '$'+Number(n).toLocaleString('es-CO')+' COP';
+    }
+
+    // CRM local (solo front, NO backend)
+    function guardarCRM(resumen, original) {
+      const entry = {
+        id: resumen.cotizacionId,
+        fecha: resumen.fecha,
+        inversion: resumen.valorTotalSistema,
+        ahorro: resumen.ahorroMensualEnergia,
+        retorno: resumen.tiempoRetorno,
+        capacidad: resumen.capacidadInstalada,
+        nombre: original.nombre,
+        email: original.email
+      };
+      const lista = JSON.parse(localStorage.getItem('crmCotizaciones')||'[]');
+      lista.unshift(entry);
+      localStorage.setItem('crmCotizaciones', JSON.stringify(lista.slice(0,100)));
+    }
+
+    function restaurarCRM() {
+      // no acción al inicio, se carga al abrir modal
+    }
+
+    document.getElementById('openCrm').addEventListener('click',()=>{
+      const modal = document.getElementById('crmModal');
+      const listDiv = document.getElementById('crmList');
+      const lista = JSON.parse(localStorage.getItem('crmCotizaciones')||'[]');
+      if(!lista.length) {
+        listDiv.innerHTML = '<div class="empty">Sin cotizaciones registradas aún.</div>';
+      } else {
+        listDiv.innerHTML = `
+          <table style="width:100%;border-collapse:collapse;font-size:.7rem;">
+            <thead><tr style="background:#052c4c;color:#fff;">
+              <th style="padding:6px;">ID</th>
+              <th style="padding:6px;">Fecha</th>
+              <th style="padding:6px;">Cliente</th>
+              <th style="padding:6px;">Inversión</th>
+              <th style="padding:6px;">Ahorro</th>
+              <th style="padding:6px;">Retorno</th>
+            </tr></thead>
+            <tbody>
+              ${lista.map(r=>`
+              <tr>
+                <td style="padding:6px;">${r.id}</td>
+                <td style="padding:6px;">${(r.fecha||'').slice(0,10)}</td>
+                <td style="padding:6px;">${r.nombre}</td>
+                <td style="padding:6px;">${formMoneda(r.inversion)}</td>
+                <td style="padding:6px;">${formMoneda(r.ahorro)}</td>
+                <td style="padding:6px;">${r.retorno} años</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`;
+      }
+      modal.classList.add('active');
+    });
+    document.getElementById('closeCrm').addEventListener('click',()=>{
+      document.getElementById('crmModal').classList.remove('active');
+    });
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape') document.getElementById('crmModal').classList.remove('active');
+    });
+
+    init();
+  </script>
+</body>
 </html>
