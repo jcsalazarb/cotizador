@@ -1082,13 +1082,11 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
     <div style="max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
         
         <!-- Header con Gradiente -->
-        <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #ea580c 100%); padding: 40px 30px; text-align: center; position: relative;">
-            <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); border-radius: 15px; padding: 20px; display: inline-block; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-                <img src="cid:logo_nassa" alt="NASSA Solar Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;">
-                <p style="margin: 8px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 600; letter-spacing: 2px;">
-                    ENERGÍA INTELIGENTE
-                </p>
-            </div>
+        <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center; position: relative;">
+            <img src="cid:logo_nassa" alt="NASSA Solar Logo" style="max-width: 200px; height: auto; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+            <p style="margin: 0; color: #ffffff; font-size: 18px; font-weight: 700; letter-spacing: 3px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                ☀️ ENERGÍA INTELIGENTE
+            </p>
         </div>
         
         <!-- Contenido -->
@@ -1171,10 +1169,18 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
             
             <!-- Call to Action -->
             <div style="text-align: center; margin: 35px 0;">
-                <a href="https://wa.me/573136909723?text=Hola,%20me%20interesa%20la%20cotización%20{resultado['cotizacionId']}" 
-                   style="display: inline-block; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff !important; padding: 18px 40px; text-decoration: none; border-radius: 50px; font-size: 18px; font-weight: 700; box-shadow: 0 10px 25px rgba(22, 163, 74, 0.4); transition: transform 0.3s;">
-                    <span style="color: #ffffff !important;">💬 Contáctanos por WhatsApp</span>
-                </a>
+                <!-- Botón como tabla para máxima compatibilidad cross-client -->
+                <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
+                    <tr>
+                        <td align="center" style="background: #16a34a; border-radius: 50px; box-shadow: 0 10px 25px rgba(22, 163, 74, 0.4);">
+                            <a href="https://wa.me/573136909723?text=Hola,%20me%20interesa%20la%20cotización%20{resultado['cotizacionId']}" 
+                               target="_blank"
+                               style="background: #16a34a; border: 2px solid #16a34a; color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px; font-weight: 700; line-height: 1.5; text-align: center; text-decoration: none; display: block; padding: 18px 45px; border-radius: 50px; -webkit-text-size-adjust: none; mso-hide: all;">
+                                <span style="color: #ffffff; text-decoration: none;">💬 Contáctanos por WhatsApp</span>
+                            </a>
+                        </td>
+                    </tr>
+                </table>
                 <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
                     O llámanos al <strong style="color: #ea580c;">(057) 313 690 9723</strong>
                 </p>
