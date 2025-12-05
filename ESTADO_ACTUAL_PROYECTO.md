@@ -1,6 +1,6 @@
 # 📸 ESTADO ACTUAL DEL PROYECTO - SNAPSHOT PARA PRUEBAS
-**Fecha**: 4 de diciembre de 2025, 17:30 (Colombia)  
-**Commit actual**: e07c429 (templates actualizados)  
+**Fecha**: 5 de diciembre de 2025, 10:35 (Colombia)  
+**Commit actual**: f4f03e5 (compatibilidad formato ciudades.json)  
 **Rama**: main  
 **Ambiente de pruebas**: https://web-production-3749b.up.railway.app/
 
@@ -8,6 +8,34 @@
 
 ## 🎯 PROPÓSITO DE ESTE DOCUMENTO
 Este archivo documenta el estado EXACTO del proyecto antes de iniciar pruebas con testers externos. Si necesitas reanudar el trabajo después de 12+ horas, **LEE ESTE ARCHIVO PRIMERO** para evitar modificar archivos incorrectos.
+
+---
+
+## 🚨 ÚLTIMO CAMBIO CRÍTICO (5 dic 2025, 10:30)
+
+### Bug Solucionado: Admin Panel no cargaba ciudades
+**Problema**: El panel de administración (admin.html) no podía cargar la lista de ciudades debido a incompatibilidad de formato en `ciudades.json`.
+
+**Causa Raíz**:
+- Backend esperaba: `{"ciudad": {"nombre": "X", "hsp": 5.2}}`
+- JSON tenía: `{"ciudad": 5.2}`
+- Admin.html intentaba leer `.nombre` y `.hsp` → `undefined`
+
+**Solución Aplicada** (Opción B - Mantener nuevo formato):
+1. ✅ Convertido `ciudades.json` al formato objeto completo
+2. ✅ Agregado compatibilidad en frontend para ambos formatos
+3. ✅ Creado backup del formato anterior (`ciudades_backup.json`)
+4. ✅ Creado script de conversión (`convertir_ciudades.py`)
+
+**Archivos Modificados**:
+- `backend/config/ciudades.json` (160 ciudades → formato objeto)
+- `backend/static/index.html` (compatibilidad líneas 290-301, 425-445)
+- `backend/config/ciudades_backup.json` (NUEVO - backup formato antiguo)
+- `backend/convertir_ciudades.py` (NUEVO - script conversión)
+
+**Commit**: f4f03e5 - "Fix: Compatibilidad frontend con nuevo formato ciudades.json"
+
+**Estado**: ✅ DESPLEGADO EN PRODUCCIÓN (Railway) - Verificado funcionando
 
 ---
 
@@ -32,9 +60,11 @@ backend/static/styles.css            ← Estilos Tailwind
 #### Configuración y Datos
 ```
 backend/config/equipos.json          ← Catálogo equipos (TODOS tienen "default")
-backend/config/ciudades.json         ← 160 ciudades colombianas con HSP
+backend/config/ciudades.json         ← 160 ciudades (FORMATO OBJETO: {nombre, hsp})
+backend/config/ciudades_backup.json  ← Backup formato antiguo (números directos)
 backend/config/parametros.json       ← Configuración sistema
 backend/datos/estadisticas.json      ← Tracking de cotizaciones
+backend/convertir_ciudades.py        ← Script conversión formatos ciudades
 ```
 
 #### Templates PowerPoint
@@ -82,6 +112,37 @@ frontend/index_Canva_Original.html   ← Obsoleto - No usar
 **Archivos**: `Template/Template-PreCotizacion.pptx`, `Template/Template-PreCotizacion2.pptx`  
 **Solución**: Subidos templates de 43 MB cada uno  
 **Estado**: ✅ Commit e07c429  
+
+### Fix 5: Formato Ciudades.json - Admin Panel
+**Problema**: Admin panel no cargaba ciudades (incompatibilidad formato)  
+**Archivos**: `backend/config/ciudades.json`, `backend/static/index.html`  
+**Solución**: Convertido a formato objeto `{nombre, hsp}` + compatibilidad frontend  
+**Estado**: ✅ Commit f4f03e5 - DESPLEGADO EN PRODUCCIÓN  
+
+---
+
+## 📋 FORMATO ACTUAL DE DATOS
+
+### Ciudades (`ciudades.json`)
+**Formato NUEVO** (desde 5 dic 2025):
+```json
+{
+  "santa_marta": {
+    "nombre": "Santa Marta",
+    "hsp": 5.6
+  },
+  "default": {
+    "hsp": 4.5
+  }
+}
+```
+
+**Backup formato antiguo**: Guardado en `ciudades_backup.json`
+
+**Compatibilidad**: Frontend maneja ambos formatos automáticamente:
+- Si encuentra `.nombre` → lo usa
+- Si encuentra `.hsp` → lo usa
+- Si solo encuentra número → lo usa como HSP directo
 
 ---
 
@@ -328,7 +389,7 @@ git diff backend/config/equipos.json
    git log --oneline -10
    
    # Verificar archivos correctos
-   ls -lh backend/static/index.html backend/server.py backend/config/equipos.json
+   ls -lh backend/static/index.html backend/server.py backend/config/equipos.json backend/config/ciudades.json
    ```
 
 6. **SEXTO**: Después de hacer cambios:
@@ -351,6 +412,12 @@ git diff backend/config/equipos.json
 
 ## ✅ VALIDACIÓN DE ESTADO
 
+**Últimos commits**:
+```
+f4f03e5 - Fix: Compatibilidad frontend con nuevo formato ciudades.json (5 dic 2025, 10:30)
+e07c429 - Feature: Templates actualizados (4 dic 2025, 17:20)
+```
+
 **Hash de archivos críticos** (para verificar integridad):
 ```bash
 # Ejecutar en terminal para validar
@@ -358,13 +425,27 @@ md5 backend/config/equipos.json
 # Esperado: 164341ab (primeros 8 caracteres)
 
 wc -l backend/static/index.html
-# Esperado: 1086 líneas
+# Esperado: 1089 líneas (aumentó por código compatibilidad)
 
 wc -l backend/server.py
 # Esperado: 2254 líneas
+
+# NUEVO: Verificar formato ciudades
+head -5 backend/config/ciudades.json
+# Debe mostrar formato objeto: {"ciudad": {"nombre": "X", "hsp": Y}}
 ```
 
-**Último cambio válido**: 4 de diciembre de 2025, 17:20 (commit e07c429)
+**Verificación en Producción**:
+```bash
+# Health check
+curl https://web-production-3749b.up.railway.app/health
+
+# Verificar formato ciudades
+curl https://web-production-3749b.up.railway.app/api/ciudades | head -20
+# Debe mostrar formato objeto
+```
+
+**Último cambio válido**: 5 de diciembre de 2025, 10:30 (commit f4f03e5)
 
 ---
 
@@ -379,5 +460,7 @@ wc -l backend/server.py
 ---
 
 **🎯 OBJETIVO DE ESTE DOCUMENTO**: Garantizar continuidad del proyecto después de interrupciones largas (12+ horas) sin perder contexto ni modificar archivos incorrectos.
+
+**📅 ÚLTIMA ACTUALIZACIÓN**: 5 de diciembre de 2025, 10:35 - Agregado Fix #5 (formato ciudades)
 
 **📅 PRÓXIMA REVISIÓN**: Después de completar pruebas con testers.
