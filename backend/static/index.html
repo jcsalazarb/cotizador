@@ -100,7 +100,7 @@
        </div>
        <div><label for="porcentajeConsumodia" class="block text-sm font-medium text-blue-100 mb-2">% Consumo en el Día *</label> <select id="porcentajeConsumodia" name="porcentajeConsumodia" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="30">30% - Uso principalmente nocturno</option> <option value="50">50% - Uso equilibrado día/noche</option> <option value="70">70% - Uso principalmente diurno</option> <option value="90">90% - Uso casi exclusivo diurno</option> </select>
        </div>
-       <div><label for="tipoSistemaFV" class="block text-sm font-medium text-blue-100 mb-2">Tipo de Sistema FV *</label> <select id="tipoSistemaFV" name="tipoSistemaFV" required onchange="mostrarOpcionesBaterias()" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="ongrid">ON-GRID CONECTADO A RED</option> <option value="offgrid">OFF-GRID AUTONOMO CON BATERIAS</option> <option value="hibrido_incluido">HIBRIDO INCLUIDO BATERIAS</option> <option value="hibrido_opcional">HIBRIDO OPCIONAL BATERIAS</option> </select>
+       <div><label for="tipoSistemaFV" class="block text-sm font-medium text-blue-100 mb-2">Tipo de Sistema FV *</label> <select id="tipoSistemaFV" name="tipoSistemaFV" required onchange="mostrarOpcionesBaterias()" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"> <option value="">Selecciona</option> <option value="ongrid">ON-GRID CONECTADO A RED</option> <option value="offgrid">OFF-GRID AUTÓNOMO CON BATERÍAS</option> <option value="hibrido_incluido">HÍBRIDO INCLUIDO BATERÍAS</option> <option value="hibrido_opcional">HÍBRIDO OPCIONAL BATERÍAS</option> </select>
        </div>
        <div><label for="hspCalculado" class="block text-sm font-medium text-blue-100 mb-2">HSP Calculado</label> <input type="number" id="hspCalculado" name="hspCalculado" readonly step="0.1" class="w-full px-4 py-3 bg-gray-600 bg-opacity-50 border border-white border-opacity-30 rounded-lg text-gray-300 cursor-not-allowed" placeholder="Se calcula automáticamente">
         <p class="text-xs text-blue-200 mt-1">Horas Sol Pico para tu ciudad</p>
@@ -868,13 +868,20 @@
         }
 
         // Función para nueva cotización
-        function nuevaCotizacion() {
+        async function nuevaCotizacion() {
             cerrarModal();
             document.getElementById('formularioCotizacion').reset();
             document.getElementById('hspCalculado').value = '';
             document.getElementById('seccionBaterias').style.display = 'none';
             document.querySelectorAll('.equipo-selected').forEach(el => el.classList.remove('equipo-selected'));
             desbloquearFormulario(); // Asegurar que esté desbloqueado
+            
+            // ✅ Reaplicar valores por defecto después de resetear
+            await aplicarValoresDefault();
+            
+            // Reinicializar estado de equipos
+            toggleSeleccionEquipos();
+            
             // No limpiar el template cargado
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
