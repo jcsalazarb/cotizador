@@ -1,163 +1,645 @@
 {
-  "acacias": 4.7,
-  "aguachica": 5.4,
-  "agustin_codazzi": 5.5,
-  "albania_guajira": 5.8,
-  "algarrobo": 5.4,
-  "apartado": 5.1,
-  "aracataca": 5.4,
-  "arauca": 5.5,
-  "ariguani": 5.3,
-  "arjona": 5.3,
-  "armenia": 4.7,
-  "baranoa": 5.2,
-  "barrancabermeja": 5.0,
-  "barrancas": 5.7,
-  "barranquilla": 5.2,
-  "becerril": 5.5,
-  "bello": 4.5,
-  "bogota": 4.2,
-  "bosconia": 5.4,
-  "bucaramanga": 4.9,
-  "buenaventura": 4.4,
-  "buga": 4.7,
-  "cali": 4.8,
-  "campo_de_la_cruz": 5.2,
-  "candelaria_atlantico": 5.2,
-  "carepa": 5.1,
-  "cartagena": 5.3,
-  "cerete": 5.4,
-  "cerro_san_antonio": 5.3,
-  "chia": 4.2,
-  "chibolo": 5.3,
-  "chinchina": 4.6,
-  "chinu": 5.3,
-  "chiriguana": 5.4,
-  "cienaga": 5.5,
-  "concordia": 5.3,
-  "corozal": 5.3,
-  "covenas": 5.4,
-  "cucuta": 5.5,
-  "curumani": 5.4,
-  "dibulla": 5.8,
-  "duitama": 4.4,
-  "el_banco": 5.2,
-  "el_carmen_de_bolivar": 5.2,
-  "el_piñon": 5.3,
-  "el_reten": 5.4,
-  "envigado": 4.5,
-  "espinal": 5.1,
-  "facatativa": 4.1,
-  "florencia": 4.7,
-  "floridablanca": 4.9,
-  "fonseca": 5.7,
-  "fundacion": 5.3,
-  "fusagasuga": 4.4,
-  "galapa": 5.2,
-  "garzon": 5.1,
-  "girardot": 5.2,
-  "giron": 4.9,
-  "granada_meta": 4.8,
-  "guamal_magdalena": 5.3,
-  "hato_nuevo": 5.8,
-  "ibague": 4.8,
-  "inirida": 5.5,
-  "ipiales": 4.2,
-  "itagui": 4.5,
-  "jamundi": 4.8,
-  "juan_de_acosta": 5.3,
-  "la_jagua_de_ibirico": 5.5,
-  "leticia": 4.5,
-  "lorica": 5.3,
-  "magangue": 5.3,
-  "maicao": 5.7,
-  "malambo": 5.2,
-  "manaure": 5.9,
-  "manizales": 4.5,
-  "maria_la_baja": 5.2,
-  "medellin": 4.5,
-  "mitu": 4.8,
-  "mocoa": 4.4,
-  "mompox": 5.2,
-  "monitos": 5.4,
-  "monteria": 5.4,
-  "neiva": 5.3,
-  "nueva_granada": 5.3,
-  "ocana": 5.2,
-  "palmar_de_la_varela": 5.2,
-  "palmira": 4.8,
-  "pamplona": 4.8,
-  "pasto": 4.3,
-  "pedraza": 5.3,
-  "pereira": 4.6,
-  "pijino_del_carmen": 5.3,
-  "piojo": 5.3,
-  "pitalito": 5.0,
-  "pivijay": 5.3,
-  "planeta_rica": 5.3,
-  "plato": 5.2,
-  "polonuevo": 5.2,
-  "popayan": 4.6,
-  "providencia": 5.5,
-  "pueblo_Viejo": 5.5,
-  "puerto_asis": 4.6,
-  "puerto_carreno": 5.7,
-  "puerto_colombia": 5.2,
-  "puerto_escondido": 5.4,
-  "puerto_libertador": 5.2,
-  "quibdo": 4.0,
-  "remolino": 5.4,
-  "riohacha": 5.8,
-  "rionegro": 4.6,
-  "sabanagrande": 5.2,
-  "sabanalarga": 5.2,
-  "sabanas_de_san_angel": 5.3,
-  "sahagun": 5.3,
-  "salamina": 5.3,
-  "sampues": 5.3,
-  "san_alberto": 5.3,
-  "san_andres": 5.5,
-  "san_bernardo_del_viento": 5.4,
-  "san_gil": 5.0,
-  "san_jacinto": 5.2,
-  "san_juan_del_cesar": 5.7,
-  "san_juan_nepomuceno": 5.2,
-  "san_marcos": 5.2,
-  "san_onofre": 5.4,
-  "san_pedro_sucre": 5.2,
-  "san_sebastian_de_buenavista": 5.2,
-  "san_zenon": 5.2,
-  "santa_ana": 5.3,
-  "santa_barbara_de_pinto": 5.2,
-  "santa_catalina": 5.3,
-  "santa_marta": 5.6,
-  "santa_rosa_de_lima": 5.2,
-  "santo_tomas": 5.2,
-  "sincelejo": 5.3,
-  "Sitio_Nuevo": 5.4,
-  "soacha": 4.2,
-  "sogamoso": 4.5,
-  "soledad": 5.2,
-  "sucre_sucre": 5.2,
-  "tenerife": 5.3,
-  "tierralta": 5.2,
-  "tolu": 5.3,
-  "tubara": 5.3,
-  "tulua": 4.7,
-  "tumaco": 4.3,
-  "tunja": 4.4,
-  "turbaco": 5.3,
-  "turbo": 5.1,
-  "uribia": 5.9,
-  "usiacuri": 5.2,
-  "valencia_cordoba": 5.2,
-  "valledupar": 5.6,
-  "villanueva_bolivar": 5.2,
-  "villanueva_guajira": 5.7,
-  "villavicencio": 4.6,
-  "yopal": 5.4,
-  "zapayan": 5.3,
-  "zipaquira": 4.2,
-  "zona_bananera": 5.4,
-  "default": 4.5
+  "acacias": {
+    "nombre": "Acacias",
+    "hsp": 4.7
+  },
+  "aguachica": {
+    "nombre": "Aguachica",
+    "hsp": 5.4
+  },
+  "agustin_codazzi": {
+    "nombre": "Agustin Codazzi",
+    "hsp": 5.5
+  },
+  "albania_guajira": {
+    "nombre": "Albania Guajira",
+    "hsp": 5.8
+  },
+  "algarrobo": {
+    "nombre": "Algarrobo",
+    "hsp": 5.4
+  },
+  "apartado": {
+    "nombre": "Apartado",
+    "hsp": 5.1
+  },
+  "aracataca": {
+    "nombre": "Aracataca",
+    "hsp": 5.4
+  },
+  "arauca": {
+    "nombre": "Arauca",
+    "hsp": 5.5
+  },
+  "ariguani": {
+    "nombre": "Ariguani",
+    "hsp": 5.3
+  },
+  "arjona": {
+    "nombre": "Arjona",
+    "hsp": 5.3
+  },
+  "armenia": {
+    "nombre": "Armenia",
+    "hsp": 4.7
+  },
+  "baranoa": {
+    "nombre": "Baranoa",
+    "hsp": 5.2
+  },
+  "barrancabermeja": {
+    "nombre": "Barrancabermeja",
+    "hsp": 5.0
+  },
+  "barrancas": {
+    "nombre": "Barrancas",
+    "hsp": 5.7
+  },
+  "barranquilla": {
+    "nombre": "Barranquilla",
+    "hsp": 5.2
+  },
+  "becerril": {
+    "nombre": "Becerril",
+    "hsp": 5.5
+  },
+  "bello": {
+    "nombre": "Bello",
+    "hsp": 4.5
+  },
+  "bogota": {
+    "nombre": "Bogota",
+    "hsp": 4.2
+  },
+  "bosconia": {
+    "nombre": "Bosconia",
+    "hsp": 5.4
+  },
+  "bucaramanga": {
+    "nombre": "Bucaramanga",
+    "hsp": 4.9
+  },
+  "buenaventura": {
+    "nombre": "Buenaventura",
+    "hsp": 4.4
+  },
+  "buga": {
+    "nombre": "Buga",
+    "hsp": 4.7
+  },
+  "cali": {
+    "nombre": "Cali",
+    "hsp": 4.8
+  },
+  "campo_de_la_cruz": {
+    "nombre": "Campo De La Cruz",
+    "hsp": 5.2
+  },
+  "candelaria_atlantico": {
+    "nombre": "Candelaria Atlantico",
+    "hsp": 5.2
+  },
+  "carepa": {
+    "nombre": "Carepa",
+    "hsp": 5.1
+  },
+  "cartagena": {
+    "nombre": "Cartagena",
+    "hsp": 5.3
+  },
+  "cerete": {
+    "nombre": "Cerete",
+    "hsp": 5.4
+  },
+  "cerro_san_antonio": {
+    "nombre": "Cerro San Antonio",
+    "hsp": 5.3
+  },
+  "chia": {
+    "nombre": "Chia",
+    "hsp": 4.2
+  },
+  "chibolo": {
+    "nombre": "Chibolo",
+    "hsp": 5.3
+  },
+  "chinchina": {
+    "nombre": "Chinchina",
+    "hsp": 4.6
+  },
+  "chinu": {
+    "nombre": "Chinu",
+    "hsp": 5.3
+  },
+  "chiriguana": {
+    "nombre": "Chiriguana",
+    "hsp": 5.4
+  },
+  "cienaga": {
+    "nombre": "Cienaga",
+    "hsp": 5.5
+  },
+  "concordia": {
+    "nombre": "Concordia",
+    "hsp": 5.3
+  },
+  "corozal": {
+    "nombre": "Corozal",
+    "hsp": 5.3
+  },
+  "covenas": {
+    "nombre": "Covenas",
+    "hsp": 5.4
+  },
+  "cucuta": {
+    "nombre": "Cucuta",
+    "hsp": 5.5
+  },
+  "curumani": {
+    "nombre": "Curumani",
+    "hsp": 5.4
+  },
+  "dibulla": {
+    "nombre": "Dibulla",
+    "hsp": 5.8
+  },
+  "duitama": {
+    "nombre": "Duitama",
+    "hsp": 4.4
+  },
+  "el_banco": {
+    "nombre": "El Banco",
+    "hsp": 5.2
+  },
+  "el_carmen_de_bolivar": {
+    "nombre": "El Carmen De Bolivar",
+    "hsp": 5.2
+  },
+  "el_piñon": {
+    "nombre": "El Piñon",
+    "hsp": 5.3
+  },
+  "el_reten": {
+    "nombre": "El Reten",
+    "hsp": 5.4
+  },
+  "envigado": {
+    "nombre": "Envigado",
+    "hsp": 4.5
+  },
+  "espinal": {
+    "nombre": "Espinal",
+    "hsp": 5.1
+  },
+  "facatativa": {
+    "nombre": "Facatativa",
+    "hsp": 4.1
+  },
+  "florencia": {
+    "nombre": "Florencia",
+    "hsp": 4.7
+  },
+  "floridablanca": {
+    "nombre": "Floridablanca",
+    "hsp": 4.9
+  },
+  "fonseca": {
+    "nombre": "Fonseca",
+    "hsp": 5.7
+  },
+  "fundacion": {
+    "nombre": "Fundacion",
+    "hsp": 5.3
+  },
+  "fusagasuga": {
+    "nombre": "Fusagasuga",
+    "hsp": 4.4
+  },
+  "galapa": {
+    "nombre": "Galapa",
+    "hsp": 5.2
+  },
+  "garzon": {
+    "nombre": "Garzon",
+    "hsp": 5.1
+  },
+  "girardot": {
+    "nombre": "Girardot",
+    "hsp": 5.2
+  },
+  "giron": {
+    "nombre": "Giron",
+    "hsp": 4.9
+  },
+  "granada_meta": {
+    "nombre": "Granada Meta",
+    "hsp": 4.8
+  },
+  "guamal_magdalena": {
+    "nombre": "Guamal Magdalena",
+    "hsp": 5.3
+  },
+  "hato_nuevo": {
+    "nombre": "Hato Nuevo",
+    "hsp": 5.8
+  },
+  "ibague": {
+    "nombre": "Ibague",
+    "hsp": 4.8
+  },
+  "inirida": {
+    "nombre": "Inirida",
+    "hsp": 5.5
+  },
+  "ipiales": {
+    "nombre": "Ipiales",
+    "hsp": 4.2
+  },
+  "itagui": {
+    "nombre": "Itagui",
+    "hsp": 4.5
+  },
+  "jamundi": {
+    "nombre": "Jamundi",
+    "hsp": 4.8
+  },
+  "juan_de_acosta": {
+    "nombre": "Juan De Acosta",
+    "hsp": 5.3
+  },
+  "la_jagua_de_ibirico": {
+    "nombre": "La Jagua De Ibirico",
+    "hsp": 5.5
+  },
+  "leticia": {
+    "nombre": "Leticia",
+    "hsp": 4.5
+  },
+  "lorica": {
+    "nombre": "Lorica",
+    "hsp": 5.3
+  },
+  "magangue": {
+    "nombre": "Magangue",
+    "hsp": 5.3
+  },
+  "maicao": {
+    "nombre": "Maicao",
+    "hsp": 5.7
+  },
+  "malambo": {
+    "nombre": "Malambo",
+    "hsp": 5.2
+  },
+  "manaure": {
+    "nombre": "Manaure",
+    "hsp": 5.9
+  },
+  "manizales": {
+    "nombre": "Manizales",
+    "hsp": 4.5
+  },
+  "maria_la_baja": {
+    "nombre": "Maria La Baja",
+    "hsp": 5.2
+  },
+  "medellin": {
+    "nombre": "Medellin",
+    "hsp": 4.5
+  },
+  "mitu": {
+    "nombre": "Mitu",
+    "hsp": 4.8
+  },
+  "mocoa": {
+    "nombre": "Mocoa",
+    "hsp": 4.4
+  },
+  "mompox": {
+    "nombre": "Mompox",
+    "hsp": 5.2
+  },
+  "monitos": {
+    "nombre": "Monitos",
+    "hsp": 5.4
+  },
+  "monteria": {
+    "nombre": "Monteria",
+    "hsp": 5.4
+  },
+  "neiva": {
+    "nombre": "Neiva",
+    "hsp": 5.3
+  },
+  "nueva_granada": {
+    "nombre": "Nueva Granada",
+    "hsp": 5.3
+  },
+  "ocana": {
+    "nombre": "Ocana",
+    "hsp": 5.2
+  },
+  "palmar_de_la_varela": {
+    "nombre": "Palmar De La Varela",
+    "hsp": 5.2
+  },
+  "palmira": {
+    "nombre": "Palmira",
+    "hsp": 4.8
+  },
+  "pamplona": {
+    "nombre": "Pamplona",
+    "hsp": 4.8
+  },
+  "pasto": {
+    "nombre": "Pasto",
+    "hsp": 4.3
+  },
+  "pedraza": {
+    "nombre": "Pedraza",
+    "hsp": 5.3
+  },
+  "pereira": {
+    "nombre": "Pereira",
+    "hsp": 4.6
+  },
+  "pijino_del_carmen": {
+    "nombre": "Pijino Del Carmen",
+    "hsp": 5.3
+  },
+  "piojo": {
+    "nombre": "Piojo",
+    "hsp": 5.3
+  },
+  "pitalito": {
+    "nombre": "Pitalito",
+    "hsp": 5.0
+  },
+  "pivijay": {
+    "nombre": "Pivijay",
+    "hsp": 5.3
+  },
+  "planeta_rica": {
+    "nombre": "Planeta Rica",
+    "hsp": 5.3
+  },
+  "plato": {
+    "nombre": "Plato",
+    "hsp": 5.2
+  },
+  "polonuevo": {
+    "nombre": "Polonuevo",
+    "hsp": 5.2
+  },
+  "popayan": {
+    "nombre": "Popayan",
+    "hsp": 4.6
+  },
+  "providencia": {
+    "nombre": "Providencia",
+    "hsp": 5.5
+  },
+  "pueblo_Viejo": {
+    "nombre": "Pueblo Viejo",
+    "hsp": 5.5
+  },
+  "puerto_asis": {
+    "nombre": "Puerto Asis",
+    "hsp": 4.6
+  },
+  "puerto_carreno": {
+    "nombre": "Puerto Carreno",
+    "hsp": 5.7
+  },
+  "puerto_colombia": {
+    "nombre": "Puerto Colombia",
+    "hsp": 5.2
+  },
+  "puerto_escondido": {
+    "nombre": "Puerto Escondido",
+    "hsp": 5.4
+  },
+  "puerto_libertador": {
+    "nombre": "Puerto Libertador",
+    "hsp": 5.2
+  },
+  "quibdo": {
+    "nombre": "Quibdo",
+    "hsp": 4.0
+  },
+  "remolino": {
+    "nombre": "Remolino",
+    "hsp": 5.4
+  },
+  "riohacha": {
+    "nombre": "Riohacha",
+    "hsp": 5.8
+  },
+  "rionegro": {
+    "nombre": "Rionegro",
+    "hsp": 4.6
+  },
+  "sabanagrande": {
+    "nombre": "Sabanagrande",
+    "hsp": 5.2
+  },
+  "sabanalarga": {
+    "nombre": "Sabanalarga",
+    "hsp": 5.2
+  },
+  "sabanas_de_san_angel": {
+    "nombre": "Sabanas De San Angel",
+    "hsp": 5.3
+  },
+  "sahagun": {
+    "nombre": "Sahagun",
+    "hsp": 5.3
+  },
+  "salamina": {
+    "nombre": "Salamina",
+    "hsp": 5.3
+  },
+  "sampues": {
+    "nombre": "Sampues",
+    "hsp": 5.3
+  },
+  "san_alberto": {
+    "nombre": "San Alberto",
+    "hsp": 5.3
+  },
+  "san_andres": {
+    "nombre": "San Andres",
+    "hsp": 5.5
+  },
+  "san_bernardo_del_viento": {
+    "nombre": "San Bernardo Del Viento",
+    "hsp": 5.4
+  },
+  "san_gil": {
+    "nombre": "San Gil",
+    "hsp": 5.0
+  },
+  "san_jacinto": {
+    "nombre": "San Jacinto",
+    "hsp": 5.2
+  },
+  "san_juan_del_cesar": {
+    "nombre": "San Juan Del Cesar",
+    "hsp": 5.7
+  },
+  "san_juan_nepomuceno": {
+    "nombre": "San Juan Nepomuceno",
+    "hsp": 5.2
+  },
+  "san_marcos": {
+    "nombre": "San Marcos",
+    "hsp": 5.2
+  },
+  "san_onofre": {
+    "nombre": "San Onofre",
+    "hsp": 5.4
+  },
+  "san_pedro_sucre": {
+    "nombre": "San Pedro Sucre",
+    "hsp": 5.2
+  },
+  "san_sebastian_de_buenavista": {
+    "nombre": "San Sebastian De Buenavista",
+    "hsp": 5.2
+  },
+  "san_zenon": {
+    "nombre": "San Zenon",
+    "hsp": 5.2
+  },
+  "santa_ana": {
+    "nombre": "Santa Ana",
+    "hsp": 5.3
+  },
+  "santa_barbara_de_pinto": {
+    "nombre": "Santa Barbara De Pinto",
+    "hsp": 5.2
+  },
+  "santa_catalina": {
+    "nombre": "Santa Catalina",
+    "hsp": 5.3
+  },
+  "santa_marta": {
+    "nombre": "Santa Marta",
+    "hsp": 5.6
+  },
+  "santa_rosa_de_lima": {
+    "nombre": "Santa Rosa De Lima",
+    "hsp": 5.2
+  },
+  "santo_tomas": {
+    "nombre": "Santo Tomas",
+    "hsp": 5.2
+  },
+  "sincelejo": {
+    "nombre": "Sincelejo",
+    "hsp": 5.3
+  },
+  "Sitio_Nuevo": {
+    "nombre": "Sitio Nuevo",
+    "hsp": 5.4
+  },
+  "soacha": {
+    "nombre": "Soacha",
+    "hsp": 4.2
+  },
+  "sogamoso": {
+    "nombre": "Sogamoso",
+    "hsp": 4.5
+  },
+  "soledad": {
+    "nombre": "Soledad",
+    "hsp": 5.2
+  },
+  "sucre_sucre": {
+    "nombre": "Sucre Sucre",
+    "hsp": 5.2
+  },
+  "tenerife": {
+    "nombre": "Tenerife",
+    "hsp": 5.3
+  },
+  "tierralta": {
+    "nombre": "Tierralta",
+    "hsp": 5.2
+  },
+  "tolu": {
+    "nombre": "Tolu",
+    "hsp": 5.3
+  },
+  "tubara": {
+    "nombre": "Tubara",
+    "hsp": 5.3
+  },
+  "tulua": {
+    "nombre": "Tulua",
+    "hsp": 4.7
+  },
+  "tumaco": {
+    "nombre": "Tumaco",
+    "hsp": 4.3
+  },
+  "tunja": {
+    "nombre": "Tunja",
+    "hsp": 4.4
+  },
+  "turbaco": {
+    "nombre": "Turbaco",
+    "hsp": 5.3
+  },
+  "turbo": {
+    "nombre": "Turbo",
+    "hsp": 5.1
+  },
+  "uribia": {
+    "nombre": "Uribia",
+    "hsp": 5.9
+  },
+  "usiacuri": {
+    "nombre": "Usiacuri",
+    "hsp": 5.2
+  },
+  "valencia_cordoba": {
+    "nombre": "Valencia Cordoba",
+    "hsp": 5.2
+  },
+  "valledupar": {
+    "nombre": "Valledupar",
+    "hsp": 5.6
+  },
+  "villanueva_bolivar": {
+    "nombre": "Villanueva Bolivar",
+    "hsp": 5.2
+  },
+  "villanueva_guajira": {
+    "nombre": "Villanueva Guajira",
+    "hsp": 5.7
+  },
+  "villavicencio": {
+    "nombre": "Villavicencio",
+    "hsp": 4.6
+  },
+  "yopal": {
+    "nombre": "Yopal",
+    "hsp": 5.4
+  },
+  "zapayan": {
+    "nombre": "Zapayan",
+    "hsp": 5.3
+  },
+  "zipaquira": {
+    "nombre": "Zipaquira",
+    "hsp": 4.2
+  },
+  "zona_bananera": {
+    "nombre": "Zona Bananera",
+    "hsp": 5.4
+  },
+  "default": {
+    "hsp": 4.5
+  }
 }

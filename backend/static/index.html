@@ -291,9 +291,10 @@
                 const listaCiudades = Object.keys(ciudades)
                     .filter(key => key !== 'default')
                     .map(key => {
-                        // Convertir de snake_case a Title Case para mostrar
+                        // Usar el nombre del objeto o convertir de snake_case a Title Case
+                        const nombreMostrar = ciudades[key]?.nombre || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         return {
-                            value: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                            value: nombreMostrar,
                             key: key
                         };
                     })
@@ -425,19 +426,21 @@
             // Normalizar: reemplazar espacios por guiones bajos
             const ciudadNormalizada = ciudad.replace(/\s+/g, '_');
             
-            // Valor por defecto
-            let hsp = hspCiudades.default || 4.5;
+            // Valor por defecto (compatibilidad con ambos formatos)
+            let hsp = (hspCiudades.default?.hsp || hspCiudades.default) || 4.5;
             
             // Buscar coincidencia exacta primero
             if (hspCiudades[ciudadNormalizada] !== undefined) {
-                hsp = hspCiudades[ciudadNormalizada];
+                // Compatibilidad: objeto {nombre, hsp} o número directo
+                hsp = hspCiudades[ciudadNormalizada].hsp || hspCiudades[ciudadNormalizada];
                 console.log(`✅ HSP encontrado para ${ciudad}: ${hsp}`);
             } else {
                 // Buscar coincidencia parcial
                 let encontrado = false;
                 for (const [key, value] of Object.entries(hspCiudades)) {
                     if (key !== 'default' && (ciudadNormalizada.includes(key) || key.includes(ciudadNormalizada))) {
-                        hsp = value;
+                        // Compatibilidad: objeto {nombre, hsp} o número directo
+                        hsp = value.hsp || value;
                         console.log(`✅ HSP encontrado (parcial) para ${ciudad}: ${hsp}`);
                         encontrado = true;
                         break;
