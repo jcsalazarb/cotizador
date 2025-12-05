@@ -405,6 +405,28 @@
       await cargarCiudades();
       await cargarEquipos();
       restaurarCRM();
+      
+      // Inicializar estado de campos de equipos según valor default
+      initEquiposState();
+    }
+
+    // Inicializar estado de required en campos de equipos
+    function initEquiposState() {
+      const seleccionManual = document.getElementById('seleccionManual');
+      const panelSel = document.getElementById('panel');
+      const invSel = document.getElementById('inversor');
+      const panelLabel = document.getElementById('panelLabel');
+      const invLabel = document.getElementById('inversorLabel');
+      const wrapper = document.getElementById('equiposWrapper');
+      
+      // Si el valor actual es "NO" (default), asegurar que required está en false
+      if (seleccionManual.value === 'NO' || seleccionManual.value === '') {
+        wrapper.style.display = 'none';
+        panelSel.required = false;
+        invSel.required = false;
+        panelLabel.textContent = 'Panel';
+        invLabel.textContent = 'Inversor';
+      }
     }
 
     async function cargarCiudades() {
