@@ -1197,7 +1197,7 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
         
         <!-- Footer -->
         <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 30px; text-align: center; color: white;">
-            <img src="cid:logo_nassa" alt="NASSA Solar" style="max-width: 160px; height: auto; margin: 0 auto 20px auto; display: block; opacity: 0.95;">
+            <img src="cid:logo_nassa" alt="NASSA Solar" style="max-width: 32px; height: auto; margin: 0 auto 12px auto; display: block; opacity: 0.9;">
             <h3 style="margin: 0 0 15px 0; font-size: 22px; font-weight: 700; color: #fbbf24;">
                 NASSA SOLAR
             </h3>
