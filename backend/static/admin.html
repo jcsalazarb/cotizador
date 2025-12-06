@@ -539,6 +539,39 @@
                         </div>
                     </div>
 
+                    <div class="param-section">
+                        <h3>⚙️ Parámetros del Sistema</h3>
+                        <div class="form-group">
+                            <label>Factor Área Efectiva (0.85 = 85%)</label>
+                            <input type="number" step="0.01" id="factor_area_efectiva" required min="0.5" max="1.0">
+                            <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                                Factor de reducción del área disponible por pasillos, sombras, etc.
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>% Ahorro Energía Default (100 = 100%)</label>
+                            <input type="number" id="porcentaje_ahorro_default" required min="10" max="100" step="5">
+                            <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                                Valor por defecto del campo "% Ahorro Energía Deseado" en el formulario cliente.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="param-section">
+                        <h3>📋 Tabla de Legalización (COP)</h3>
+                        <div style="margin-bottom: 15px;">
+                            <button type="button" class="btn-success btn-small" onclick="agregarRangoLegalizacion()">
+                                ➕ Agregar Rango
+                            </button>
+                        </div>
+                        <div id="tablaLegalizacionContainer">
+                            <!-- Los rangos se cargarán dinámicamente aquí -->
+                        </div>
+                        <small style="color: #666; font-size: 12px; display: block; margin-top: 8px;">
+                            Define el costo de legalización según la capacidad instalada (en Watts). Los rangos no deben solaparse.
+                        </small>
+                    </div>
+
                     <button type="submit" class="btn-success">💾 Guardar Parámetros</button>
                 </form>
             </div>
@@ -643,6 +676,34 @@
                         <option value="bifasico">Bifásico</option>
                         <option value="trifasico">Trifásico</option>
                     </select>
+                </div>
+
+                <!-- Campos específicos para INVERSORES -->
+                <div class="form-group" id="tipoInversorGroup" style="display: none;">
+                    <label>Tipo de Inversor *</label>
+                    <select id="formTipoInversor" onchange="toggleInversorFields()">
+                        <option value="STRING">STRING</option>
+                        <option value="MICRO">MICRO</option>
+                    </select>
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                        MICRO: Requiere redondeo por paneles_por_inversor. STRING: Usa sobredimensionamiento.
+                    </small>
+                </div>
+
+                <div class="form-group" id="panelesPorInversorGroup" style="display: none;">
+                    <label>Paneles por Inversor *</label>
+                    <input type="number" id="formPanelesPorInversor" step="1" min="1" placeholder="Ej: 4">
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                        Solo para inversores MICRO. Número de paneles que puede gestionar cada inversor.
+                    </small>
+                </div>
+
+                <div class="form-group" id="sobredimensionamientoGroup" style="display: none;">
+                    <label>Sobredimensionamiento (0.40 = 40%) *</label>
+                    <input type="number" id="formSobredimensionamiento" step="0.01" min="0" max="1" placeholder="Ej: 0.40">
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                        Solo para inversores STRING. Factor de capacidad adicional permitida (típicamente 40%).
+                    </small>
                 </div>
 
                 <button type="submit" id="btnGuardar" class="btn-success">💾 Guardar</button>
@@ -786,6 +847,15 @@
                 document.getElementById('factor_primer_ano').value = data.parametros_proyeccion.factor_primer_ano;
                 document.getElementById('incremento_anual_kwh').value = data.parametros_proyeccion.incremento_anual_kwh;
                 document.getElementById('anos_proyeccion').value = data.parametros_proyeccion.anos_proyeccion;
+                
+                // Parámetros del Sistema (NUEVOS)
+                const paramsSistema = data.parametros_sistema || {};
+                document.getElementById('factor_area_efectiva').value = paramsSistema.factor_area_efectiva || 0.85;
+                document.getElementById('porcentaje_ahorro_default').value = paramsSistema.porcentaje_ahorro_default || 100;
+                
+                // Tabla de Legalización (NUEVA)
+                const tablaLegalizacion = data.tabla_legalizacion || {};
+                cargarTablaLegalizacion(tablaLegalizacion.rangos || []);
             } catch (error) {
                 showAlert('Error al cargar parámetros', false);
             }
@@ -819,6 +889,13 @@
                     factor_primer_ano: parseFloat(document.getElementById('factor_primer_ano').value),
                     incremento_anual_kwh: parseFloat(document.getElementById('incremento_anual_kwh').value),
                     anos_proyeccion: parseInt(document.getElementById('anos_proyeccion').value)
+                },
+                parametros_sistema: {
+                    factor_area_efectiva: parseFloat(document.getElementById('factor_area_efectiva').value),
+                    porcentaje_ahorro_default: parseInt(document.getElementById('porcentaje_ahorro_default').value)
+                },
+                tabla_legalizacion: {
+                    rangos: obtenerRangosLegalizacion()
                 }
             };
             
@@ -905,8 +982,12 @@
                         </div>
                         <div class="card-details">🆔 ID: ${inv.id}</div>
                         <div class="card-details">⚡ Capacidad: ${inv.capacidad}W</div>
-                        <div class="card-details">🔌 Tipo: ${inv.tipo_sistema || 'No especificado'}</div>
+                        <div class="card-details">🔌 Sistema: ${Array.isArray(inv.sistemaElectrico) ? inv.sistemaElectrico[0] : (inv.tipo_sistema || 'No especificado')}</div>
                         <div class="card-details">📊 Eficiencia: ${(inv.eficiencia * 100).toFixed(0)}%</div>
+                        <div class="card-details">
+                            🔧 Tipo: <strong>${inv.tipo || 'STRING'}</strong>
+                            ${inv.tipo === 'MICRO' ? ` | ${inv.paneles_por_inversor || 4} paneles/inv` : ` | Sobredim: ${((inv.sobredimensionamiento || 0.40) * 100).toFixed(0)}%`}
+                        </div>
                         <div class="card-price">💵 $${inv.precio.toLocaleString('es-CO')}</div>
                         <div class="card-details">${inv.descripcion}</div>
                         <div class="card-actions">
@@ -991,8 +1072,22 @@
             const tipoSistemaGroup = document.getElementById('tipoSistemaGroup');
             const idGroup = document.getElementById('idGroup');
             
+            // Campos específicos de inversores
+            const tipoInversorGroup = document.getElementById('tipoInversorGroup');
+            const panelesPorInversorGroup = document.getElementById('panelesPorInversorGroup');
+            const sobredimensionamientoGroup = document.getElementById('sobredimensionamientoGroup');
+            
             eficienciaGroup.style.display = tipo !== 'bateria' ? 'block' : 'none';
             tipoSistemaGroup.style.display = tipo === 'inversor' ? 'block' : 'none';
+            
+            // Mostrar campos específicos solo para inversores
+            if (tipo === 'inversor') {
+                tipoInversorGroup.style.display = 'block';
+            } else {
+                tipoInversorGroup.style.display = 'none';
+                panelesPorInversorGroup.style.display = 'none';
+                sobredimensionamientoGroup.style.display = 'none';
+            }
             
             if (data) {
                 // MODO EDICIÓN: Mostrar ID (deshabilitado)
@@ -1011,7 +1106,23 @@
                     document.getElementById('formEficiencia').value = data.eficiencia || data.eficienciaPanel || 0.90;
                 }
                 if (tipo === 'inversor') {
-                    document.getElementById('formTipoSistema').value = data.tipo_sistema || '';
+                    // Cargar sistema eléctrico (compatibilidad con formato viejo y nuevo)
+                    const sistemaElectrico = Array.isArray(data.sistemaElectrico) ? data.sistemaElectrico[0] : data.tipo_sistema || '';
+                    document.getElementById('formTipoSistema').value = sistemaElectrico;
+                    
+                    // Cargar nuevos campos de inversores
+                    const tipoInv = data.tipo || 'STRING';
+                    document.getElementById('formTipoInversor').value = tipoInv;
+                    
+                    if (tipoInv === 'MICRO') {
+                        document.getElementById('formPanelesPorInversor').value = data.paneles_por_inversor || 4;
+                        panelesPorInversorGroup.style.display = 'block';
+                        sobredimensionamientoGroup.style.display = 'none';
+                    } else {
+                        document.getElementById('formSobredimensionamiento').value = data.sobredimensionamiento || 0.40;
+                        panelesPorInversorGroup.style.display = 'none';
+                        sobredimensionamientoGroup.style.display = 'block';
+                    }
                 }
             } else {
                 // MODO CREACIÓN: Ocultar ID (se genera automáticamente)
@@ -1019,6 +1130,14 @@
                 document.getElementById('isEdit').value = 'false';
                 document.getElementById('equipoForm').reset();
                 idGroup.style.display = 'none';
+                
+                // Valores por defecto para inversores nuevos
+                if (tipo === 'inversor') {
+                    document.getElementById('formTipoInversor').value = 'STRING';
+                    document.getElementById('formSobredimensionamiento').value = 0.40;
+                    sobredimensionamientoGroup.style.display = 'block';
+                    panelesPorInversorGroup.style.display = 'none';
+                }
             }
         }
 
@@ -1082,7 +1201,20 @@
             }
             
             if (tipo === 'inversor') {
-                equipo.tipo_sistema = document.getElementById('formTipoSistema').value;
+                // Sistema eléctrico
+                equipo.sistemaElectrico = [document.getElementById('formTipoSistema').value];
+                
+                // Nuevos campos de inversores
+                const tipoInv = document.getElementById('formTipoInversor').value;
+                equipo.tipo = tipoInv;
+                
+                if (tipoInv === 'MICRO') {
+                    equipo.paneles_por_inversor = parseInt(document.getElementById('formPanelesPorInversor').value);
+                    equipo.sobredimensionamiento = 0; // No aplica para MICRO
+                } else { // STRING
+                    equipo.sobredimensionamiento = parseFloat(document.getElementById('formSobredimensionamiento').value);
+                    equipo.paneles_por_inversor = 0; // No aplica para STRING
+                }
             }
             
             const plurales = { panel: 'paneles', inversor: 'inversores', bateria: 'baterias' };
@@ -1319,6 +1451,121 @@
                 showAlert('❌ Error de conexión con el servidor', false);
             }
         });
+
+        // ==================== FUNCIONES PARA TABLA DE LEGALIZACIÓN ====================
+        
+        function cargarTablaLegalizacion(rangos) {
+            const container = document.getElementById('tablaLegalizacionContainer');
+            
+            if (!rangos || rangos.length === 0) {
+                // Cargar valores por defecto si no hay rangos
+                rangos = [
+                    {min: 0, max: 12000, valor: 6000000},
+                    {min: 12001, max: 24000, valor: 8500000},
+                    {min: 24001, max: 36000, valor: 11000000},
+                    {min: 36001, max: 48000, valor: 13500000},
+                    {min: 48001, max: 60000, valor: 16000000},
+                    {min: 60001, max: 999999, valor: 20000000}
+                ];
+            }
+            
+            container.innerHTML = rangos.map((rango, index) => `
+                <div class="rango-legalizacion" data-index="${index}" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                        <div>
+                            <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">Capacidad Mín (W)</label>
+                            <input type="number" class="rango-min" value="${rango.min}" step="1" 
+                                   style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">Capacidad Máx (W)</label>
+                            <input type="number" class="rango-max" value="${rango.max}" step="1"
+                                   style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">Valor Legalización (COP)</label>
+                            <input type="number" class="rango-valor" value="${rango.valor}" step="1000"
+                                   style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <button type="button" onclick="eliminarRangoLegalizacion(${index})" 
+                                    style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function agregarRangoLegalizacion() {
+            const rangosActuales = obtenerRangosLegalizacion();
+            
+            // Determinar valores por defecto para el nuevo rango
+            let nuevoMin = 0;
+            let nuevoMax = 10000;
+            let nuevoValor = 5000000;
+            
+            if (rangosActuales.length > 0) {
+                const ultimoRango = rangosActuales[rangosActuales.length - 1];
+                nuevoMin = ultimoRango.max + 1;
+                nuevoMax = nuevoMin + 10000;
+                nuevoValor = ultimoRango.valor + 1000000;
+            }
+            
+            rangosActuales.push({min: nuevoMin, max: nuevoMax, valor: nuevoValor});
+            cargarTablaLegalizacion(rangosActuales);
+        }
+        
+        function eliminarRangoLegalizacion(index) {
+            const rangosActuales = obtenerRangosLegalizacion();
+            
+            if (rangosActuales.length <= 1) {
+                showAlert('⚠️ Debe haber al menos un rango de legalización', false);
+                return;
+            }
+            
+            rangosActuales.splice(index, 1);
+            cargarTablaLegalizacion(rangosActuales);
+        }
+        
+        function obtenerRangosLegalizacion() {
+            const rangosElements = document.querySelectorAll('.rango-legalizacion');
+            const rangos = [];
+            
+            rangosElements.forEach(elem => {
+                const min = parseInt(elem.querySelector('.rango-min').value);
+                const max = parseInt(elem.querySelector('.rango-max').value);
+                const valor = parseInt(elem.querySelector('.rango-valor').value);
+                
+                rangos.push({min, max, valor});
+            });
+            
+            // Ordenar por min
+            rangos.sort((a, b) => a.min - b.min);
+            
+            return rangos;
+        }
+
+        // ==================== FUNCIONES PARA INVERSORES ====================
+        
+        function toggleInversorFields() {
+            const tipoInversor = document.getElementById('formTipoInversor').value;
+            const panelesPorInversorGroup = document.getElementById('panelesPorInversorGroup');
+            const sobredimensionamientoGroup = document.getElementById('sobredimensionamientoGroup');
+            
+            if (tipoInversor === 'MICRO') {
+                panelesPorInversorGroup.style.display = 'block';
+                sobredimensionamientoGroup.style.display = 'none';
+                document.getElementById('formSobredimensionamiento').removeAttribute('required');
+                document.getElementById('formPanelesPorInversor').setAttribute('required', 'required');
+            } else { // STRING
+                panelesPorInversorGroup.style.display = 'none';
+                sobredimensionamientoGroup.style.display = 'block';
+                document.getElementById('formPanelesPorInversor').removeAttribute('required');
+                document.getElementById('formSobredimensionamiento').setAttribute('required', 'required');
+            }
+        }
     </script>
 </body>
 </html>
