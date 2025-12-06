@@ -617,12 +617,12 @@
 
                 <div class="form-group">
                     <label>Capacidad (W o Wh) *</label>
-                    <input type="number" id="formCapacidad" required>
+                    <input type="number" step="0.01" id="formCapacidad" required>
                 </div>
 
                 <div class="form-group">
                     <label>Precio (COP) *</label>
-                    <input type="number" id="formPrecio" required>
+                    <input type="number" step="0.01" id="formPrecio" required>
                 </div>
 
                 <div class="form-group">
@@ -736,6 +736,11 @@
             const duration = isSuccess ? 5000 : 4000;
             setTimeout(() => alert.classList.remove('show'), duration);
         }
+
+        // Variables globales para almacenar los datos
+        let panelesData = [];
+        let inversoresData = [];
+        let bateriasData = [];
 
         // Tabs
         function showTab(tabName) {
@@ -852,6 +857,9 @@
                 });
                 const paneles = await response.json();
                 
+                // Guardar en variable global
+                panelesData = paneles;
+                
                 const container = document.getElementById('panelesList');
                 container.innerHTML = paneles.map(panel => `
                     <div class="card">
@@ -866,12 +874,13 @@
                         <div class="card-details">${panel.descripcion}</div>
                         <div class="card-actions">
                             ${!panel.default ? `<button class="btn-success btn-small" onclick="setDefault('panel', '${panel.id}')">⭐ Marcar Default</button>` : ''}
-                            <button class="btn-warning btn-small" onclick='editEquipo("panel", ${JSON.stringify(panel).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+                            <button class="btn-warning btn-small" onclick="editEquipoById('panel', '${panel.id}')">✏️ Editar</button>
                             <button class="btn-danger btn-small" onclick="deleteEquipo('panel', '${panel.id}')">🗑️ Eliminar</button>
                         </div>
                     </div>
                 `).join('');
             } catch (error) {
+                console.error('Error al cargar paneles:', error);
                 showAlert('Error al cargar paneles', false);
             }
         }
@@ -883,6 +892,9 @@
                     headers: { 'Authorization': `Basic ${authCredentials}` }
                 });
                 const inversores = await response.json();
+                
+                // Guardar en variable global
+                inversoresData = inversores;
                 
                 const container = document.getElementById('inversoresList');
                 container.innerHTML = inversores.map(inv => `
@@ -899,12 +911,13 @@
                         <div class="card-details">${inv.descripcion}</div>
                         <div class="card-actions">
                             ${!inv.default ? `<button class="btn-success btn-small" onclick="setDefault('inversor', '${inv.id}')">⭐ Marcar Default</button>` : ''}
-                            <button class="btn-warning btn-small" onclick='editEquipo("inversor", ${JSON.stringify(inv).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+                            <button class="btn-warning btn-small" onclick="editEquipoById('inversor', '${inv.id}')">✏️ Editar</button>
                             <button class="btn-danger btn-small" onclick="deleteEquipo('inversor', '${inv.id}')">🗑️ Eliminar</button>
                         </div>
                     </div>
                 `).join('');
             } catch (error) {
+                console.error('Error al cargar inversores:', error);
                 showAlert('Error al cargar inversores', false);
             }
         }
@@ -916,6 +929,9 @@
                     headers: { 'Authorization': `Basic ${authCredentials}` }
                 });
                 const baterias = await response.json();
+                
+                // Guardar en variable global
+                bateriasData = baterias;
                 
                 const container = document.getElementById('bateriasList');
                 container.innerHTML = baterias.map(bat => `
@@ -930,12 +946,13 @@
                         <div class="card-details">${bat.descripcion}</div>
                         <div class="card-actions">
                             ${!bat.default ? `<button class="btn-success btn-small" onclick="setDefault('bateria', '${bat.id}')">⭐ Marcar Default</button>` : ''}
-                            <button class="btn-warning btn-small" onclick='editEquipo("bateria", ${JSON.stringify(bat).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+                            <button class="btn-warning btn-small" onclick="editEquipoById('bateria', '${bat.id}')">✏️ Editar</button>
                             <button class="btn-danger btn-small" onclick="deleteEquipo('bateria', '${bat.id}')">🗑️ Eliminar</button>
                         </div>
                     </div>
                 `).join('');
             } catch (error) {
+                console.error('Error al cargar baterías:', error);
                 showAlert('Error al cargar baterías', false);
             }
         }
@@ -1014,6 +1031,27 @@
             openModal(tipo, data);
         }
 
+        // Nueva función para buscar equipo por ID y editar
+        function editEquipoById(tipo, equipoId) {
+            let data = null;
+            
+            if (tipo === 'panel') {
+                data = panelesData.find(p => p.id === equipoId);
+            } else if (tipo === 'inversor') {
+                data = inversoresData.find(i => i.id === equipoId);
+            } else if (tipo === 'bateria') {
+                data = bateriasData.find(b => b.id === equipoId);
+            }
+            
+            if (data) {
+                console.log('📝 Editando equipo:', tipo, equipoId, data);
+                openModal(tipo, data);
+            } else {
+                console.error('❌ Equipo no encontrado:', tipo, equipoId);
+                showAlert(`Error: ${tipo} con ID ${equipoId} no encontrado`, false);
+            }
+        }
+
         document.getElementById('equipoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -1028,8 +1066,8 @@
             
             const equipo = {
                 nombre: document.getElementById('formNombre').value,
-                capacidad: parseInt(document.getElementById('formCapacidad').value),
-                precio: parseInt(document.getElementById('formPrecio').value),
+                capacidad: parseFloat(document.getElementById('formCapacidad').value),
+                precio: parseFloat(document.getElementById('formPrecio').value),
                 descripcion: document.getElementById('formDescripcion').value
             };
             
