@@ -1082,10 +1082,10 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
     <div style="max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
         
         <!-- Header con Gradiente -->
-        <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 40px 30px; text-align: center; position: relative;">
-            <img src="cid:logo_nassa" alt="NASSA Solar Logo" style="max-width: 200px; height: auto; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-            <p style="margin: 0; color: #ffffff; font-size: 18px; font-weight: 700; letter-spacing: 3px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                ☀️ ENERGÍA INTELIGENTE
+        <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); padding: 40px 30px; text-align: center; position: relative;">
+            <img src="cid:logo_nassa" alt="NASSA Solar Logo" style="max-width: 220px; height: auto; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+            <p style="margin: 0; color: #ffffff; font-size: 18px; font-weight: 700; letter-spacing: 3px; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                ENERGÍA INTELIGENTE
             </p>
         </div>
         
@@ -1197,8 +1197,9 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
         
         <!-- Footer -->
         <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 30px; text-align: center; color: white;">
+            <img src="cid:logo_nassa" alt="NASSA Solar" style="max-width: 160px; height: auto; margin: 0 auto 20px auto; display: block; opacity: 0.95;">
             <h3 style="margin: 0 0 15px 0; font-size: 22px; font-weight: 700; color: #fbbf24;">
-                ☀️ NASSA SOLAR
+                NASSA SOLAR
             </h3>
             <p style="margin: 5px 0; font-size: 14px; color: #d1d5db;">
                 Expertos en Energía Solar Fotovoltaica
