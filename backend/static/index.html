@@ -81,6 +81,9 @@
        <div><label for="consumoMensual" class="block text-sm font-medium text-blue-100 mb-2">Consumo Mensual (kWh) *</label> <input type="number" id="consumoMensual" name="consumoMensual" required min="50" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="300">
         <p class="text-xs text-blue-200 mt-1">Revisa tu factura de luz</p>
        </div>
+       <div><label for="porcentajeAhorroEnergia" class="block text-sm font-medium text-blue-100 mb-2">% Ahorro Energía Deseado *</label> <input type="number" id="porcentajeAhorroEnergia" name="porcentajeAhorroEnergia" required min="10" max="100" step="5" value="100" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="100">
+        <p class="text-xs text-blue-200 mt-1">¿Qué % de su consumo desea cubrir con energía solar?</p>
+       </div>
        <div><label for="valorFactura" class="block text-sm font-medium text-blue-100 mb-2">Valor Factura Mensual ($) *</label> <input type="number" id="valorFactura" name="valorFactura" required min="50000" step="1000" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="150000">
        </div>
        <div><label for="nic" class="block text-sm font-medium text-blue-100 mb-2">NIC (Número de Instalación) *</label> <input type="text" id="nic" name="nic" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de tu medidor">
@@ -751,6 +754,42 @@
                         </div>
                     </div>
 
+                    <!-- Desglose Detallado de Costos (NUEVO) -->
+                    ${cotizacion.desgloseCostos ? `
+                    <div class="bg-indigo-50 p-6 rounded-xl border-l-4 border-indigo-500">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">📊 Desglose Detallado de Costos</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span>Paneles:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoPaneles.toLocaleString()}</span></div>
+                                <div class="flex justify-between"><span>Inversores:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoInversores.toLocaleString()}</span></div>
+                                ${cotizacion.desgloseCostos.costoBaterias > 0 ? `<div class="flex justify-between"><span>Baterías:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoBaterias.toLocaleString()}</span></div>` : ''}
+                                <div class="flex justify-between"><span>Soportería:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoSoporteria.toLocaleString()}</span></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span>Instalación:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoInstalacion.toLocaleString()}</span></div>
+                                <div class="flex justify-between"><span>Materiales:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoMateriales.toLocaleString()}</span></div>
+                                ${cotizacion.desgloseCostos.costoLegalizacion > 0 ? `<div class="flex justify-between"><span>Legalización:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoLegalizacion.toLocaleString()}</span></div>` : ''}
+                                <div class="flex justify-between border-t pt-2 mt-2"><span class="font-semibold">IVA (19%):</span><span class="font-mono font-semibold">$${cotizacion.desgloseCostos.ivaTotal.toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t-2 border-indigo-300">
+                            <div class="flex justify-between text-lg font-bold">
+                                <span>TOTAL SISTEMA:</span>
+                                <span class="text-indigo-600 font-mono text-2xl">$${cotizacion.valorTotalSistema.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Botón Enviar Email (NUEVO) -->
+                        <div class="mt-6 pt-4 border-t">
+                            <button id="btnEnviarEmailModal" onclick="enviarCotizacionPorEmail()" class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-bold text-lg shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2">
+                                <span class="text-2xl">📧</span>
+                                <span>Enviar Cotización por Email</span>
+                            </button>
+                            <p id="estadoEnvioEmail" class="text-center text-sm mt-2 text-gray-600"></p>
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <!-- Tabla Completa de Ahorros -->
                     <div class="bg-green-50 p-6 rounded-xl">
                         <h3 class="text-xl font-bold text-gray-900 mb-4">📈 Tabla Detallada de Ahorros (10 años)</h3>
@@ -836,6 +875,67 @@
         function cerrarModal() {
             document.getElementById('modalResultado').classList.add('hidden');
             document.getElementById('modalResultado').classList.remove('flex');
+        }
+        
+        // Función para enviar cotización por email (NUEVO)
+        async function enviarCotizacionPorEmail() {
+            const btn = document.getElementById('btnEnviarEmailModal');
+            const estadoMsg = document.getElementById('estadoEnvioEmail');
+            
+            if (!cotizacionActual || !datosCliente) {
+                estadoMsg.textContent = '❌ Error: No hay cotización para enviar';
+                estadoMsg.className = 'text-center text-sm mt-2 text-red-600';
+                return;
+            }
+            
+            // Deshabilitar botón
+            btn.disabled = true;
+            btn.innerHTML = '<span class="text-2xl">⏳</span><span>Enviando...</span>';
+            estadoMsg.textContent = '📤 Generando PDFs y enviando email...';
+            estadoMsg.className = 'text-center text-sm mt-2 text-blue-600';
+            
+            try {
+                const payload = {
+                    email: datosCliente.email,
+                    resumen: cotizacionActual,
+                    datosCliente: datosCliente,
+                    opcion2: null  // TODO: agregar segunda opción si existe
+                };
+                
+                console.log('📧 Enviando cotización por email...', payload);
+                
+                const response = await fetch(`${API_BASE_URL}/enviar-cotizacion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Error al enviar email');
+                }
+                
+                const resultado = await response.json();
+                console.log('✅ Email enviado:', resultado);
+                
+                estadoMsg.textContent = '✅ Cotización enviada exitosamente a ' + datosCliente.email;
+                estadoMsg.className = 'text-center text-sm mt-2 text-green-600 font-semibold';
+                btn.innerHTML = '<span class="text-2xl">✅</span><span>Email Enviado</span>';
+                
+                // Mostrar notificación
+                mostrarNotificacion('✅ Cotización enviada exitosamente a ' + datosCliente.email, 'success');
+                
+            } catch (error) {
+                console.error('❌ Error enviando email:', error);
+                estadoMsg.textContent = '❌ Error: ' + error.message;
+                estadoMsg.className = 'text-center text-sm mt-2 text-red-600';
+                btn.disabled = false;
+                btn.innerHTML = '<span class="text-2xl">📧</span><span>Reintentar Envío</span>';
+                
+                mostrarNotificacion('❌ Error al enviar email: ' + error.message, 'error');
+            }
         }
         
         // Funciones para bloquear/desbloquear formulario
@@ -965,6 +1065,7 @@
                 datos.valorFactura = parseFloat(datos.valorFactura);
                 datos.valorKwh = parseFloat(datos.valorKwh);
                 datos.porcentajeConsumodia = parseFloat(datos.porcentajeConsumodia);
+                datos.porcentajeAhorroEnergia = datos.porcentajeAhorroEnergia ? parseFloat(datos.porcentajeAhorroEnergia) : 100;
                 datos.areaDisponible = datos.areaDisponible ? parseFloat(datos.areaDisponible) : 0;
                 datos.hspCalculado = datos.hspCalculado ? parseFloat(datos.hspCalculado) : null;
                 

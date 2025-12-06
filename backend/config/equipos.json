@@ -84,6 +84,9 @@
       "descripcion": "Monofásico, WiFi incluido",
       "eficiencia": 0.9,
       "tipo_sistema": "monofasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": true
     },
     {
@@ -94,6 +97,9 @@
       "descripcion": "Bifásico, optimizadores incluidos",
       "eficiencia": 0.93,
       "tipo_sistema": "bifasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     },
     {
@@ -104,6 +110,9 @@
       "descripcion": "Trifásico, grado industrial",
       "eficiencia": 0.9,
       "tipo_sistema": "trifasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     },
     {
@@ -114,6 +123,9 @@
       "descripcion": "Monofásico, tecnología austriaca",
       "eficiencia": 0.9,
       "tipo_sistema": "monofasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     },
     {
@@ -124,6 +136,9 @@
       "descripcion": "Híbrido, compatible con baterías",
       "eficiencia": 0.9,
       "tipo_sistema": "bifasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     },
     {
@@ -134,6 +149,9 @@
       "descripcion": "Ideal para sistemas residenciales pequeños",
       "eficiencia": 0.9,
       "tipo_sistema": "monofasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     },
     {
@@ -144,6 +162,9 @@
       "descripcion": "Para sistemas residenciales medianos",
       "eficiencia": 0.9,
       "tipo_sistema": "monofasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     },
     {
@@ -154,6 +175,9 @@
       "descripcion": "Para sistemas comerciales y grandes residenciales",
       "eficiencia": 0.9,
       "tipo_sistema": "trifasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     },
     {
@@ -164,6 +188,9 @@
       "descripcion": "Configurable 110V/220V Pot.Max:2500 W",
       "eficiencia": 0.9,
       "tipo_sistema": "bifasico",
+      "tipo": "STRING",
+      "paneles_por_inversor": 4,
+      "sobredimensionamiento": 0.40,
       "default": false
     }
   ],

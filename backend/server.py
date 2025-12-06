@@ -42,6 +42,7 @@ EQUIPOS_FILE = os.path.join(CONFIG_DIR, "equipos.json")
 CIUDADES_FILE = os.path.join(CONFIG_DIR, "ciudades.json")
 PARAMETROS_FILE = os.path.join(CONFIG_DIR, "parametros.json")
 ESTADISTICAS_FILE = os.path.join(CONFIG_DIR, "estadisticas.json")
+CONSECUTIVO_FILE = os.path.join(CONFIG_DIR, "consecutivo.json")
 TEMPLATE_DIR = os.path.join(APP_DIR, "..", "Template")
 TEMPLATE_PPTX = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion.pptx")
 TEMPLATE_PPTX_OP2 = os.path.join(TEMPLATE_DIR, "Template-PreCotizacion2.pptx")
@@ -118,6 +119,7 @@ class CotizarRequest(BaseModel):
     numeroPisos: Optional[str] = Field("1", pattern=r'^[1-6]$')
     sistemaElectrico: str = Field(..., pattern=r'^(monofasico|bifasico|trifasico)$')
     porcentajeConsumodia: float = Field(..., ge=0, le=100)
+    porcentajeAhorroEnergia: float = Field(100.0, ge=10, le=100, description="Porcentaje del consumo que desea cubrir con energía solar")
     tipoSistemaFV: str = Field(..., pattern=r'^(ongrid|offgrid|hibrido_incluido|hibrido_opcional)$')
     hspCalculado: Optional[float] = Field(None, gt=0, lt=9)
     legalizacion: str = Field(..., pattern=r'^(SI|NO)$')
@@ -154,6 +156,64 @@ def load_json(path: str) -> dict:
         raise HTTPException(404, f"Archivo no encontrado: {os.path.basename(path)}")
     except json.JSONDecodeError:
         raise HTTPException(500, f"JSON inválido: {os.path.basename(path)}")
+
+def obtener_siguiente_consecutivo() -> str:
+    """
+    Genera el siguiente número de cotización con formato NASSA-YYYY-#### 
+    Usa lock de archivo para evitar duplicados en concurrencia
+    """
+    import fcntl
+    
+    consecutivo_file = os.path.join(CONFIG_DIR, "consecutivo.json")
+    
+    # Abrir con lock exclusivo
+    with open(consecutivo_file, "r+", encoding="utf-8") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        
+        try:
+            data = json.load(f)
+            ano_actual = now_colombia().year
+            
+            # Si cambió el año, resetear consecutivo
+            if data.get("ano_actual") != ano_actual:
+                data["ano_actual"] = ano_actual
+                data["ultimo_consecutivo"] = 0
+            
+            # Incrementar consecutivo
+            data["ultimo_consecutivo"] += 1
+            consecutivo = data["ultimo_consecutivo"]
+            
+            # Escribir de vuelta
+            f.seek(0)
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.truncate()
+            
+            # Formatear: NASSA-2025-0001
+            cotizacion_id = f"NASSA-{ano_actual}-{consecutivo:04d}"
+            return cotizacion_id
+            
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+def calcular_valor_legalizacion(capacidad_instalada_w: float, parametros: dict) -> float:
+    """
+    Calcula el costo de legalización según tabla de rangos
+    
+    Args:
+        capacidad_instalada_w: Capacidad en Watts
+        parametros: Dict con tabla_legalizacion.rangos
+    
+    Returns:
+        Valor de legalización (no exento de IVA)
+    """
+    tabla = parametros.get("tabla_legalizacion", {}).get("rangos", [])
+    
+    for rango in tabla:
+        if rango["min"] <= capacidad_instalada_w <= rango["max"]:
+            return rango["valor"]
+    
+    # Fallback: último rango si no encuentra
+    return tabla[-1]["valor"] if tabla else 0
 
 def obtener_equipos_defaults(equipos: dict, sistema_electrico: str = None) -> dict:
     """
@@ -233,7 +293,13 @@ def obtener_equipos_defaults(equipos: dict, sistema_electrico: str = None) -> di
 # 🧮 FUNCIÓN DE CÁLCULO
 # ========================================
 def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
-    """Lógica de cálculo de cotización completa"""
+    """
+    Lógica de cálculo de cotización completa con:
+    - Porcentaje de ahorro de energía
+    - Lógica MICRO vs STRING para inversores
+    - Costo de legalización por rangos
+    - Consecutivo controlado
+    """
     # Cargar parámetros de configuración
     parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
     parametros = load_json(parametros_path)
@@ -242,15 +308,21 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     costos = parametros["costos_instalacion"]
     fiscales = parametros["parametros_fiscales"]
     proyeccion = parametros["parametros_proyeccion"]
+    parametros_sistema = parametros.get("parametros_sistema", {})
+    
+    # PUNTO 6: Porcentaje de ahorro de energía (default 100%)
+    porcentajeAhorroEnergia = float(data.get("porcentajeAhorroEnergia", parametros_sistema.get("porcentaje_ahorro_default", 100)))
     
     consumoMensual = float(data["consumoMensual"])
+    # MODIFICACIÓN CRÍTICA: Consumo objetivo basado en % ahorro
+    consumoObjetivo = consumoMensual * (porcentajeAhorroEnergia / 100.0)
+    
     valorFactura = float(data["valorFactura"])
     valorKwh = float(data["valorKwh"])
     ciudad_key = data["ciudad"].lower().strip().replace(" ", "_")
     
     # FIX: Compatibilidad con nuevo formato de ciudades.json (objeto con .hsp)
     ciudad_data = ciudades.get(ciudad_key, ciudades.get("default", 4.5))
-    # Si es un objeto, extraer .hsp, sino usar el valor directo (retrocompatibilidad)
     hsp_value = ciudad_data.get("hsp") if isinstance(ciudad_data, dict) else ciudad_data
     hsp = float(data.get("hspCalculado") or hsp_value)
 
@@ -260,26 +332,58 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     if not panel or not inversor:
         raise ValueError("Panel o inversor no encontrado")
     
-    # Obtener configuración de área desde parámetros
-    parametros_sistema = parametros.get("parametros_sistema", {})
     factorAreaEfectiva = parametros_sistema.get("factor_area_efectiva", 1.2)
-    areaPanel = panel.get("area", 2.0)  # Default 2 m² si no existe
-
-    # Usar eficiencia del panel seleccionado
+    areaPanel = panel.get("area", 2.0)
     eficiencia_panel = panel.get("eficienciaPanel", parametros_sistema.get("eficiencia_panel_default", 1.0))
     eficiencia_inversor = inversor.get("eficiencia", parametros_sistema.get("eficiencia_inversor_default", 1.0))
     
-    consumoDiario = consumoMensual / 30
+    # CÁLCULO INICIAL de paneles basado en consumo objetivo
+    consumoDiario = consumoObjetivo / 30
     energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp) / 1000
-    numeroPaneles = int(ceil((consumoDiario * 1.2) / energiaPanelDia))
-    capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000
+    numeroPaneles_inicial = int(ceil((consumoDiario * 1.2) / energiaPanelDia))
     
-    # Aplicar eficiencia del inversor en la generación
+    # PUNTO 5: Lógica de inversores MICRO vs STRING
+    tipo_inversor = inversor.get("tipo", "STRING")
+    
+    if tipo_inversor == "MICRO":
+        # MICRO: Basado en paneles por inversor
+        paneles_por_inversor = inversor.get("paneles_por_inversor", 4)
+        numeroInversores_raw = numeroPaneles_inicial / paneles_por_inversor
+        decimal = numeroInversores_raw - int(numeroInversores_raw)
+        
+        if decimal < 0.5:
+            numeroInversores = int(numeroInversores_raw)
+        else:
+            numeroInversores = int(numeroInversores_raw) + 1
+        
+        # Recalcular paneles si se redondeó hacia abajo
+        numeroPaneles = numeroInversores * paneles_por_inversor
+        
+    else:  # STRING
+        # STRING: Basado en capacidad con sobredimensionamiento
+        sobredimensionamiento = inversor.get("sobredimensionamiento", 0.40)
+        capacidad_inversor_w = inversor["capacidad"]
+        capacidad_efectiva_w = capacidad_inversor_w * (1 + sobredimensionamiento)
+        
+        # Calcular capacidad instalada inicial
+        capacidadInstalada_inicial = (numeroPaneles_inicial * panel["capacidad"]) / 1000  # kW
+        
+        # Número de inversores necesarios
+        numeroInversores = int(ceil((capacidadInstalada_inicial * 1000) / capacidad_efectiva_w))
+        
+        # Capacidad máxima que pueden manejar los inversores
+        capacidad_maxima_sistema = (numeroInversores * capacidad_efectiva_w) / 1000  # kW
+        
+        # Si la capacidad inicial excede la máxima, ajustar paneles
+        if capacidadInstalada_inicial > capacidad_maxima_sistema:
+            numeroPaneles = int((capacidad_maxima_sistema * 1000) / panel["capacidad"])
+        else:
+            numeroPaneles = numeroPaneles_inicial
+    
+    # RECALCULAR todo con paneles y/o inversores ajustados
+    capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000  # kW
     generacionMensual = numeroPaneles * energiaPanelDia * 30 * eficiencia_inversor
     generacionAnual = generacionMensual * 12
-    numeroInversores = int(ceil(capacidadInstalada / (inversor["capacidad"] / 1000)))
-    
-    # Calcular área requerida para instalación
     areaRequerida = round(numeroPaneles * areaPanel * factorAreaEfectiva, 2)
 
     # Costos básicos desde parámetros configurables
@@ -295,9 +399,22 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     costoInstalacion = numeroPaneles * instalacion
     costoMateriales = numeroPaneles * materialesAdicionales
 
+    # PUNTO 1: Valor de legalización (NO exento de IVA)
+    capacidadInstalada_w = capacidadInstalada * 1000
+    valorLegalizacion = calcular_valor_legalizacion(capacidadInstalada_w, parametros)
+    incluir_legalizacion = data.get("legalizacion", "NO") == "SI"
+    costoLegalizacion = valorLegalizacion if incluir_legalizacion else 0
+    ivaLegalizacion = costoLegalizacion * fiscales["iva_porcentaje"]
+
+    # Cálculo de costos totales
     subtotalAntesIVA = costoPaneles + costoInversores + costoBaterias + costoSoporteria + costoInstalacion + costoMateriales
+    subtotalConLegalizacion = subtotalAntesIVA + costoLegalizacion
+    
+    # IVA: Equipos + Legalización
     ivaEquipos = (costoBaterias + costoSoporteria + costoInstalacion + costoMateriales) * fiscales["iva_porcentaje"]
-    valorTotalSistema = subtotalAntesIVA + ivaEquipos
+    ivaTotal = ivaEquipos + ivaLegalizacion
+    
+    valorTotalSistema = subtotalConLegalizacion + ivaTotal
 
     porcentajeProduccionMensual = ((generacionMensual / consumoMensual) * 100) if consumoMensual > 0 else 0
     ahorroMensualEnergia = generacionMensual * valorKwh
@@ -360,13 +477,24 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
         })
 
     TotalAcum = acumxgen + acumxdeduc + acumxdepre
+    TotalAcum = acumxgen + acumxdeduc + acumxdepre
     tiempoRetorno = payback or (valorTotalSistema / (ahorroAnualEnergia + ahorroAnualDeduccion + ahorroAnualDepreciacion + 1e-9))
+
+    # PUNTO 3: Generar consecutivo controlado
+    cotizacion_id = obtener_siguiente_consecutivo()
 
     return {
         "fecha": now_colombia().isoformat(),
-        "cotizacionId": "NASSA-" + str(int(now_colombia().timestamp())),
+        "cotizacionId": cotizacion_id,
         "panel": {"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"], "area": areaPanel},
-        "inversor": {"id": inversor["id"], "nombre": inversor["nombre"], "capacidad": inversor["capacidad"]},
+        "inversor": {
+            "id": inversor["id"], 
+            "nombre": inversor["nombre"], 
+            "capacidad": inversor["capacidad"],
+            "tipo": tipo_inversor,
+            "paneles_por_inversor": inversor.get("paneles_por_inversor") if tipo_inversor == "MICRO" else None,
+            "sobredimensionamiento": inversor.get("sobredimensionamiento") if tipo_inversor == "STRING" else None
+        },
         "bateria": {"id": bateria["id"], "nombre": bateria["nombre"]} if bateria else None,
         "numeroPaneles": numeroPaneles,
         "numeroInversores": numeroInversores,
@@ -375,6 +503,22 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
         "areaDisponibleCliente": float(data.get("areaDisponible", 0)),
         "generacionMensual": round(generacionMensual),
         "generacionAnual": round(generacionAnual),
+        "porcentajeAhorroEnergia": porcentajeAhorroEnergia,
+        "consumoObjetivo": round(consumoObjetivo),
+        # PUNTO 2: Desglose detallado de costos para preview
+        "desgloseCostos": {
+            "costoPaneles": round(costoPaneles),
+            "costoInversores": round(costoInversores),
+            "costoBaterias": round(costoBaterias),
+            "costoSoporteria": round(costoSoporteria),
+            "costoInstalacion": round(costoInstalacion),
+            "costoMateriales": round(costoMateriales),
+            "costoLegalizacion": round(costoLegalizacion),
+            "subtotalAntesIVA": round(subtotalAntesIVA),
+            "ivaEquipos": round(ivaEquipos),
+            "ivaLegalizacion": round(ivaLegalizacion),
+            "ivaTotal": round(ivaTotal)
+        },
         "valorTotalSistema": round(valorTotalSistema),
         "ahorroMensualEnergia": round(ahorroMensualEnergia),
         "ahorroAnualEnergia": round(ahorroAnualEnergia),
@@ -398,9 +542,10 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     """
     Calcula cotización ajustada al área disponible del cliente.
     Reduce número de paneles para que quepan en el espacio real.
+    Usa la misma lógica MICRO/STRING y legalización que calcular_cotizacion.
     
     Args:
-        cotizacion_id_base: ID base sin sufijo (ej: "NASSA-1234567890") para mantener consistencia
+        cotizacion_id_base: ID base (ej: "NASSA-2025-0001") para mantener consistencia
     """
     parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
     parametros = load_json(parametros_path)
@@ -408,15 +553,18 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     costos = parametros["costos_instalacion"]
     fiscales = parametros["parametros_fiscales"]
     proyeccion = parametros["parametros_proyeccion"]
+    parametros_sistema = parametros.get("parametros_sistema", {})
+    
+    # Porcentaje de ahorro
+    porcentajeAhorroEnergia = float(data.get("porcentajeAhorroEnergia", parametros_sistema.get("porcentaje_ahorro_default", 100)))
     
     consumoMensual = float(data["consumoMensual"])
+    consumoObjetivo = consumoMensual * (porcentajeAhorroEnergia / 100.0)
     valorFactura = float(data["valorFactura"])
     valorKwh = float(data["valorKwh"])
     ciudad_key = data["ciudad"].lower().strip().replace(" ", "_")
     
-    # FIX: Compatibilidad con nuevo formato de ciudades.json (objeto con .hsp)
     ciudad_data = ciudades.get(ciudad_key, ciudades.get("default", 4.5))
-    # Si es un objeto, extraer .hsp, sino usar el valor directo (retrocompatibilidad)
     hsp_value = ciudad_data.get("hsp") if isinstance(ciudad_data, dict) else ciudad_data
     hsp = float(data.get("hspCalculado") or hsp_value)
 
@@ -424,29 +572,46 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
     bateria = next((x for x in equipos["baterias"] if x["id"] == data.get("bateria")), None) if data.get("bateria") else None
     
-    # Obtener parámetros del sistema
-    parametros_sistema = parametros.get("parametros_sistema", {})
     factorAreaEfectiva = parametros_sistema.get("factor_area_efectiva", 1.2)
     areaPanel = panel.get("area", 2.0)
     
-    # CALCULAR NÚMERO MÁXIMO DE PANELES QUE CABEN
-    numeroPaneles = max(1, int(areaDisponible / (areaPanel * factorAreaEfectiva)))
+    # CALCULAR NÚMERO MÁXIMO DE PANELES QUE CABEN EN EL ÁREA
+    numeroPaneles_max = max(1, int(areaDisponible / (areaPanel * factorAreaEfectiva)))
     
-    # Recalcular todo con paneles ajustados usando eficiencias específicas
+    # Aplicar lógica MICRO/STRING con restricción de área
     eficiencia_panel = panel.get("eficienciaPanel", parametros_sistema.get("eficiencia_panel_default", 1.0))
     eficiencia_inversor = inversor.get("eficiencia", parametros_sistema.get("eficiencia_inversor_default", 1.0))
-    
     energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp) / 1000
-    capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000
     
-    # Aplicar eficiencia del inversor en la generación
+    tipo_inversor = inversor.get("tipo", "STRING")
+    
+    if tipo_inversor == "MICRO":
+        paneles_por_inversor = inversor.get("paneles_por_inversor", 4)
+        # Ajustar a múltiplo de paneles_por_inversor que quepa en área
+        numeroInversores = numeroPaneles_max // paneles_por_inversor
+        if numeroInversores == 0:
+            numeroInversores = 1
+        numeroPaneles = numeroInversores * paneles_por_inversor
+        # Si excede área, reducir un inversor
+        if numeroPaneles > numeroPaneles_max:
+            numeroInversores = max(1, numeroInversores - 1)
+            numeroPaneles = numeroInversores * paneles_por_inversor
+    else:  # STRING
+        # Usar todos los paneles que quepan
+        numeroPaneles = numeroPaneles_max
+        sobredimensionamiento = inversor.get("sobredimensionamiento", 0.40)
+        capacidad_inversor_w = inversor["capacidad"]
+        capacidad_efectiva_w = capacidad_inversor_w * (1 + sobredimensionamiento)
+        capacidadInstalada_temp = (numeroPaneles * panel["capacidad"]) / 1000
+        numeroInversores = int(ceil((capacidadInstalada_temp * 1000) / capacidad_efectiva_w))
+    
+    # RECALCULAR con paneles/inversores ajustados
+    capacidadInstalada = (numeroPaneles * panel["capacidad"]) / 1000
     generacionMensual = numeroPaneles * energiaPanelDia * 30 * eficiencia_inversor
     generacionAnual = generacionMensual * 12
-    numeroInversores = int(ceil(capacidadInstalada / (inversor["capacidad"] / 1000)))
-    
     areaRequerida = round(numeroPaneles * areaPanel * factorAreaEfectiva, 2)
     
-    # Costos
+    # Costos con legalización
     soporteria = costos["soporteria_por_panel"]
     instalacion = costos["instalacion_por_panel"]
     materialesAdicionales = costos["materiales_por_panel"]
@@ -459,15 +624,24 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     costoInstalacion = numeroPaneles * instalacion
     costoMateriales = numeroPaneles * materialesAdicionales
     
+    # Legalización (si aplica)
+    capacidadInstalada_w = capacidadInstalada * 1000
+    valorLegalizacion = calcular_valor_legalizacion(capacidadInstalada_w, parametros)
+    incluir_legalizacion = data.get("legalizacion", "NO") == "SI"
+    costoLegalizacion = valorLegalizacion if incluir_legalizacion else 0
+    ivaLegalizacion = costoLegalizacion * fiscales["iva_porcentaje"]
+    
     subtotalAntesIVA = costoPaneles + costoInversores + costoBaterias + costoSoporteria + costoInstalacion + costoMateriales
+    subtotalConLegalizacion = subtotalAntesIVA + costoLegalizacion
     ivaEquipos = (costoBaterias + costoSoporteria + costoInstalacion + costoMateriales) * fiscales["iva_porcentaje"]
-    valorTotalSistema = subtotalAntesIVA + ivaEquipos
+    ivaTotal = ivaEquipos + ivaLegalizacion
+    valorTotalSistema = subtotalConLegalizacion + ivaTotal
     
     porcentajeProduccionMensual = ((generacionMensual / consumoMensual) * 100) if consumoMensual > 0 else 0
     ahorroMensualEnergia = generacionMensual * valorKwh
     ahorroAnualEnergia = ahorroMensualEnergia * 12
     
-    # Fiscales - usar nombres correctos del parametros.json
+    # Fiscales
     deduccionRentaBase = subtotalAntesIVA * fiscales["deduccion_renta_base_porcentaje"]
     deduccionRentaEfectiva = deduccionRentaBase * fiscales["impuesto_renta_porcentaje"]
     ahorroAnualDeduccion = (deduccionRentaEfectiva / fiscales["anos_deduccion"])
@@ -531,9 +705,16 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     
     return {
         "fecha": now_colombia().isoformat(),
-        "cotizacionId": cotizacion_id_base + "-OP2",  # Usar el mismo ID base
+        "cotizacionId": cotizacion_id_base + "-OP2",  # Usar el mismo ID base con sufijo
         "panel": {"id": panel["id"], "nombre": panel["nombre"], "capacidad": panel["capacidad"], "area": areaPanel},
-        "inversor": {"id": inversor["id"], "nombre": inversor["nombre"], "capacidad": inversor["capacidad"]},
+        "inversor": {
+            "id": inversor["id"], 
+            "nombre": inversor["nombre"], 
+            "capacidad": inversor["capacidad"],
+            "tipo": tipo_inversor,
+            "paneles_por_inversor": inversor.get("paneles_por_inversor") if tipo_inversor == "MICRO" else None,
+            "sobredimensionamiento": inversor.get("sobredimensionamiento") if tipo_inversor == "STRING" else None
+        },
         "bateria": {"id": bateria["id"], "nombre": bateria["nombre"]} if bateria else None,
         "numeroPaneles": numeroPaneles,
         "numeroInversores": numeroInversores,
@@ -542,6 +723,22 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
         "areaDisponibleCliente": areaDisponible,
         "generacionMensual": round(generacionMensual),
         "generacionAnual": round(generacionAnual),
+        "porcentajeAhorroEnergia": porcentajeAhorroEnergia,
+        "consumoObjetivo": round(consumoObjetivo),
+        "desgloseCostos": {
+            "costoPaneles": round(costoPaneles),
+            "costoInversores": round(costoInversores),
+            "costoBaterias": round(costoBaterias),
+            "costoSoporteria": round(costoSoporteria),
+            "costoInstalacion": round(costoInstalacion),
+            "costoMateriales": round(costoMateriales),
+            "costoLegalizacion": round(costoLegalizacion),
+            "subtotalAntesIVA": round(subtotalAntesIVA),
+            "subtotalConLegalizacion": round(subtotalConLegalizacion),
+            "ivaEquipos": round(ivaEquipos),
+            "ivaLegalizacion": round(ivaLegalizacion),
+            "ivaTotal": round(ivaTotal)
+        },
         "valorTotalSistema": round(valorTotalSistema),
         "ahorroMensualEnergia": round(ahorroMensualEnergia),
         "ahorroAnualEnergia": round(ahorroAnualEnergia),
@@ -1197,7 +1394,7 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
         
         <!-- Footer -->
         <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 30px; text-align: center; color: white;">
-            <img src="cid:logo_nassa" alt="NASSA Solar" style="max-width: 32px; height: auto; margin: 0 auto 12px auto; display: block; opacity: 0.9;">
+()            <img src="cid:logo_nassa" alt="NASSA Solar" style="max-width: 32px; height: auto; margin: 0 auto 12px auto; display: block; opacity: 0.9;">
             <h3 style="margin: 0 0 15px 0; font-size: 22px; font-weight: 700; color: #fbbf24;">
                 NASSA SOLAR
             </h3>
@@ -2044,139 +2241,36 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     print(f"\n{'🎯 DECISIÓN FINAL: ' + ('✅ SÍ GENERA 2 OPCIONES' if necesita_segunda_opcion else '❌ NO, SOLO 1 OPCIÓN')}")
     print(f"{'='*80}\n")
     
-    pdf_paths = []
-    pptx_paths = []  # Para limpiar después
-    opciones = []
+    # CALCULAR SEGUNDA OPCIÓN si es necesario (sin generar PDFs aún)
+    resultado_opcion2 = None
     num_opciones = 1
     
-    try:
-        # GENERAR OPCIÓN 1
-        print(f"🔄 Generando Opción 1 {'(única)' if not necesita_segunda_opcion else '(de 2)'}...")
-        pptx_path1, pdf_path1 = fill_template_and_convert(
-            req_dict, 
-            resultado_opcion1,
-            opcion="" if not necesita_segunda_opcion else "OPCIÓN 1 DE 2"
-        )
-        pdf_paths.append(pdf_path1)
-        pptx_paths.append(pptx_path1)
-        opciones.append(resultado_opcion1)
-        print(f"✅ Opción 1 generada: {os.path.basename(pdf_path1)}")
-        
-        # GENERAR OPCIÓN 2 si es necesario
-        resultado_opcion2 = None
-        if necesita_segunda_opcion:
-            print(f"\n🚀 INICIANDO GENERACIÓN DE SEGUNDA OPCIÓN")
-            print(f"   Área disponible: {areaDisponible} m²")
-            print(f"   Área requerida original: {areaRequerida} m²")
-            
-            try:
-                print(f"   � Calculando segunda opción...")
-                print(f"   📊 Calculando segunda opción...")
-                # Extraer ID base sin sufijo para mantener consistencia
-                cotizacion_id_base = resultado_opcion1["cotizacionId"]  # "NASSA-1234567890"
-                resultado_opcion2 = calcular_segunda_opcion(req_dict, equipos, ciudades, areaDisponible, cotizacion_id_base)
-                # Agregar COND_COM también a la opción 2
-                resultado_opcion2["condicionesComerciales"] = cond_com
-                print(f"   ✅ Cálculo completado:")
-                print(f"      - Paneles reducidos: {resultado_opcion2['numeroPaneles']} (vs {resultado_opcion1['numeroPaneles']} original)")
-                print(f"      - Capacidad: {resultado_opcion2['capacidadInstalada']} kW (vs {resultado_opcion1['capacidadInstalada']} kW original)")
-                print(f"      - Área ajustada: {resultado_opcion2['areaRequerida']} m²")
-                print(f"      - Valor: ${resultado_opcion2['valorTotalSistema']:,.0f} (vs ${resultado_opcion1['valorTotalSistema']:,.0f} original)")
-                
-                print(f"   📄 Generando PDF de segunda opción con template diferente...")
-                
-                # Verificar que existe Template-PreCotizacion2.pptx
-                if os.path.isfile(TEMPLATE_PPTX_OP2):
-                    pptx_path2, pdf_path2 = fill_template_and_convert(
-                        req_dict,
-                        resultado_opcion2,
-                        opcion="OPCIÓN 2 - Ajustada a área disponible",
-                        template_path=TEMPLATE_PPTX_OP2  # Usar template diferente
-                    )
-                    pdf_paths.append(pdf_path2)
-                    pptx_paths.append(pptx_path2)
-                    opciones.append(resultado_opcion2)
-                    num_opciones = 2
-                    print(f"   ✅ Segunda opción generada con Template-PreCotizacion2.pptx")
-                    print(f"   ✅ Resultado: {resultado_opcion2['numeroPaneles']} paneles - {os.path.basename(pdf_path2)}")
-                    print(f"   📦 Total PDFs generados: {len(pdf_paths)}")
-                else:
-                    print(f"   ⚠️ Template-PreCotizacion2.pptx NO ENCONTRADO - usando template principal")
-                    pptx_path2, pdf_path2 = fill_template_and_convert(
-                        req_dict,
-                        resultado_opcion2,
-                        opcion="OPCIÓN 2 - Ajustada a área disponible"
-                    )
-                    pdf_paths.append(pdf_path2)
-                    pptx_paths.append(pptx_path2)
-                    opciones.append(resultado_opcion2)
-                    num_opciones = 2
-                    print(f"   ✅ Segunda opción generada (fallback): {resultado_opcion2['numeroPaneles']} paneles")
-                    print(f"   📦 Total PDFs generados: {len(pdf_paths)}")
-            except Exception as e:
-                error_msg = f"{type(e).__name__}: {str(e)}"
-                diagnostico["error_opcion2"] = error_msg
-                print(f"   ❌ ERROR GENERANDO SEGUNDA OPCIÓN: {error_msg}")
-                import traceback
-                traceback.print_exc()
-                # No lanzar excepción, continuar con una sola opción
-        else:
-            print(f"\n❌ NO SE GENERA SEGUNDA OPCIÓN (condición no cumplida)")
-        
-        # ENVIAR EMAIL con 1 o 2 PDFs
-        email_enviado = False
-        email_error = None
-        
-        print(f"\n📧 PREPARANDO ENVÍO DE EMAIL")
-        print(f"   Total de PDFs generados: {len(pdf_paths)}")
-        print(f"   Archivos: {[os.path.basename(p) for p in pdf_paths]}")
-        print(f"   Número de opciones: {num_opciones}")
+    if necesita_segunda_opcion:
+        print(f"\n🚀 CALCULANDO SEGUNDA OPCIÓN")
+        print(f"   Área disponible: {areaDisponible} m²")
+        print(f"   Área requerida original: {areaRequerida} m²")
         
         try:
-            enviar_email_sendgrid(req.email, pdf_paths, resultado_opcion1, num_opciones)
-            email_enviado = True
-            print(f"✅ Email enviado con {num_opciones} opción(es) a {req.email}")
+            print(f"   📊 Calculando segunda opción...")
+            # Extraer ID base sin sufijo para mantener consistencia
+            cotizacion_id_base = resultado_opcion1["cotizacionId"]
+            resultado_opcion2 = calcular_segunda_opcion(req_dict, equipos, ciudades, areaDisponible, cotizacion_id_base)
+            # Agregar COND_COM también a la opción 2
+            resultado_opcion2["condicionesComerciales"] = cond_com
+            num_opciones = 2
+            print(f"   ✅ Cálculo completado:")
+            print(f"      - Paneles: {resultado_opcion2['numeroPaneles']} (vs {resultado_opcion1['numeroPaneles']} original)")
+            print(f"      - Capacidad: {resultado_opcion2['capacidadInstalada']} kW")
+            print(f"      - Valor: ${resultado_opcion2['valorTotalSistema']:,.0f}")
         except Exception as e:
-            email_error = str(e)
-            print(f"⚠️ Error email: {e}")
-        finally:
-            # Limpiar archivos temporales (PDFs y PPTXs generados)
-            print("🧹 Limpiando archivos temporales...")
-            for pdf_path in pdf_paths:
-                if pdf_path and os.path.exists(pdf_path):
-                    try:
-                        os.remove(pdf_path)
-                        print(f"   🗑️  Eliminado: {os.path.basename(pdf_path)}")
-                    except Exception as e:
-                        print(f"   ⚠️ Error eliminando PDF: {e}")
-            
-            for pptx_path in pptx_paths:
-                if pptx_path and os.path.exists(pptx_path):
-                    try:
-                        os.remove(pptx_path)
-                        print(f"   🗑️  Eliminado: {os.path.basename(pptx_path)}")
-                    except Exception as e:
-                        print(f"   ⚠️ Error eliminando PPTX: {e}")
-            
-            # Limpiar directorios temporales de LibreOffice
-            try:
-                temp_dir = tempfile.gettempdir()
-                for item in os.listdir(temp_dir):
-                    if item.startswith("tmp") and os.path.isdir(os.path.join(temp_dir, item)):
-                        item_path = os.path.join(temp_dir, item)
-                        try:
-                            # Eliminar PDFs viejos de cotizaciones en directorios temp
-                            for f in os.listdir(item_path):
-                                if f.startswith("cotizacion_") and f.endswith(".pdf"):
-                                    os.remove(os.path.join(item_path, f))
-                        except:
-                            pass
-            except:
-                pass
-                    
-    except Exception as e:
-        print(f"⚠️ Error generando PDFs: {e}")
-        raise HTTPException(500, f"Error generando documentos: {e}")
+            error_msg = f"{type(e).__name__}: {str(e)}"
+            diagnostico["error_opcion2"] = error_msg
+            print(f"   ❌ ERROR CALCULANDO SEGUNDA OPCIÓN: {error_msg}")
+            import traceback
+            traceback.print_exc()
+            # No lanzar excepción, continuar con una sola opción
+    else:
+        print(f"\n❌ NO SE CALCULA SEGUNDA OPCIÓN (condición no cumplida)")
 
     # Combinar datos de la solicitud con el resultado para el frontend
     resumen_completo = {
@@ -2204,18 +2298,10 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             "capacidadInstalada": resultado_opcion2["capacidadInstalada"],
             "valorTotalSistema": resultado_opcion2["valorTotalSistema"],
             "ahorroMensualEnergia": resultado_opcion2["ahorroMensualEnergia"],
-            "tiempoRetorno": resultado_opcion2["tiempoRetorno"]
+            "tiempoRetorno": resultado_opcion2["tiempoRetorno"],
+            "desgloseCostos": resultado_opcion2["desgloseCostos"]
         } if resultado_opcion2 else None
     }
-    
-    # Mensaje personalizado según el estado del email
-    if email_enviado:
-        if num_opciones == 2:
-            mensaje = f"✅ Cotización generada con {num_opciones} opciones. Revisa tu email."
-        else:
-            mensaje = "✅ Cotización generada exitosamente. Revisa tu email."
-    else:
-        mensaje = "✅ Cotización generada exitosamente. ⚠️ El email no pudo enviarse."
     
     # TRACKING AUTOMÁTICO: Registrar selección para estadísticas (sin bloquear si falla)
     try:
@@ -2250,12 +2336,127 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     
     return JSONResponse({
         "status": "success",
-        "mensaje": mensaje,
-        "emailEnviado": email_enviado,
+        "mensaje": f"✅ Cotización calculada exitosamente. {num_opciones} opción(es) disponible(s).",
         "numOpciones": num_opciones,
         "resumen": resumen_completo,
         "diagnostico": diagnostico  # Agregar diagnóstico para debug
     })
+
+
+@app.post("/api/enviar-cotizacion", tags=["Cotización"])
+async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_limit)):
+    """
+    Genera PDFs y envía cotización por email.
+    Requiere los datos completos de la cotización previamente calculada.
+    """
+    try:
+        # Validar campos requeridos
+        campos_requeridos = ["email", "resumen", "datosCliente"]
+        for campo in campos_requeridos:
+            if campo not in data:
+                raise HTTPException(400, f"Campo requerido faltante: {campo}")
+        
+        email_cliente = data["email"]
+        resumen = data["resumen"]
+        datos_cliente = data["datosCliente"]
+        opcion2 = data.get("opcion2")  # Opcional
+        num_opciones = 2 if opcion2 else 1
+        
+        # Recargar configuración
+        equipos = load_json(EQUIPOS_FILE)
+        ciudades = load_json(CIUDADES_FILE)
+        parametros = load_json(PARAMETROS_FILE)
+        
+        pdf_paths = []
+        pptx_paths = []
+        
+        print(f"\n📧 GENERANDO PDFs PARA ENVÍO")
+        print(f"   Email destino: {email_cliente}")
+        print(f"   Número de opciones: {num_opciones}")
+        
+        # GENERAR OPCIÓN 1
+        print(f"\n🔄 Generando PDF Opción 1...")
+        pptx_path1, pdf_path1 = fill_template_and_convert(
+            datos_cliente,
+            resumen,
+            opcion="" if num_opciones == 1 else "OPCIÓN 1 DE 2"
+        )
+        pdf_paths.append(pdf_path1)
+        pptx_paths.append(pptx_path1)
+        print(f"✅ Opción 1: {os.path.basename(pdf_path1)}")
+        
+        # GENERAR OPCIÓN 2 si existe
+        if opcion2:
+            print(f"\n🔄 Generando PDF Opción 2...")
+            # Verificar que existe Template-PreCotizacion2.pptx
+            if os.path.isfile(TEMPLATE_PPTX_OP2):
+                pptx_path2, pdf_path2 = fill_template_and_convert(
+                    datos_cliente,
+                    opcion2,
+                    opcion="OPCIÓN 2 - Ajustada a área disponible",
+                    template_path=TEMPLATE_PPTX_OP2
+                )
+                print(f"✅ Opción 2 (template 2): {os.path.basename(pdf_path2)}")
+            else:
+                pptx_path2, pdf_path2 = fill_template_and_convert(
+                    datos_cliente,
+                    opcion2,
+                    opcion="OPCIÓN 2 - Ajustada a área disponible"
+                )
+                print(f"✅ Opción 2 (template principal): {os.path.basename(pdf_path2)}")
+            
+            pdf_paths.append(pdf_path2)
+            pptx_paths.append(pptx_path2)
+        
+        # ENVIAR EMAIL
+        email_enviado = False
+        email_error = None
+        
+        print(f"\n📧 ENVIANDO EMAIL")
+        print(f"   Total PDFs: {len(pdf_paths)}")
+        
+        try:
+            enviar_email_sendgrid(email_cliente, pdf_paths, resumen, num_opciones)
+            email_enviado = True
+            print(f"✅ Email enviado exitosamente a {email_cliente}")
+        except Exception as e:
+            email_error = str(e)
+            print(f"❌ Error enviando email: {e}")
+            raise HTTPException(500, f"Error al enviar email: {e}")
+        finally:
+            # Limpiar archivos temporales
+            print("\n🧹 Limpiando archivos temporales...")
+            for pdf_path in pdf_paths:
+                if pdf_path and os.path.exists(pdf_path):
+                    try:
+                        os.remove(pdf_path)
+                        print(f"   🗑️  {os.path.basename(pdf_path)}")
+                    except Exception as e:
+                        print(f"   ⚠️ Error eliminando: {e}")
+            
+            for pptx_path in pptx_paths:
+                if pptx_path and os.path.exists(pptx_path):
+                    try:
+                        os.remove(pptx_path)
+                        print(f"   🗑️  {os.path.basename(pptx_path)}")
+                    except Exception as e:
+                        print(f"   ⚠️ Error eliminando: {e}")
+        
+        return JSONResponse({
+            "status": "success",
+            "mensaje": f"✅ Cotización enviada exitosamente a {email_cliente}",
+            "emailEnviado": email_enviado,
+            "numOpciones": num_opciones
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error en enviar_cotizacion: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, f"Error procesando envío: {e}")
+
 
 # ========================================
 # 🚀 EJECUCIÓN

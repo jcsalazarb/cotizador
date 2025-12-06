@@ -22,6 +22,24 @@
     "factor_area_efectiva": 1.2,
     "umbral_segunda_opcion": 0.92,
     "eficiencia_panel_default": 1.0,
-    "eficiencia_inversor_default": 1.0
+    "eficiencia_inversor_default": 1.0,
+    "porcentaje_ahorro_default": 100
+  },
+  "tabla_legalizacion": {
+    "descripcion": "Costo de legalización según capacidad instalada (W). No exento de IVA.",
+    "rangos": [
+      {"min": 0, "max": 12000, "valor": 6000000},
+      {"min": 12001, "max": 24000, "valor": 8500000},
+      {"min": 24001, "max": 36000, "valor": 11000000},
+      {"min": 36001, "max": 48000, "valor": 13500000},
+      {"min": 48001, "max": 60000, "valor": 16000000},
+      {"min": 60001, "max": 999999, "valor": 20000000}
+    ]
+  },
+  "inversores_defaults": {
+    "descripcion": "Valores por defecto para inversores nuevos",
+    "tipo_default": "STRING",
+    "paneles_por_inversor_micro_default": 4,
+    "sobredimensionamiento_string_default": 0.40
   }
 }
