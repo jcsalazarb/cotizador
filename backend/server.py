@@ -1672,8 +1672,13 @@ def create_panel(panel: dict):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()  # Forzar escritura al disco
+            os.fsync(f.fileno())  # Sincronizar con el sistema de archivos
+        
+        print(f"✅ Panel {panel['id']} creado y guardado en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Panel {panel['id']} creado exitosamente", "id": panel["id"]}
     except Exception as e:
+        print(f"❌ Error al guardar panel: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.put("/api/admin/paneles/{panel_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1692,8 +1697,13 @@ def update_panel(panel_id: str, panel: dict):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Panel {panel_id} actualizado en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Panel {panel_id} actualizado exitosamente"}
     except Exception as e:
+        print(f"❌ Error al actualizar panel: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.delete("/api/admin/paneles/{panel_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1710,8 +1720,13 @@ def delete_panel(panel_id: str):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Panel {panel_id} eliminado de {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Panel {panel_id} eliminado exitosamente"}
     except Exception as e:
+        print(f"❌ Error al eliminar panel: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 # --- GESTIÓN DE INVERSORES ---
@@ -1751,8 +1766,13 @@ def create_inversor(inversor: dict):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Inversor {inversor['id']} creado y guardado en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Inversor {inversor['id']} creado exitosamente", "id": inversor["id"]}
     except Exception as e:
+        print(f"❌ Error al guardar inversor: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.put("/api/admin/inversores/{inversor_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1770,8 +1790,13 @@ def update_inversor(inversor_id: str, inversor: dict):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Inversor {inversor_id} actualizado en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Inversor {inversor_id} actualizado exitosamente"}
     except Exception as e:
+        print(f"❌ Error al actualizar inversor: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.delete("/api/admin/inversores/{inversor_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1788,8 +1813,13 @@ def delete_inversor(inversor_id: str):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Inversor {inversor_id} eliminado de {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Inversor {inversor_id} eliminado exitosamente"}
     except Exception as e:
+        print(f"❌ Error al eliminar inversor: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 # --- GESTIÓN DE BATERÍAS ---
@@ -1821,8 +1851,13 @@ def create_bateria(bateria: dict):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Batería {bateria['id']} creada y guardada en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Batería {bateria['id']} creada exitosamente", "id": bateria["id"]}
     except Exception as e:
+        print(f"❌ Error al guardar batería: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.put("/api/admin/baterias/{bateria_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1840,8 +1875,13 @@ def update_bateria(bateria_id: str, bateria: dict):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Batería {bateria_id} actualizada en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Batería {bateria_id} actualizada exitosamente"}
     except Exception as e:
+        print(f"❌ Error al actualizar batería: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.delete("/api/admin/baterias/{bateria_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1858,8 +1898,13 @@ def delete_bateria(bateria_id: str):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Batería {bateria_id} eliminada de {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Batería {bateria_id} eliminada exitosamente"}
     except Exception as e:
+        print(f"❌ Error al eliminar batería: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 # --- GESTIÓN DE EQUIPOS DEFAULT ---
@@ -1883,8 +1928,13 @@ def set_panel_default(panel_id: str):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Panel {panel_id} marcado como default en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Panel {panel_id} marcado como default"}
     except Exception as e:
+        print(f"❌ Error al marcar panel default: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.put("/api/admin/inversores/{inversor_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1907,8 +1957,13 @@ def set_inversor_default(inversor_id: str):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Inversor {inversor_id} marcado como default en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Inversor {inversor_id} marcado como default"}
     except Exception as e:
+        print(f"❌ Error al marcar inversor default: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 @app.put("/api/admin/baterias/{bateria_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1931,8 +1986,13 @@ def set_bateria_default(bateria_id: str):
     try:
         with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        print(f"✅ Batería {bateria_id} marcada como default en {EQUIPOS_FILE}")
         return {"status": "success", "mensaje": f"Batería {bateria_id} marcada como default"}
     except Exception as e:
+        print(f"❌ Error al marcar batería default: {e}")
         raise HTTPException(500, f"Error al guardar: {e}")
 
 # --- GESTIÓN DE CIUDADES ---
