@@ -1533,6 +1533,43 @@ def admin_panel():
 def health():
     return {"status": "ok", "timestamp": now_colombia().isoformat()}
 
+@app.post("/api/admin/migrate-to-postgres", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def migrate_to_postgres():
+    """
+    Endpoint ONE-TIME para migrar datos de JSON a PostgreSQL
+    ⚠️ EJECUTAR SOLO UNA VEZ después de crear la base de datos
+    """
+    try:
+        # Verificar que DATABASE_URL exista
+        if not os.getenv("DATABASE_URL"):
+            raise HTTPException(500, "DATABASE_URL no configurada. Agrega PostgreSQL en Railway.")
+        
+        # Importar el script de migración
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent))
+        
+        from migrate_to_postgres import migrate
+        
+        # Ejecutar migración
+        success = migrate()
+        
+        if success:
+            return {
+                "status": "success",
+                "mensaje": "¡Migración completada exitosamente!",
+                "timestamp": now_colombia().isoformat(),
+                "siguiente_paso": "Ahora debes actualizar server.py para usar PostgreSQL en lugar de JSON"
+            }
+        else:
+            raise HTTPException(500, "La migración falló. Revisa los logs de Railway.")
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN MIGRACIÓN: {error_trace}")
+        raise HTTPException(500, f"Error en migración: {str(e)}")
+
 @app.get("/debug/equipos-file", tags=["Debug"])
 def debug_equipos_file():
     """Endpoint temporal para diagnosticar problema con equipos.json"""
