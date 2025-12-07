@@ -8,3 +8,5 @@ python-docx==0.8.11
 reportlab==4.0.7
 sendgrid==6.12.5
 aiofiles==23.2.1
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
