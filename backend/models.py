@@ -23,6 +23,7 @@ class Panel(Base):
     precio = Column(Float, nullable=False)  # COP
     descripcion = Column(Text, nullable=False)
     eficienciaPanel = Column(Float, default=0.90)
+    area = Column(Float, default=2.0)  # m² - Área del panel
     default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -174,6 +175,12 @@ def migrate_from_json():
             
             # Inversores
             for inv_data in equipos.get("inversores", []):
+                # Mapear tipo_sistema → sistemaElectrico
+                if "tipo_sistema" in inv_data:
+                    tipo_sistema = inv_data.pop("tipo_sistema")
+                    # Convertir string a lista (formato esperado por el modelo)
+                    inv_data["sistemaElectrico"] = [tipo_sistema]
+                
                 inversor = Inversor(**inv_data)
                 session.merge(inversor)
             print(f"✅ Migrados {len(equipos.get('inversores', []))} inversores")
@@ -249,8 +256,6 @@ def migrate_from_json():
 
 
 if __name__ == "__main__":
-    # Crear tablas
-    init_database()
-    
-    # Migrar datos (comentar después de ejecutar una vez)
-    # migrate_from_json()
+    # Este bloque ya no se usa - usar migrate_to_postgres.py en su lugar
+    print("⚠️ Usar migrate_to_postgres.py para migración inicial")
+    print("⚠️ Este archivo solo proporciona modelos y funciones auxiliares")
