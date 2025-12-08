@@ -538,7 +538,6 @@
                             <input type="number" id="anos_proyeccion" required>
                         </div>
                     </div>
-
                     <div class="param-section">
                         <h3>⚙️ Parámetros del Sistema</h3>
                         <div class="form-group">
@@ -606,7 +605,7 @@
             <!-- Ciudades -->
             <div id="ciudades" class="content-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 class="section-title" style="margin: 0;">Gestión de Ciudades y HSP</h2>
+                    <h2 class="section-title" style="margin: 0;">Gestión de Ciudades, HSP y Temperatura</h2>
                     <button class="btn-success btn-small" onclick="openCiudadModal()">➕ Nueva Ciudad</button>
                 </div>
                 <div id="ciudadesList">
@@ -615,6 +614,8 @@
                             <tr>
                                 <th>Ciudad</th>
                                 <th>HSP (Horas Solar Pico)</th>
+                                <th>Factor Temperatura</th>
+                                <th>Región</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -732,6 +733,14 @@
                     <label>HSP (Horas Solar Pico) *</label>
                     <input type="number" step="0.1" id="ciudadHSP" required placeholder="Ej: 5.6" min="1" max="8">
                     <small style="color: #666; font-size: 12px;">Rango típico en Colombia: 3.5 - 6.5</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Factor de Temperatura *</label>
+                    <input type="number" step="0.01" id="ciudadFactorTemp" required placeholder="Ej: 0.85" min="0.75" max="1.0" value="0.90">
+                    <small style="color: #666; font-size: 12px;">
+                        Costa caribe: 0.84-0.86 | Interior: 0.87-0.91 | Alta montaña: 0.92-0.95 | Default: 0.90
+                    </small>
                 </div>
 
                 <button type="submit" class="btn-success">💾 Guardar</button>
@@ -982,12 +991,8 @@
                         </div>
                         <div class="card-details">🆔 ID: ${inv.id}</div>
                         <div class="card-details">⚡ Capacidad: ${inv.capacidad}W</div>
-                        <div class="card-details">🔌 Sistema: ${Array.isArray(inv.sistemaElectrico) ? inv.sistemaElectrico[0] : (inv.tipo_sistema || 'No especificado')}</div>
+                        <div class="card-details">🔌 Tipo: ${inv.tipo_sistema || 'No especificado'}</div>
                         <div class="card-details">📊 Eficiencia: ${(inv.eficiencia * 100).toFixed(0)}%</div>
-                        <div class="card-details">
-                            🔧 Tipo: <strong>${inv.tipo || 'STRING'}</strong>
-                            ${inv.tipo === 'MICRO' ? ` | ${inv.paneles_por_inversor || 4} paneles/inv` : ` | Sobredim: ${((inv.sobredimensionamiento || 0.40) * 100).toFixed(0)}%`}
-                        </div>
                         <div class="card-price">💵 $${inv.precio.toLocaleString('es-CO')}</div>
                         <div class="card-details">${inv.descripcion}</div>
                         <div class="card-actions">
@@ -1047,16 +1052,35 @@
                 const ciudades = await response.json();
                 
                 const tbody = document.getElementById('ciudadesTableBody');
-                tbody.innerHTML = ciudades.map(ciudad => `
-                    <tr>
-                        <td><strong>${ciudad.nombre}</strong></td>
-                        <td>${ciudad.hsp.toFixed(1)}</td>
-                        <td>
-                            <button class="btn-warning btn-small" onclick='editCiudad(${JSON.stringify(ciudad)})'>✏️ Editar</button>
-                            <button class="btn-danger btn-small" onclick="deleteCiudad('${ciudad.key}', '${ciudad.nombre}')">🗑️ Eliminar</button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = ciudades.map(ciudad => {
+                    const factorTemp = ciudad.factorTemperatura || 0.90;
+                    let region = '🌡️ Moderado';
+                    let regionColor = '#ffa500';
+                    
+                    if (factorTemp <= 0.86) {
+                        region = '🔥 Costa Caribe';
+                        regionColor = '#ff6b6b';
+                    } else if (factorTemp >= 0.92) {
+                        region = '❄️ Alta Montaña';
+                        regionColor = '#4dabf7';
+                    } else if (factorTemp >= 0.87 && factorTemp <= 0.91) {
+                        region = '🌤️ Interior/Valles';
+                        regionColor = '#51cf66';
+                    }
+                    
+                    return `
+                        <tr>
+                            <td><strong>${ciudad.nombre}</strong></td>
+                            <td>${ciudad.hsp.toFixed(1)}</td>
+                            <td>${factorTemp.toFixed(2)}</td>
+                            <td><span style="color: ${regionColor}; font-weight: 600;">${region}</span></td>
+                            <td>
+                                <button class="btn-warning btn-small" onclick='editCiudad(${JSON.stringify(ciudad)})'>✏️ Editar</button>
+                                <button class="btn-danger btn-small" onclick="deleteCiudad('${ciudad.key}', '${ciudad.nombre}')">🗑️ Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             } catch (error) {
                 showAlert('Error al cargar ciudades', false);
             }
@@ -1072,22 +1096,8 @@
             const tipoSistemaGroup = document.getElementById('tipoSistemaGroup');
             const idGroup = document.getElementById('idGroup');
             
-            // Campos específicos de inversores
-            const tipoInversorGroup = document.getElementById('tipoInversorGroup');
-            const panelesPorInversorGroup = document.getElementById('panelesPorInversorGroup');
-            const sobredimensionamientoGroup = document.getElementById('sobredimensionamientoGroup');
-            
             eficienciaGroup.style.display = tipo !== 'bateria' ? 'block' : 'none';
             tipoSistemaGroup.style.display = tipo === 'inversor' ? 'block' : 'none';
-            
-            // Mostrar campos específicos solo para inversores
-            if (tipo === 'inversor') {
-                tipoInversorGroup.style.display = 'block';
-            } else {
-                tipoInversorGroup.style.display = 'none';
-                panelesPorInversorGroup.style.display = 'none';
-                sobredimensionamientoGroup.style.display = 'none';
-            }
             
             if (data) {
                 // MODO EDICIÓN: Mostrar ID (deshabilitado)
@@ -1106,23 +1116,7 @@
                     document.getElementById('formEficiencia').value = data.eficiencia || data.eficienciaPanel || 0.90;
                 }
                 if (tipo === 'inversor') {
-                    // Cargar sistema eléctrico (compatibilidad con formato viejo y nuevo)
-                    const sistemaElectrico = Array.isArray(data.sistemaElectrico) ? data.sistemaElectrico[0] : data.tipo_sistema || '';
-                    document.getElementById('formTipoSistema').value = sistemaElectrico;
-                    
-                    // Cargar nuevos campos de inversores
-                    const tipoInv = data.tipo || 'STRING';
-                    document.getElementById('formTipoInversor').value = tipoInv;
-                    
-                    if (tipoInv === 'MICRO') {
-                        document.getElementById('formPanelesPorInversor').value = data.paneles_por_inversor || 4;
-                        panelesPorInversorGroup.style.display = 'block';
-                        sobredimensionamientoGroup.style.display = 'none';
-                    } else {
-                        document.getElementById('formSobredimensionamiento').value = data.sobredimensionamiento || 0.40;
-                        panelesPorInversorGroup.style.display = 'none';
-                        sobredimensionamientoGroup.style.display = 'block';
-                    }
+                    document.getElementById('formTipoSistema').value = data.tipo_sistema || '';
                 }
             } else {
                 // MODO CREACIÓN: Ocultar ID (se genera automáticamente)
@@ -1130,14 +1124,6 @@
                 document.getElementById('isEdit').value = 'false';
                 document.getElementById('equipoForm').reset();
                 idGroup.style.display = 'none';
-                
-                // Valores por defecto para inversores nuevos
-                if (tipo === 'inversor') {
-                    document.getElementById('formTipoInversor').value = 'STRING';
-                    document.getElementById('formSobredimensionamiento').value = 0.40;
-                    sobredimensionamientoGroup.style.display = 'block';
-                    panelesPorInversorGroup.style.display = 'none';
-                }
             }
         }
 
@@ -1201,20 +1187,7 @@
             }
             
             if (tipo === 'inversor') {
-                // Sistema eléctrico
-                equipo.sistemaElectrico = [document.getElementById('formTipoSistema').value];
-                
-                // Nuevos campos de inversores
-                const tipoInv = document.getElementById('formTipoInversor').value;
-                equipo.tipo = tipoInv;
-                
-                if (tipoInv === 'MICRO') {
-                    equipo.paneles_por_inversor = parseInt(document.getElementById('formPanelesPorInversor').value);
-                    equipo.sobredimensionamiento = 0; // No aplica para MICRO
-                } else { // STRING
-                    equipo.sobredimensionamiento = parseFloat(document.getElementById('formSobredimensionamiento').value);
-                    equipo.paneles_por_inversor = 0; // No aplica para STRING
-                }
+                equipo.tipo_sistema = document.getElementById('formTipoSistema').value;
             }
             
             const plurales = { panel: 'paneles', inversor: 'inversores', bateria: 'baterias' };
@@ -1360,6 +1333,7 @@
                 document.getElementById('ciudadKey').value = ciudad.key;
                 document.getElementById('ciudadNombre').value = ciudad.nombre;
                 document.getElementById('ciudadHSP').value = ciudad.hsp;
+                document.getElementById('ciudadFactorTemp').value = ciudad.factorTemperatura || 0.90;
                 document.getElementById('ciudadNombre').disabled = true; // No permitir cambiar nombre en edición
             } else {
                 // MODO CREACIÓN
@@ -1368,6 +1342,7 @@
                 document.getElementById('ciudadKey').value = '';
                 document.getElementById('ciudadNombre').value = '';
                 document.getElementById('ciudadHSP').value = '';
+                document.getElementById('ciudadFactorTemp').value = '0.90';
                 document.getElementById('ciudadNombre').disabled = false;
             }
         }
@@ -1411,8 +1386,9 @@
             const key = document.getElementById('ciudadKey').value;
             const nombre = document.getElementById('ciudadNombre').value;
             const hsp = parseFloat(document.getElementById('ciudadHSP').value);
+            const factorTemperatura = parseFloat(document.getElementById('ciudadFactorTemp').value);
             
-            const ciudadData = { nombre, hsp };
+            const ciudadData = { nombre, hsp, factorTemperatura };
             
             try {
                 let response;
