@@ -333,7 +333,7 @@ def cargar_datos_desde_postgres():
             "capacidad": p.capacidad,
             "precio": p.precio,
             "area": p.area,
-            "eficienciaPanel": p.eficiencia_panel,
+            "eficienciaPanel": p.eficienciaPanel,  # Usar camelCase como en el modelo
             "default": p.default
         } for p in paneles_db]
         print(f"✅ [DEBUG] Paneles convertidos a dict: {len(paneles)} items")
