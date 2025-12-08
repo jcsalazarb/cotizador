@@ -1859,17 +1859,24 @@ def equipos_publicos(sistemaElectrico: str = None):
         ]
         
         # Obtener inversores con filtro opcional
-        inversores_query = session.query(Inversor)
+        inversores_db = session.query(Inversor).all()
+        
+        # Filtrar en Python si se especifica sistema eléctrico
         if sistemaElectrico:
             sistema_normalizado = sistemaElectrico.lower().strip()
-            # Filtrar inversores que contengan el sistema eléctrico en su array JSON
-            # En PostgreSQL, sistemaElectrico es JSON array: ["monofasico", "trifasico"]
-            from sqlalchemy import func, cast, String as SQLString
-            inversores_query = inversores_query.filter(
-                func.lower(cast(Inversor.sistemaElectrico, SQLString)).contains(sistema_normalizado)
-            )
+            inversores_filtrados = []
+            for i in inversores_db:
+                # sistemaElectrico puede ser string o array JSON
+                if isinstance(i.sistemaElectrico, list):
+                    # Es un array: ["monofasico", "trifasico"]
+                    if sistema_normalizado in [s.lower() for s in i.sistemaElectrico]:
+                        inversores_filtrados.append(i)
+                elif isinstance(i.sistemaElectrico, str):
+                    # Es un string: "monofasico"
+                    if sistema_normalizado == i.sistemaElectrico.lower():
+                        inversores_filtrados.append(i)
+            inversores_db = inversores_filtrados
         
-        inversores_db = inversores_query.all()
         inversores = [
             {
                 "id": i.id,
