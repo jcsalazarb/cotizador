@@ -305,13 +305,28 @@ def cargar_datos_desde_postgres():
     Carga equipos, ciudades y parámetros desde PostgreSQL.
     Retorna estructura compatible con formato JSON legacy.
     """
+    print("🔍 [DEBUG] Iniciando cargar_datos_desde_postgres()")
+    
     if not POSTGRES_AVAILABLE:
+        print("❌ [DEBUG] POSTGRES_AVAILABLE = False")
         raise RuntimeError("PostgreSQL no está disponible - falló la importación de models")
     
-    session = get_db_session()
+    print("✅ [DEBUG] POSTGRES_AVAILABLE = True")
+    
+    try:
+        print("🔗 [DEBUG] Obteniendo sesión de BD...")
+        session = get_db_session()
+        print("✅ [DEBUG] Sesión obtenida exitosamente")
+    except Exception as e:
+        print(f"❌ [DEBUG] Error al obtener sesión: {type(e).__name__}: {e}")
+        raise
+    
     try:
         # Cargar paneles
+        print("📦 [DEBUG] Cargando paneles...")
         paneles_db = session.query(Panel).all()
+        print(f"✅ [DEBUG] Paneles cargados: {len(paneles_db)} registros")
+        
         paneles = [{
             "id": p.id,
             "nombre": p.nombre,
@@ -321,9 +336,13 @@ def cargar_datos_desde_postgres():
             "eficienciaPanel": p.eficiencia_panel,
             "default": p.default
         } for p in paneles_db]
+        print(f"✅ [DEBUG] Paneles convertidos a dict: {len(paneles)} items")
         
         # Cargar inversores
+        print("⚡ [DEBUG] Cargando inversores...")
         inversores_db = session.query(Inversor).all()
+        print(f"✅ [DEBUG] Inversores cargados: {len(inversores_db)} registros")
+        
         inversores = [{
             "id": i.id,
             "nombre": i.nombre,
@@ -336,9 +355,13 @@ def cargar_datos_desde_postgres():
             "sistemaElectrico": i.sistema_electrico,
             "default": i.default
         } for i in inversores_db]
+        print(f"✅ [DEBUG] Inversores convertidos a dict: {len(inversores)} items")
         
         # Cargar baterías
+        print("🔋 [DEBUG] Cargando baterías...")
         baterias_db = session.query(Bateria).all()
+        print(f"✅ [DEBUG] Baterías cargadas: {len(baterias_db)} registros")
+        
         baterias = [{
             "id": b.id,
             "nombre": b.nombre,
@@ -346,16 +369,26 @@ def cargar_datos_desde_postgres():
             "precio": b.precio,
             "default": b.default
         } for b in baterias_db]
+        print(f"✅ [DEBUG] Baterías convertidas a dict: {len(baterias)} items")
         
         # Cargar ciudades
+        print("🏙️ [DEBUG] Cargando ciudades...")
         ciudades_db = session.query(Ciudad).all()
+        print(f"✅ [DEBUG] Ciudades cargadas: {len(ciudades_db)} registros")
+        
         ciudades = {c.key: {"hsp": c.hsp, "nombre": c.nombre} for c in ciudades_db}
+        print(f"✅ [DEBUG] Ciudades convertidas a dict: {len(ciudades)} items")
         
         # Cargar parámetros (reconstruir dict anidado)
+        print("⚙️ [DEBUG] Cargando parámetros...")
         parametros_db = session.query(Parametro).all()
+        print(f"✅ [DEBUG] Parámetros cargados: {len(parametros_db)} registros")
+        
         parametros = {}
         for p in parametros_db:
             parametros[p.seccion] = p.data
+            print(f"   - Sección: {p.seccion}")
+        print(f"✅ [DEBUG] Parámetros reconstruidos: {len(parametros)} secciones")
         
         equipos = {
             "paneles": paneles,
@@ -363,10 +396,18 @@ def cargar_datos_desde_postgres():
             "baterias": baterias
         }
         
+        print("🎉 [DEBUG] cargar_datos_desde_postgres() completado exitosamente")
         return equipos, ciudades, parametros
         
+    except Exception as e:
+        print(f"❌ [DEBUG] Error en cargar_datos_desde_postgres(): {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
     finally:
+        print("🔒 [DEBUG] Cerrando sesión...")
         session.close()
+        print("✅ [DEBUG] Sesión cerrada")
 
 # ========================================
 # 🧮 FUNCIÓN DE CÁLCULO
