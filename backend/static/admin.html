@@ -1040,7 +1040,8 @@
                         </div>
                         <div class="card-details">🆔 ID: ${inv.id}</div>
                         <div class="card-details">⚡ Capacidad: ${inv.capacidad}W</div>
-                        <div class="card-details">🔌 Tipo: ${inv.tipo_sistema || 'No especificado'}</div>
+                        <div class="card-details">🔌 Sistema: ${inv.sistemaElectrico || inv.tipo_sistema || 'No especificado'}</div>
+                        <div class="card-details">📡 Tipo: ${inv.tipo || 'STRING'} ${inv.tipo === 'MICRO' ? `(${inv.paneles_por_inversor} paneles/inv)` : `(Sobre: ${(inv.sobredimensionamiento * 100).toFixed(0)}%)`}</div>
                         <div class="card-details">📊 Eficiencia: ${(inv.eficiencia * 100).toFixed(0)}%</div>
                         <div class="card-price">💵 $${inv.precio.toLocaleString('es-CO')}</div>
                         <div class="card-details">${inv.descripcion}</div>
@@ -1143,10 +1144,18 @@
             // Mostrar/ocultar campos según tipo
             const eficienciaGroup = document.getElementById('eficienciaGroup');
             const tipoSistemaGroup = document.getElementById('tipoSistemaGroup');
+            const tipoInversorGroup = document.getElementById('tipoInversorGroup');
+            const panelesPorInversorGroup = document.getElementById('panelesPorInversorGroup');
+            const sobredimensionamientoGroup = document.getElementById('sobredimensionamientoGroup');
             const idGroup = document.getElementById('idGroup');
             
             eficienciaGroup.style.display = tipo !== 'bateria' ? 'block' : 'none';
             tipoSistemaGroup.style.display = tipo === 'inversor' ? 'block' : 'none';
+            tipoInversorGroup.style.display = tipo === 'inversor' ? 'block' : 'none';
+            
+            // Por defecto ocultar campos específicos de MICRO/STRING
+            panelesPorInversorGroup.style.display = 'none';
+            sobredimensionamientoGroup.style.display = 'none';
             
             if (data) {
                 // MODO EDICIÓN: Mostrar ID (deshabilitado)
@@ -1165,7 +1174,21 @@
                     document.getElementById('formEficiencia').value = data.eficiencia || data.eficienciaPanel || 0.90;
                 }
                 if (tipo === 'inversor') {
-                    document.getElementById('formTipoSistema').value = data.tipo_sistema || '';
+                    document.getElementById('formTipoSistema').value = data.sistemaElectrico || data.tipo_sistema || '';
+                    
+                    // Cargar nuevos campos MICRO/STRING
+                    const tipoInversor = data.tipo || 'STRING';
+                    document.getElementById('formTipoInversor').value = tipoInversor;
+                    
+                    if (tipoInversor === 'MICRO') {
+                        document.getElementById('formPanelesPorInversor').value = data.paneles_por_inversor || 0;
+                        panelesPorInversorGroup.style.display = 'block';
+                        sobredimensionamientoGroup.style.display = 'none';
+                    } else { // STRING
+                        document.getElementById('formSobredimensionamiento').value = data.sobredimensionamiento || 0.40;
+                        panelesPorInversorGroup.style.display = 'none';
+                        sobredimensionamientoGroup.style.display = 'block';
+                    }
                 }
             } else {
                 // MODO CREACIÓN: Ocultar ID (se genera automáticamente)
@@ -1173,6 +1196,13 @@
                 document.getElementById('isEdit').value = 'false';
                 document.getElementById('equipoForm').reset();
                 idGroup.style.display = 'none';
+                
+                // Valores por defecto para nuevos inversores
+                if (tipo === 'inversor') {
+                    document.getElementById('formTipoInversor').value = 'STRING';
+                    document.getElementById('formSobredimensionamiento').value = '0.40';
+                    sobredimensionamientoGroup.style.display = 'block';
+                }
             }
         }
 
@@ -1236,7 +1266,18 @@
             }
             
             if (tipo === 'inversor') {
-                equipo.tipo_sistema = document.getElementById('formTipoSistema').value;
+                equipo.sistemaElectrico = document.getElementById('formTipoSistema').value;
+                
+                // Nuevos campos para MICRO/STRING
+                equipo.tipo = document.getElementById('formTipoInversor').value;
+                
+                if (equipo.tipo === 'MICRO') {
+                    equipo.paneles_por_inversor = parseInt(document.getElementById('formPanelesPorInversor').value) || 0;
+                    equipo.sobredimensionamiento = 0.0; // MICRO no usa sobredimensionamiento
+                } else { // STRING
+                    equipo.paneles_por_inversor = 0; // STRING no usa paneles_por_inversor
+                    equipo.sobredimensionamiento = parseFloat(document.getElementById('formSobredimensionamiento').value) || 0.40;
+                }
             }
             
             const plurales = { panel: 'paneles', inversor: 'inversores', bateria: 'baterias' };
