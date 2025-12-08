@@ -2850,6 +2850,48 @@ def get_valores_default():
             "source": "defaults"
         }
 
+@app.get("/api/diagnostico-postgres", tags=["Debug"])
+def diagnostico_postgres():
+    """Endpoint de diagnóstico para verificar carga de datos desde PostgreSQL"""
+    resultado = {
+        "timestamp": now_colombia().isoformat(),
+        "postgres_available": POSTGRES_AVAILABLE,
+        "error": None,
+        "datos_cargados": {}
+    }
+    
+    try:
+        print("\n" + "="*80)
+        print("🔍 DIAGNÓSTICO: Intentando cargar datos desde PostgreSQL")
+        print("="*80)
+        
+        equipos, ciudades, parametros = cargar_datos_desde_postgres()
+        
+        resultado["datos_cargados"] = {
+            "paneles": len(equipos.get("paneles", [])),
+            "inversores": len(equipos.get("inversores", [])),
+            "baterias": len(equipos.get("baterias", [])),
+            "ciudades": len(ciudades),
+            "parametros_secciones": list(parametros.keys())
+        }
+        resultado["status"] = "success"
+        print("✅ Diagnóstico completado exitosamente")
+        print("="*80 + "\n")
+        
+    except Exception as e:
+        import traceback
+        error_details = {
+            "type": type(e).__name__,
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
+        resultado["error"] = error_details
+        resultado["status"] = "error"
+        print(f"❌ Diagnóstico falló: {error_details}")
+        print("="*80 + "\n")
+    
+    return JSONResponse(resultado)
+
 @app.post("/api/cotizar", tags=["Cotización"])
 async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_limit)):
     """Generar cotización completa con 1 o 2 opciones según área disponible"""
