@@ -2369,89 +2369,104 @@ def delete_bateria(bateria_id: str):
 @app.put("/api/admin/paneles/{panel_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def set_panel_default(panel_id: str):
     """Marcar un panel como default (desmarca los demás)"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Panel
     
-    # Verificar que existe el panel
-    panel = next((p for p in data["paneles"] if p["id"] == panel_id), None)
-    if not panel:
-        raise HTTPException(404, f"Panel {panel_id} no encontrado")
-    
-    # Desmarcar todos los paneles como default
-    for p in data["paneles"]:
-        p["default"] = False
-    
-    # Marcar el seleccionado como default
-    panel["default"] = True
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Verificar que existe el panel
+        panel = session.query(Panel).filter_by(id=panel_id).first()
+        if not panel:
+            raise HTTPException(404, f"Panel {panel_id} no encontrado")
         
-        print(f"✅ Panel {panel_id} marcado como default en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Panel {panel_id} marcado como default"}
+        # Desmarcar todos los paneles como default
+        session.query(Panel).update({"default": False})
+        
+        # Marcar el seleccionado como default
+        panel.default = True
+        
+        session.commit()
+        
+        print(f"✅ Panel {panel_id} marcado como default en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Panel {panel_id} marcado como default"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al marcar panel default: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al marcar default: {e}")
+    finally:
+        session.close()
 
 @app.put("/api/admin/inversores/{inversor_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def set_inversor_default(inversor_id: str):
     """Marcar un inversor como default (desmarca los demás)"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Inversor
     
-    # Verificar que existe el inversor
-    inversor = next((i for i in data["inversores"] if i["id"] == inversor_id), None)
-    if not inversor:
-        raise HTTPException(404, f"Inversor {inversor_id} no encontrado")
-    
-    # Desmarcar todos los inversores como default
-    for i in data["inversores"]:
-        i["default"] = False
-    
-    # Marcar el seleccionado como default
-    inversor["default"] = True
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Verificar que existe el inversor
+        inversor = session.query(Inversor).filter_by(id=inversor_id).first()
+        if not inversor:
+            raise HTTPException(404, f"Inversor {inversor_id} no encontrado")
         
-        print(f"✅ Inversor {inversor_id} marcado como default en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Inversor {inversor_id} marcado como default"}
+        # Desmarcar todos los inversores como default
+        session.query(Inversor).update({"default": False})
+        
+        # Marcar el seleccionado como default
+        inversor.default = True
+        
+        session.commit()
+        
+        print(f"✅ Inversor {inversor_id} marcado como default en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Inversor {inversor_id} marcado como default"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al marcar inversor default: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al marcar default: {e}")
+    finally:
+        session.close()
 
 @app.put("/api/admin/baterias/{bateria_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def set_bateria_default(bateria_id: str):
     """Marcar una batería como default (desmarca las demás)"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Bateria
     
-    # Verificar que existe la batería
-    bateria = next((b for b in data["baterias"] if b["id"] == bateria_id), None)
-    if not bateria:
-        raise HTTPException(404, f"Batería {bateria_id} no encontrada")
-    
-    # Desmarcar todas las baterías como default
-    for b in data["baterias"]:
-        b["default"] = False
-    
-    # Marcar la seleccionada como default
-    bateria["default"] = True
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Verificar que existe la batería
+        bateria = session.query(Bateria).filter_by(id=bateria_id).first()
+        if not bateria:
+            raise HTTPException(404, f"Batería {bateria_id} no encontrada")
         
-        print(f"✅ Batería {bateria_id} marcada como default en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Batería {bateria_id} marcada como default"}
+        # Desmarcar todas las baterías como default
+        session.query(Bateria).update({"default": False})
+        
+        # Marcar la seleccionada como default
+        bateria.default = True
+        
+        session.commit()
+        
+        print(f"✅ Batería {bateria_id} marcada como default en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Batería {bateria_id} marcada como default"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al marcar batería default: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al marcar default: {e}")
+    finally:
+        session.close()
 
 # --- GESTIÓN DE CIUDADES ---
 @app.get("/api/admin/ciudades", tags=["Admin"], dependencies=[Depends(auth_admin)])
