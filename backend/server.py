@@ -290,9 +290,79 @@ def obtener_equipos_defaults(equipos: dict, sistema_electrico: str = None) -> di
     }
 
 # ========================================
+# 📊 CARGA DE DATOS DESDE POSTGRESQL
+# ========================================
+def cargar_datos_desde_postgres():
+    """
+    Carga equipos, ciudades y parámetros desde PostgreSQL.
+    Retorna estructura compatible con formato JSON legacy.
+    """
+    from models import get_db_session, Panel, Inversor, Bateria, Ciudad, Parametro
+    
+    session = get_db_session()
+    try:
+        # Cargar paneles
+        paneles_db = session.query(Panel).all()
+        paneles = [{
+            "id": p.id,
+            "nombre": p.nombre,
+            "capacidad": p.capacidad,
+            "precio": p.precio,
+            "area": p.area,
+            "eficienciaPanel": p.eficiencia_panel,
+            "default": p.default
+        } for p in paneles_db]
+        
+        # Cargar inversores
+        inversores_db = session.query(Inversor).all()
+        inversores = [{
+            "id": i.id,
+            "nombre": i.nombre,
+            "capacidad": i.capacidad,
+            "precio": i.precio,
+            "eficiencia": i.eficiencia,
+            "tipo": i.tipo,
+            "paneles_por_inversor": i.paneles_por_inversor,
+            "sobredimensionamiento": i.sobredimensionamiento,
+            "sistemaElectrico": i.sistema_electrico,
+            "default": i.default
+        } for i in inversores_db]
+        
+        # Cargar baterías
+        baterias_db = session.query(Bateria).all()
+        baterias = [{
+            "id": b.id,
+            "nombre": b.nombre,
+            "capacidad": b.capacidad,
+            "precio": b.precio,
+            "default": b.default
+        } for b in baterias_db]
+        
+        # Cargar ciudades
+        ciudades_db = session.query(Ciudad).all()
+        ciudades = {c.key: {"hsp": c.hsp, "nombre": c.nombre} for c in ciudades_db}
+        
+        # Cargar parámetros (reconstruir dict anidado)
+        parametros_db = session.query(Parametro).all()
+        parametros = {}
+        for p in parametros_db:
+            parametros[p.seccion] = p.data
+        
+        equipos = {
+            "paneles": paneles,
+            "inversores": inversores,
+            "baterias": baterias
+        }
+        
+        return equipos, ciudades, parametros
+        
+    finally:
+        session.close()
+
+# ========================================
 # 🧮 FUNCIÓN DE CÁLCULO
 # ========================================
-def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
+def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict, parametros: dict = None) -> dict:
     """
     Lógica de cálculo de cotización completa con:
     - Porcentaje de ahorro de energía
@@ -301,8 +371,9 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
     - Consecutivo controlado
     """
     # Cargar parámetros de configuración
-    parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
-    parametros = load_json(parametros_path)
+    if parametros is None:
+        # Fallback: cargar desde PostgreSQL si no se pasan
+        _, _, parametros = cargar_datos_desde_postgres()
     
     # Extraer parámetros
     costos = parametros["costos_instalacion"]
@@ -538,7 +609,7 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict) -> dict:
         "TotalAcum": round(TotalAcum)
     }
 
-def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDisponible: float, cotizacion_id_base: str) -> dict:
+def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDisponible: float, cotizacion_id_base: str, parametros: dict = None) -> dict:
     """
     Calcula cotización ajustada al área disponible del cliente.
     Reduce número de paneles para que quepan en el espacio real.
@@ -547,8 +618,9 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     Args:
         cotizacion_id_base: ID base (ej: "NASSA-2025-0001") para mantener consistencia
     """
-    parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
-    parametros = load_json(parametros_path)
+    # Cargar parámetros si no se pasan
+    if parametros is None:
+        _, _, parametros = cargar_datos_desde_postgres()
     
     costos = parametros["costos_instalacion"]
     fiscales = parametros["parametros_fiscales"]
@@ -2731,9 +2803,8 @@ def get_valores_default():
 @app.post("/api/cotizar", tags=["Cotización"])
 async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_limit)):
     """Generar cotización completa con 1 o 2 opciones según área disponible"""
-    equipos = load_json(EQUIPOS_FILE)
-    ciudades = load_json(CIUDADES_FILE)
-    parametros = load_json(PARAMETROS_FILE)
+    # MIGRACIÓN POSTGRESQL: Cargar desde BD en lugar de archivos JSON
+    equipos, ciudades, parametros = cargar_datos_desde_postgres()
     
     # Preparar datos de solicitud
     req_dict = req.dict()
@@ -2765,7 +2836,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     
     try:
         # Calcular OPCIÓN 1 (ideal sin restricciones)
-        resultado_opcion1 = calcular_cotizacion(req_dict, equipos, ciudades)
+        resultado_opcion1 = calcular_cotizacion(req_dict, equipos, ciudades, parametros)
         # Agregar COND_COM al resultado
         resultado_opcion1["condicionesComerciales"] = cond_com
     except ValueError as e:
@@ -2826,7 +2897,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             print(f"   📊 Calculando segunda opción...")
             # Extraer ID base sin sufijo para mantener consistencia
             cotizacion_id_base = resultado_opcion1["cotizacionId"]
-            resultado_opcion2 = calcular_segunda_opcion(req_dict, equipos, ciudades, areaDisponible, cotizacion_id_base)
+            resultado_opcion2 = calcular_segunda_opcion(req_dict, equipos, ciudades, areaDisponible, cotizacion_id_base, parametros)
             # Agregar COND_COM también a la opción 2
             resultado_opcion2["condicionesComerciales"] = cond_com
             num_opciones = 2
@@ -2934,10 +3005,8 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         opcion2 = data.get("opcion2")  # Opcional
         num_opciones = 2 if opcion2 else 1
         
-        # Recargar configuración
-        equipos = load_json(EQUIPOS_FILE)
-        ciudades = load_json(CIUDADES_FILE)
-        parametros = load_json(PARAMETROS_FILE)
+        # MIGRACIÓN POSTGRESQL: Cargar desde BD en lugar de archivos JSON
+        equipos, ciudades, parametros = cargar_datos_desde_postgres()
         
         pdf_paths = []
         pptx_paths = []
