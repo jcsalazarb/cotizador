@@ -111,16 +111,22 @@ def migrate():
             with open(ciudades_file, "r", encoding="utf-8") as f:
                 ciudades = json.load(f)
             
+            # Primero eliminar todas las ciudades existentes
+            session.query(Ciudad).delete()
+            
             ciudades_migradas = 0
             for key, data in ciudades.items():
                 if key != "default":
-                    ciudad = Ciudad(
-                        key=key,
-                        nombre=data.get("nombre", key.replace("_", " ").title()),
-                        hsp=data["hsp"]
-                    )
-                    session.merge(ciudad)
-                    ciudades_migradas += 1
+                    # Verificar si ya existe por key (por si acaso)
+                    existing = session.query(Ciudad).filter_by(key=key).first()
+                    if not existing:
+                        ciudad = Ciudad(
+                            key=key,
+                            nombre=data.get("nombre", key.replace("_", " ").title()),
+                            hsp=data["hsp"]
+                        )
+                        session.add(ciudad)
+                        ciudades_migradas += 1
             print(f"✅ Migradas {ciudades_migradas} ciudades")
         
         # 5. MIGRAR PARÁMETROS
