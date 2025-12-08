@@ -2655,15 +2655,25 @@ def get_ciudades_admin():
     session = get_db_session()
     try:
         ciudades_db = session.query(Ciudad).order_by(Ciudad.nombre).all()
-        ciudades_list = [
-            {
+        ciudades_list = []
+        for c in ciudades_db:
+            # Obtener factorTemperatura con validación
+            factorTemp = c.factorTemperatura if hasattr(c, 'factorTemperatura') else 0.90
+            
+            # VALIDACIÓN: Normalizar si está en formato porcentual
+            if factorTemp > 1.0:
+                print(f"⚠️ Ciudad {c.nombre}: factorTemperatura = {factorTemp} (corrigiendo a {factorTemp/100})")
+                factorTemp = factorTemp / 100
+            elif factorTemp < 0.5:
+                print(f"⚠️ Ciudad {c.nombre}: factorTemperatura = {factorTemp} (usando default 0.90)")
+                factorTemp = 0.90
+            
+            ciudades_list.append({
                 "key": c.key,
                 "nombre": c.nombre,
                 "hsp": c.hsp,
-                "factorTemperatura": c.factorTemperatura if hasattr(c, 'factorTemperatura') else 0.90
-            }
-            for c in ciudades_db
-        ]
+                "factorTemperatura": factorTemp
+            })
         return ciudades_list
     finally:
         session.close()
@@ -2775,6 +2785,70 @@ def delete_ciudad(ciudad_key: str):
         session.rollback()
         print(f"❌ Error al eliminar ciudad: {e}")
         raise HTTPException(500, f"Error al eliminar: {e}")
+    finally:
+        session.close()
+
+@app.post("/api/admin/ciudades/fix-temperatura", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def fix_factor_temperatura():
+    """
+    🔧 Endpoint de mantenimiento: Corregir factorTemperatura en formato porcentual
+    Convierte valores >1.0 dividiéndolos entre 100
+    """
+    from models import get_db_session, Ciudad
+    
+    session = get_db_session()
+    try:
+        ciudades_db = session.query(Ciudad).all()
+        corregidas = []
+        sin_cambios = []
+        
+        for c in ciudades_db:
+            if hasattr(c, 'factorTemperatura') and c.factorTemperatura is not None:
+                valor_original = c.factorTemperatura
+                
+                if valor_original > 1.0:
+                    # Corregir: dividir entre 100
+                    c.factorTemperatura = valor_original / 100
+                    corregidas.append({
+                        "ciudad": c.nombre,
+                        "anterior": valor_original,
+                        "nuevo": c.factorTemperatura
+                    })
+                    print(f"✅ {c.nombre}: {valor_original} → {c.factorTemperatura}")
+                elif valor_original < 0.5:
+                    # Valor inválido: usar default
+                    c.factorTemperatura = 0.90
+                    corregidas.append({
+                        "ciudad": c.nombre,
+                        "anterior": valor_original,
+                        "nuevo": 0.90,
+                        "nota": "Valor demasiado bajo, usando default"
+                    })
+                    print(f"✅ {c.nombre}: {valor_original} → 0.90 (default)")
+                else:
+                    sin_cambios.append(c.nombre)
+            else:
+                # No tiene factorTemperatura: agregar default
+                c.factorTemperatura = 0.90
+                corregidas.append({
+                    "ciudad": c.nombre,
+                    "anterior": "null",
+                    "nuevo": 0.90,
+                    "nota": "Campo faltante, agregado default"
+                })
+        
+        session.commit()
+        
+        return {
+            "status": "success",
+            "mensaje": f"✅ Proceso completado. {len(corregidas)} ciudades corregidas, {len(sin_cambios)} sin cambios",
+            "corregidas": corregidas,
+            "sin_cambios": sin_cambios
+        }
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Error al corregir factorTemperatura: {e}")
+        raise HTTPException(500, f"Error: {e}")
     finally:
         session.close()
 
