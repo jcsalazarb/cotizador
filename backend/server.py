@@ -428,6 +428,18 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict, parametros: d
     
     # NUEVO: Factor de temperatura por ciudad
     factorTemperatura = ciudad_data.get("factorTemperatura", 0.90) if isinstance(ciudad_data, dict) else 0.90
+    
+    # VALIDACIÓN CRÍTICA: Si factorTemperatura está fuera del rango 0.5-1.0, posiblemente está en formato porcentual
+    if factorTemperatura > 1.0:
+        print(f"⚠️⚠️⚠️ ERROR DETECTADO en calcular_cotizacion(): factorTemperatura = {factorTemperatura}")
+        print(f"⚠️ Valor fuera de rango [0.5-1.0]. Posiblemente está en formato porcentual.")
+        print(f"⚠️ CORRECCIÓN AUTOMÁTICA: Dividiendo entre 100")
+        factorTemperatura = factorTemperatura / 100
+        print(f"✅ Nuevo valor: {factorTemperatura}")
+    elif factorTemperatura < 0.5:
+        print(f"⚠️⚠️⚠️ ERROR DETECTADO en calcular_cotizacion(): factorTemperatura = {factorTemperatura}")
+        print(f"⚠️ Valor demasiado bajo [<0.5]. Usando default 0.90")
+        factorTemperatura = 0.90
 
     panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
@@ -445,6 +457,34 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict, parametros: d
     consumoDiario = consumoObjetivo / 30
     energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp * factorTemperatura) / 1000
     numeroPaneles_inicial = int(ceil((consumoDiario * 1.2) / energiaPanelDia))
+    
+    # DEBUGGING: Logging detallado del cálculo
+    print(f"\n{'='*80}")
+    print(f"🔍 CÁLCULO DE PANELES - DEBUGGING")
+    print(f"{'='*80}")
+    print(f"📊 DATOS DE ENTRADA:")
+    print(f"   consumoMensual: {consumoMensual} kWh")
+    print(f"   consumoObjetivo: {consumoObjetivo} kWh (porcentaje: {porcentajeAhorroEnergia}%)")
+    print(f"   consumoDiario: {consumoDiario:.2f} kWh/día")
+    print(f"\n🔧 EQUIPOS SELECCIONADOS:")
+    print(f"   Panel: {panel['id']} - {panel['nombre']}")
+    print(f"   Capacidad panel: {panel['capacidad']} W")
+    print(f"   Eficiencia panel: {eficiencia_panel}")
+    print(f"   Inversor: {inversor['id']} - {inversor['nombre']}")
+    print(f"   Eficiencia inversor: {eficiencia_inversor}")
+    print(f"\n🌡️ PARÁMETROS CLIMÁTICOS:")
+    print(f"   Ciudad: {data.get('ciudad')}")
+    print(f"   HSP: {hsp}")
+    print(f"   Factor Temperatura: {factorTemperatura} {'⚠️ ERROR: Debe estar entre 0.5 y 1.0' if factorTemperatura > 1.0 else '✅'}")
+    print(f"\n⚡ CÁLCULO DE ENERGÍA POR PANEL:")
+    print(f"   Fórmula: (capacidad * efic_panel * HSP * factorTemp) / 1000")
+    print(f"   energiaPanelDia = ({panel['capacidad']} * {eficiencia_panel} * {hsp} * {factorTemperatura}) / 1000")
+    print(f"   energiaPanelDia = {energiaPanelDia:.4f} kWh/día/panel")
+    print(f"\n🔢 NÚMERO DE PANELES:")
+    print(f"   Fórmula: ceil((consumoDiario * 1.2) / energiaPanelDia)")
+    print(f"   numeroPaneles = ceil(({consumoDiario:.2f} * 1.2) / {energiaPanelDia:.4f})")
+    print(f"   numeroPaneles_inicial = {numeroPaneles_inicial}")
+    print(f"{'='*80}\n")
     
     # PUNTO 5: Lógica de inversores MICRO vs STRING
     tipo_inversor = inversor.get("tipo", "STRING")
@@ -489,6 +529,19 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict, parametros: d
     generacionMensual = numeroPaneles * energiaPanelDia * 30 * eficiencia_inversor
     generacionAnual = generacionMensual * 12
     areaRequerida = round(numeroPaneles * areaPanel * factorAreaEfectiva, 2)
+    
+    # DEBUGGING: Logging del resultado final
+    print(f"\n{'='*80}")
+    print(f"📈 RESULTADO FINAL DEL CÁLCULO")
+    print(f"{'='*80}")
+    print(f"   Paneles finales: {numeroPaneles}")
+    print(f"   Inversores: {numeroInversores}")
+    print(f"   Capacidad instalada: {capacidadInstalada:.2f} kW")
+    print(f"   Generación MENSUAL: {generacionMensual:.2f} kWh {'⚠️ POSIBLE ERROR' if generacionMensual > consumoMensual * 10 else '✅'}")
+    print(f"   Generación ANUAL: {generacionAnual:.2f} kWh")
+    print(f"   Área requerida: {areaRequerida} m²")
+    print(f"   Ratio generación/consumo: {(generacionMensual/consumoMensual*100):.1f}%")
+    print(f"{'='*80}\n")
 
     # Costos básicos desde parámetros configurables
     soporteria = costos["soporteria_por_panel"]
@@ -675,6 +728,18 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     
     # NUEVO: Factor de temperatura por ciudad
     factorTemperatura = ciudad_data.get("factorTemperatura", 0.90) if isinstance(ciudad_data, dict) else 0.90
+    
+    # VALIDACIÓN CRÍTICA: Si factorTemperatura está fuera del rango 0.5-1.0, posiblemente está en formato porcentual
+    if factorTemperatura > 1.0:
+        print(f"⚠️⚠️⚠️ ERROR DETECTADO en calcular_segunda_opcion(): factorTemperatura = {factorTemperatura}")
+        print(f"⚠️ Valor fuera de rango [0.5-1.0]. Posiblemente está en formato porcentual.")
+        print(f"⚠️ CORRECCIÓN AUTOMÁTICA: Dividiendo entre 100")
+        factorTemperatura = factorTemperatura / 100
+        print(f"✅ Nuevo valor: {factorTemperatura}")
+    elif factorTemperatura < 0.5:
+        print(f"⚠️⚠️⚠️ ERROR DETECTADO en calcular_segunda_opcion(): factorTemperatura = {factorTemperatura}")
+        print(f"⚠️ Valor demasiado bajo [<0.5]. Usando default 0.90")
+        factorTemperatura = 0.90
 
     panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
@@ -2594,7 +2659,8 @@ def get_ciudades_admin():
             {
                 "key": c.key,
                 "nombre": c.nombre,
-                "hsp": c.hsp
+                "hsp": c.hsp,
+                "factorTemperatura": c.factorTemperatura if hasattr(c, 'factorTemperatura') else 0.90
             }
             for c in ciudades_db
         ]
