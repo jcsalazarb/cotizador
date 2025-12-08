@@ -82,6 +82,15 @@ STATIC_DIR = os.path.join(APP_DIR, "static")
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# Servir index.html desde la raíz
+@app.get("/")
+async def root():
+    """Redirige a la página principal del cotizador"""
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "NASSA Solar - API de Cotización", "docs": "/docs"}
+
 security = HTTPBasic()
 RATE_LIMIT = int(os.getenv("RATE_LIMIT", "10"))
 RATE_WINDOW = 60
@@ -1853,8 +1862,9 @@ def equipos_publicos(sistemaElectrico: str = None):
         inversores_query = session.query(Inversor)
         if sistemaElectrico:
             sistema_normalizado = sistemaElectrico.lower().strip()
+            # Buscar en el array JSON usando el operador @> de PostgreSQL
             inversores_query = inversores_query.filter(
-                Inversor.sistemaElectrico.ilike(sistema_normalizado)
+                Inversor.sistemaElectrico.cast(String).ilike(f'%{sistema_normalizado}%')
             )
         
         inversores_db = inversores_query.all()
