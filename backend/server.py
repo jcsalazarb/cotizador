@@ -1492,25 +1492,20 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
         </div>
         
         <!-- Footer -->
-        <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 30px; text-align: center; color: white;">
-()            <img src="cid:logo_nassa" alt="NASSA Solar" style="max-width: 32px; height: auto; margin: 0 auto 12px auto; display: block; opacity: 0.9;">
-            <h3 style="margin: 0 0 15px 0; font-size: 22px; font-weight: 700; color: #fbbf24;">
-                NASSA SOLAR
-            </h3>
-            <p style="margin: 5px 0; font-size: 14px; color: #d1d5db;">
+        <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 25px 30px; text-align: center; color: white;">
+            <img src="cid:logo_nassa" alt="NASSA Solar" style="max-width: 120px; height: auto; margin: 0 auto 10px auto; display: block; opacity: 0.95;">
+            
+            <p style="margin: 8px 0; font-size: 14px; color: #d1d5db;">
                 Expertos en Energía Solar Fotovoltaica
             </p>
             <p style="margin: 5px 0; font-size: 14px; color: #d1d5db;">
-                📞 Tel: (057) 313 690 9723
+                📞 (057) 313 690 9723 | 🌐 www.nassasolar.com
             </p>
             <p style="margin: 5px 0; font-size: 14px; color: #d1d5db;">
-                🌐 www.nassasolar.com
-            </p>
-            <p style="margin: 15px 0 5px 0; font-size: 14px; color: #d1d5db;">
                 📧 comercial@nassasolar.com
             </p>
             
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #374151;">
+            <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid #374151;">
                 <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.6;">
                     Esta cotización tiene una validez de 30 días.<br>
                     Precios sujetos a disponibilidad y condiciones del mercado.
