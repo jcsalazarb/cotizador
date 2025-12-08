@@ -1626,6 +1626,70 @@ def verificar_postgres():
         print(f"❌ ERROR EN VERIFICACIÓN: {error_trace}")
         raise HTTPException(500, f"Error verificando PostgreSQL: {str(e)}")
 
+@app.post("/api/admin/limpiar-parametros-duplicados", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def limpiar_parametros_duplicados():
+    """
+    Endpoint para eliminar parámetros duplicados y dejar solo los últimos valores
+    """
+    try:
+        if not os.getenv("DATABASE_URL"):
+            raise HTTPException(500, "DATABASE_URL no configurada")
+        
+        from models import get_db_session, Parametro
+        
+        session = get_db_session()
+        
+        try:
+            # Obtener todas las secciones únicas
+            secciones = session.query(Parametro.seccion).distinct().all()
+            secciones_unicas = [s[0] for s in secciones]
+            
+            total_antes = session.query(Parametro).count()
+            
+            # Para cada sección, mantener solo el último registro
+            eliminados = 0
+            actualizados = {}
+            
+            for seccion in secciones_unicas:
+                # Obtener todos los registros de esta sección ordenados por ID
+                registros = session.query(Parametro).filter_by(seccion=seccion).order_by(Parametro.id).all()
+                
+                if len(registros) > 1:
+                    # Mantener el último, eliminar los demás
+                    ultimo = registros[-1]
+                    actualizados[seccion] = ultimo.data
+                    
+                    for registro in registros[:-1]:
+                        session.delete(registro)
+                        eliminados += 1
+                else:
+                    actualizados[seccion] = registros[0].data if registros else None
+            
+            session.commit()
+            total_despues = session.query(Parametro).count()
+            
+            return {
+                "status": "success",
+                "mensaje": "Parámetros duplicados eliminados exitosamente",
+                "total_antes": total_antes,
+                "total_despues": total_despues,
+                "eliminados": eliminados,
+                "secciones_unicas": len(secciones_unicas),
+                "secciones": list(actualizados.keys()),
+                "timestamp": now_colombia().isoformat()
+            }
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN LIMPIEZA: {error_trace}")
+        raise HTTPException(500, f"Error limpiando duplicados: {str(e)}")
+
 @app.get("/debug/equipos-file", tags=["Debug"])
 def debug_equipos_file():
     """Endpoint temporal para diagnosticar problema con equipos.json"""
