@@ -12,6 +12,8 @@
         .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
         .pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .spin { display: inline-block; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .equipo-card { transition: all 0.3s ease; }
         .equipo-card:hover { transform: translateY(-2px); }
         .equipo-selected { border: 2px solid #fbbf24; background: rgba(251, 191, 36, 0.1); }        
@@ -890,7 +892,7 @@
             
             // Deshabilitar botón
             btn.disabled = true;
-            btn.innerHTML = '<span class="text-2xl">⏳</span><span>Enviando...</span>';
+            btn.innerHTML = '<span class="text-2xl spin">⏳</span><span>Enviando...</span>';
             estadoMsg.textContent = '📤 Generando PDFs y enviando email...';
             estadoMsg.className = 'text-center text-sm mt-2 text-blue-600';
             
@@ -949,7 +951,7 @@
             // Cambiar texto del botón submit
             const btnSubmit = form.querySelector('button[type="submit"]');
             if (btnSubmit) {
-                btnSubmit.innerHTML = '⏳ GENERANDO COTIZACIÓN...';
+                btnSubmit.innerHTML = '<span class="spin">⏳</span> GENERANDO COTIZACIÓN...';
             }
         }
         

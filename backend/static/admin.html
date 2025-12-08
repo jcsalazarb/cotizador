@@ -307,6 +307,16 @@
                 opacity: 1;
             }
         }
+        
+        .spin {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
         .alert.show {
             display: block;
@@ -786,10 +796,12 @@
 
                 <div class="form-group">
                     <label>Factor de Temperatura *</label>
-                    <input type="number" step="0.01" id="ciudadFactorTemp" required placeholder="Ej: 0.85" min="0.75" max="1.0" value="0.90">
+                    <input type="number" step="0.01" id="ciudadFactorTemp" required placeholder="Ej: 0.85" min="0.75" max="1.0" value="0.90" oninput="updateRegionIndicator()">
                     <small style="color: #666; font-size: 12px;">
                         Costa caribe: 0.84-0.86 | Interior: 0.87-0.91 | Alta montaña: 0.92-0.95 | Default: 0.90
                     </small>
+                    <div id="regionIndicator" style="margin-top: 8px; padding: 8px; border-radius: 4px; font-weight: 600; text-align: center; display: none;">
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-success">💾 Guardar</button>
@@ -926,7 +938,7 @@
             const btnGuardar = e.submitter || document.querySelector('#parametrosForm button[type="submit"]');
             const textoOriginal = btnGuardar.textContent;
             btnGuardar.disabled = true;
-            btnGuardar.textContent = '⏳ Guardando parámetros...';
+            btnGuardar.innerHTML = '<span class="spin">⏳</span> Guardando parámetros...';
             
             const parametros = {
                 costos_instalacion: {
@@ -1246,7 +1258,7 @@
             const btnGuardar = document.getElementById('btnGuardar');
             const textoOriginal = btnGuardar.textContent;
             btnGuardar.disabled = true;
-            btnGuardar.textContent = '⏳ Guardando...';
+            btnGuardar.innerHTML = '<span class="spin">⏳</span> Guardando...';
             
             const equipo = {
                 nombre: document.getElementById('formNombre').value,
@@ -1413,6 +1425,31 @@
         }
 
         // FUNCIONES CIUDADES
+        function updateRegionIndicator() {
+            const factorTemp = parseFloat(document.getElementById('ciudadFactorTemp').value) || 0.90;
+            const indicator = document.getElementById('regionIndicator');
+            
+            let region = '🌡️ Moderado';
+            let bgColor = '#ffa500';
+            
+            if (factorTemp <= 0.86) {
+                region = '🔥 Costa Caribe (Clima Cálido)';
+                bgColor = '#ff6b6b';
+            } else if (factorTemp >= 0.92) {
+                region = '❄️ Alta Montaña (Clima Frío)';
+                bgColor = '#4dabf7';
+            } else if (factorTemp >= 0.87 && factorTemp <= 0.91) {
+                region = '🌤️ Interior/Valles (Clima Templado)';
+                bgColor = '#51cf66';
+            }
+            
+            indicator.style.display = 'block';
+            indicator.style.backgroundColor = bgColor + '33'; // 33 = 20% opacity
+            indicator.style.color = bgColor;
+            indicator.style.border = `2px solid ${bgColor}`;
+            indicator.textContent = region;
+        }
+        
         function openCiudadModal(ciudad = null) {
             document.getElementById('ciudadModal').classList.add('show');
             
@@ -1435,6 +1472,9 @@
                 document.getElementById('ciudadFactorTemp').value = '0.90';
                 document.getElementById('ciudadNombre').disabled = false;
             }
+            
+            // Actualizar indicador de región
+            updateRegionIndicator();
         }
 
         function closeCiudadModal() {
