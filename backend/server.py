@@ -2116,88 +2116,121 @@ def get_inversores_admin():
 @app.post("/api/admin/inversores", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_inversor(inversor: dict):
     """Crear nuevo inversor con ID auto-generado"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Inversor
     
-    # Auto-generar ID: encontrar el próximo disponible
-    existing_ids = [i["id"] for i in data["inversores"]]
-    counter = 1
-    while f"inv{counter}" in existing_ids:
-        counter += 1
-    inversor["id"] = f"inv{counter}"
-    
-    # Validar campos requeridos (sin ID)
-    required = ["nombre", "capacidad", "precio", "descripcion"]
-    if not all(k in inversor for k in required):
-        raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
-    
-    # Agregar eficiencia por defecto si no existe (100%)
-    if "eficiencia" not in inversor:
-        inversor["eficiencia"] = 1.0
-    
-    # Validar tipo_sistema si se proporciona
-    if "tipo_sistema" in inversor and inversor["tipo_sistema"] not in ["monofasico", "bifasico", "trifasico"]:
-        raise HTTPException(400, "tipo_sistema debe ser: monofasico, bifasico o trifasico")
-    
-    data["inversores"].append(inversor)
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Validar campos requeridos
+        required = ["nombre", "capacidad", "precio", "descripcion"]
+        if not all(k in inversor for k in required):
+            raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
         
-        print(f"✅ Inversor {inversor['id']} creado y guardado en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Inversor {inversor['id']} creado exitosamente", "id": inversor["id"]}
+        # Auto-generar ID
+        existing_ids = [i.id for i in session.query(Inversor.id).all()]
+        counter = 1
+        while f"inv{counter}" in existing_ids:
+            counter += 1
+        inversor_id = f"inv{counter}"
+        
+        # Crear inversor
+        new_inversor = Inversor(
+            id=inversor_id,
+            nombre=inversor["nombre"],
+            capacidad=inversor["capacidad"],
+            precio=inversor["precio"],
+            descripcion=inversor["descripcion"],
+            eficiencia=inversor.get("eficiencia", 0.97),
+            sistemaElectrico=inversor.get("sistemaElectrico", "monofasico"),
+            tipo=inversor.get("tipo", "STRING"),
+            paneles_por_inversor=inversor.get("paneles_por_inversor"),
+            sobredimensionamiento=inversor.get("sobredimensionamiento"),
+            default=inversor.get("default", False)
+        )
+        
+        session.add(new_inversor)
+        session.commit()
+        
+        print(f"✅ Inversor {inversor_id} creado en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Inversor {inversor_id} creado exitosamente",
+            "id": inversor_id
+        }
     except Exception as e:
-        print(f"❌ Error al guardar inversor: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        session.rollback()
+        print(f"❌ Error al crear inversor: {e}")
+        raise HTTPException(500, f"Error al crear inversor: {e}")
+    finally:
+        session.close()
 
 @app.put("/api/admin/inversores/{inversor_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def update_inversor(inversor_id: str, inversor: dict):
     """Actualizar inversor existente"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Inversor
     
-    idx = next((i for i, inv in enumerate(data["inversores"]) if inv["id"] == inversor_id), None)
-    if idx is None:
-        raise HTTPException(404, f"Inversor {inversor_id} no encontrado")
-    
-    inversor["id"] = inversor_id
-    data["inversores"][idx] = inversor
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Buscar inversor
+        inversor_db = session.query(Inversor).filter_by(id=inversor_id).first()
+        if not inversor_db:
+            raise HTTPException(404, f"Inversor {inversor_id} no encontrado")
         
-        print(f"✅ Inversor {inversor_id} actualizado en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Inversor {inversor_id} actualizado exitosamente"}
+        # Actualizar campos
+        inversor_db.nombre = inversor.get("nombre", inversor_db.nombre)
+        inversor_db.capacidad = inversor.get("capacidad", inversor_db.capacidad)
+        inversor_db.precio = inversor.get("precio", inversor_db.precio)
+        inversor_db.descripcion = inversor.get("descripcion", inversor_db.descripcion)
+        inversor_db.eficiencia = inversor.get("eficiencia", inversor_db.eficiencia)
+        inversor_db.sistemaElectrico = inversor.get("sistemaElectrico", inversor_db.sistemaElectrico)
+        inversor_db.tipo = inversor.get("tipo", inversor_db.tipo)
+        inversor_db.paneles_por_inversor = inversor.get("paneles_por_inversor", inversor_db.paneles_por_inversor)
+        inversor_db.sobredimensionamiento = inversor.get("sobredimensionamiento", inversor_db.sobredimensionamiento)
+        inversor_db.default = inversor.get("default", inversor_db.default)
+        
+        session.commit()
+        
+        print(f"✅ Inversor {inversor_id} actualizado en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Inversor {inversor_id} actualizado exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al actualizar inversor: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al actualizar: {e}")
+    finally:
+        session.close()
 
 @app.delete("/api/admin/inversores/{inversor_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def delete_inversor(inversor_id: str):
     """Eliminar inversor"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Inversor
     
-    original_length = len(data["inversores"])
-    data["inversores"] = [i for i in data["inversores"] if i["id"] != inversor_id]
-    
-    if len(data["inversores"]) == original_length:
-        raise HTTPException(404, f"Inversor {inversor_id} no encontrado")
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Buscar inversor
+        inversor_db = session.query(Inversor).filter_by(id=inversor_id).first()
+        if not inversor_db:
+            raise HTTPException(404, f"Inversor {inversor_id} no encontrado")
         
-        print(f"✅ Inversor {inversor_id} eliminado de {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Inversor {inversor_id} eliminado exitosamente"}
+        session.delete(inversor_db)
+        session.commit()
+        
+        print(f"✅ Inversor {inversor_id} eliminado de PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Inversor {inversor_id} eliminado exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al eliminar inversor: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al eliminar: {e}")
+    finally:
+        session.close()
 
 # --- GESTIÓN DE BATERÍAS ---
 @app.get("/api/admin/baterias", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -2226,80 +2259,111 @@ def get_baterias_admin():
 @app.post("/api/admin/baterias", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_bateria(bateria: dict):
     """Crear nueva batería con ID auto-generado"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Bateria
     
-    # Auto-generar ID: encontrar el próximo disponible
-    existing_ids = [b["id"] for b in data["baterias"]]
-    counter = 1
-    while f"bat{counter}" in existing_ids:
-        counter += 1
-    bateria["id"] = f"bat{counter}"
-    
-    # Validar campos requeridos (sin ID)
-    required = ["nombre", "capacidad", "precio", "descripcion"]
-    if not all(k in bateria for k in required):
-        raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
-    
-    data["baterias"].append(bateria)
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Validar campos requeridos
+        required = ["nombre", "capacidad", "precio", "descripcion"]
+        if not all(k in bateria for k in required):
+            raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
         
-        print(f"✅ Batería {bateria['id']} creada y guardada en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Batería {bateria['id']} creada exitosamente", "id": bateria["id"]}
+        # Auto-generar ID
+        existing_ids = [b.id for b in session.query(Bateria.id).all()]
+        counter = 1
+        while f"bat{counter}" in existing_ids:
+            counter += 1
+        bateria_id = f"bat{counter}"
+        
+        # Crear batería
+        new_bateria = Bateria(
+            id=bateria_id,
+            nombre=bateria["nombre"],
+            capacidad=bateria["capacidad"],
+            precio=bateria["precio"],
+            descripcion=bateria["descripcion"],
+            default=bateria.get("default", False)
+        )
+        
+        session.add(new_bateria)
+        session.commit()
+        
+        print(f"✅ Batería {bateria_id} creada en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Batería {bateria_id} creada exitosamente",
+            "id": bateria_id
+        }
     except Exception as e:
-        print(f"❌ Error al guardar batería: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        session.rollback()
+        print(f"❌ Error al crear batería: {e}")
+        raise HTTPException(500, f"Error al crear batería: {e}")
+    finally:
+        session.close()
 
 @app.put("/api/admin/baterias/{bateria_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def update_bateria(bateria_id: str, bateria: dict):
     """Actualizar batería existente"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Bateria
     
-    idx = next((i for i, b in enumerate(data["baterias"]) if b["id"] == bateria_id), None)
-    if idx is None:
-        raise HTTPException(404, f"Batería {bateria_id} no encontrada")
-    
-    bateria["id"] = bateria_id
-    data["baterias"][idx] = bateria
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Buscar batería
+        bateria_db = session.query(Bateria).filter_by(id=bateria_id).first()
+        if not bateria_db:
+            raise HTTPException(404, f"Batería {bateria_id} no encontrada")
         
-        print(f"✅ Batería {bateria_id} actualizada en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Batería {bateria_id} actualizada exitosamente"}
+        # Actualizar campos
+        bateria_db.nombre = bateria.get("nombre", bateria_db.nombre)
+        bateria_db.capacidad = bateria.get("capacidad", bateria_db.capacidad)
+        bateria_db.precio = bateria.get("precio", bateria_db.precio)
+        bateria_db.descripcion = bateria.get("descripcion", bateria_db.descripcion)
+        bateria_db.default = bateria.get("default", bateria_db.default)
+        
+        session.commit()
+        
+        print(f"✅ Batería {bateria_id} actualizada en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Batería {bateria_id} actualizada exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al actualizar batería: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al actualizar: {e}")
+    finally:
+        session.close()
 
 @app.delete("/api/admin/baterias/{bateria_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def delete_bateria(bateria_id: str):
     """Eliminar batería"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Bateria
     
-    original_length = len(data["baterias"])
-    data["baterias"] = [b for b in data["baterias"] if b["id"] != bateria_id]
-    
-    if len(data["baterias"]) == original_length:
-        raise HTTPException(404, f"Batería {bateria_id} no encontrada")
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Buscar batería
+        bateria_db = session.query(Bateria).filter_by(id=bateria_id).first()
+        if not bateria_db:
+            raise HTTPException(404, f"Batería {bateria_id} no encontrada")
         
-        print(f"✅ Batería {bateria_id} eliminada de {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Batería {bateria_id} eliminada exitosamente"}
+        session.delete(bateria_db)
+        session.commit()
+        
+        print(f"✅ Batería {bateria_id} eliminada de PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Batería {bateria_id} eliminada exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al eliminar batería: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al eliminar: {e}")
+    finally:
+        session.close()
 
 # --- GESTIÓN DE EQUIPOS DEFAULT ---
 @app.put("/api/admin/paneles/{panel_id}/default", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -2413,75 +2477,109 @@ def get_ciudades_admin():
 @app.post("/api/admin/ciudades", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_ciudad(ciudad: dict):
     """Crear nueva ciudad con HSP"""
-    data = load_json(CIUDADES_FILE)
+    from models import get_db_session, Ciudad
     
-    # Validar campos requeridos
-    if "nombre" not in ciudad or "hsp" not in ciudad:
-        raise HTTPException(400, "Campos requeridos: nombre, hsp")
-    
-    # Normalizar nombre para key (lowercase, underscores)
-    ciudad_key = ciudad["nombre"].lower().replace(" ", "_").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("ñ", "n")
-    
-    # Verificar que no existe
-    if ciudad_key in data:
-        raise HTTPException(400, f"La ciudad {ciudad['nombre']} ya existe")
-    
-    # Agregar ciudad
-    data[ciudad_key] = {
-        "nombre": ciudad["nombre"],
-        "hsp": float(ciudad["hsp"])
-    }
-    
+    session = get_db_session()
     try:
-        with open(CIUDADES_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return {"status": "success", "mensaje": f"Ciudad {ciudad['nombre']} creada exitosamente", "key": ciudad_key}
+        # Validar campos requeridos
+        if "nombre" not in ciudad or "hsp" not in ciudad:
+            raise HTTPException(400, "Campos requeridos: nombre, hsp")
+        
+        # Normalizar nombre para key (lowercase, underscores, sin acentos)
+        ciudad_key = ciudad["nombre"].lower().replace(" ", "_").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("ñ", "n")
+        
+        # Verificar que no existe
+        existing = session.query(Ciudad).filter_by(key=ciudad_key).first()
+        if existing:
+            raise HTTPException(400, f"La ciudad {ciudad['nombre']} ya existe")
+        
+        # Crear ciudad
+        new_ciudad = Ciudad(
+            key=ciudad_key,
+            nombre=ciudad["nombre"],
+            hsp=float(ciudad["hsp"])
+        )
+        
+        session.add(new_ciudad)
+        session.commit()
+        
+        print(f"✅ Ciudad {ciudad['nombre']} creada en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Ciudad {ciudad['nombre']} creada exitosamente",
+            "key": ciudad_key
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(500, f"Error al guardar: {e}")
+        session.rollback()
+        print(f"❌ Error al crear ciudad: {e}")
+        raise HTTPException(500, f"Error al crear ciudad: {e}")
+    finally:
+        session.close()
 
 @app.put("/api/admin/ciudades/{ciudad_key}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def update_ciudad(ciudad_key: str, ciudad: dict):
     """Actualizar ciudad existente"""
-    data = load_json(CIUDADES_FILE)
+    from models import get_db_session, Ciudad
     
-    if ciudad_key not in data:
-        raise HTTPException(404, f"Ciudad {ciudad_key} no encontrada")
-    
-    if ciudad_key == "default":
-        raise HTTPException(400, "No se puede modificar la ciudad 'default'")
-    
-    # Validar campos
-    if "hsp" in ciudad:
-        data[ciudad_key]["hsp"] = float(ciudad["hsp"])
-    if "nombre" in ciudad:
-        data[ciudad_key]["nombre"] = ciudad["nombre"]
-    
+    session = get_db_session()
     try:
-        with open(CIUDADES_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return {"status": "success", "mensaje": f"Ciudad {ciudad_key} actualizada exitosamente"}
+        # Buscar ciudad
+        ciudad_db = session.query(Ciudad).filter_by(key=ciudad_key).first()
+        if not ciudad_db:
+            raise HTTPException(404, f"Ciudad {ciudad_key} no encontrada")
+        
+        # Actualizar campos
+        if "nombre" in ciudad:
+            ciudad_db.nombre = ciudad["nombre"]
+        if "hsp" in ciudad:
+            ciudad_db.hsp = float(ciudad["hsp"])
+        
+        session.commit()
+        
+        print(f"✅ Ciudad {ciudad_key} actualizada en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Ciudad {ciudad_key} actualizada exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(500, f"Error al guardar: {e}")
+        session.rollback()
+        print(f"❌ Error al actualizar ciudad: {e}")
+        raise HTTPException(500, f"Error al actualizar: {e}")
+    finally:
+        session.close()
 
 @app.delete("/api/admin/ciudades/{ciudad_key}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def delete_ciudad(ciudad_key: str):
     """Eliminar ciudad"""
-    data = load_json(CIUDADES_FILE)
+    from models import get_db_session, Ciudad
     
-    if ciudad_key not in data:
-        raise HTTPException(404, f"Ciudad {ciudad_key} no encontrada")
-    
-    if ciudad_key == "default":
-        raise HTTPException(400, "No se puede eliminar la ciudad 'default'")
-    
-    del data[ciudad_key]
-    
+    session = get_db_session()
     try:
-        with open(CIUDADES_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return {"status": "success", "mensaje": f"Ciudad {ciudad_key} eliminada exitosamente"}
+        # Buscar ciudad
+        ciudad_db = session.query(Ciudad).filter_by(key=ciudad_key).first()
+        if not ciudad_db:
+            raise HTTPException(404, f"Ciudad {ciudad_key} no encontrada")
+        
+        session.delete(ciudad_db)
+        session.commit()
+        
+        print(f"✅ Ciudad {ciudad_key} eliminada de PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Ciudad {ciudad_key} eliminada exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(500, f"Error al guardar: {e}")
+        session.rollback()
+        print(f"❌ Error al eliminar ciudad: {e}")
+        raise HTTPException(500, f"Error al eliminar: {e}")
+    finally:
+        session.close()
 
 # --- SISTEMA DE TRACKING Y VALORES POR DEFECTO ---
 @app.post("/api/track-seleccion", tags=["Analytics"])
