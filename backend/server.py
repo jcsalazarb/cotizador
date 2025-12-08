@@ -2862,7 +2862,7 @@ def diagnostico_postgres():
     return JSONResponse(resultado)
 
 
-@app.put("/api/admin/ciudades/migrar-temperatura", tags=["Admin"])
+@app.post("/api/admin/migraciones/factor-temperatura", tags=["Admin"])
 def migrar_factor_temperatura_endpoint(credentials: HTTPBasicCredentials = Depends(security)):
     """
     Endpoint admin para agregar columna factorTemperatura a la tabla ciudades.
