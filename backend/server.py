@@ -1862,9 +1862,11 @@ def equipos_publicos(sistemaElectrico: str = None):
         inversores_query = session.query(Inversor)
         if sistemaElectrico:
             sistema_normalizado = sistemaElectrico.lower().strip()
-            # Buscar en el array JSON usando el operador @> de PostgreSQL
+            # Filtrar inversores que contengan el sistema eléctrico en su array JSON
+            # En PostgreSQL, sistemaElectrico es JSON array: ["monofasico", "trifasico"]
+            from sqlalchemy import func, cast, String as SQLString
             inversores_query = inversores_query.filter(
-                Inversor.sistemaElectrico.cast(String).ilike(f'%{sistema_normalizado}%')
+                func.lower(cast(Inversor.sistemaElectrico, SQLString)).contains(sistema_normalizado)
             )
         
         inversores_db = inversores_query.all()
