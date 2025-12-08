@@ -2625,7 +2625,8 @@ def create_ciudad(ciudad: dict):
         new_ciudad = Ciudad(
             key=ciudad_key,
             nombre=ciudad["nombre"],
-            hsp=float(ciudad["hsp"])
+            hsp=float(ciudad["hsp"]),
+            factorTemperatura=float(ciudad.get("factorTemperatura", 0.90))
         )
         
         session.add(new_ciudad)
@@ -2663,6 +2664,8 @@ def update_ciudad(ciudad_key: str, ciudad: dict):
             ciudad_db.nombre = ciudad["nombre"]
         if "hsp" in ciudad:
             ciudad_db.hsp = float(ciudad["hsp"])
+        if "factorTemperatura" in ciudad:
+            ciudad_db.factorTemperatura = float(ciudad["factorTemperatura"])
         
         session.commit()
         

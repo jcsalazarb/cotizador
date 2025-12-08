@@ -500,26 +500,26 @@
                 });
                 document.querySelectorAll('input[name="inversor"]').forEach(input => {
                     input.required = true;
-                    input.disabled = false;  // ✅ Habilitar para que participen en validación
+                    // NO deshabilitar - solo ocultar con CSS
                 });
                 // Batería se maneja con mostrarOpcionesBaterias()
             } else {
                 wrapper.style.display = 'none';
-                // Limpiar selecciones, REMOVER required y DESHABILITAR
+                // Limpiar selecciones y REMOVER required (pero NO deshabilitar)
                 document.querySelectorAll('input[name="panel"]').forEach(input => {
                     input.checked = false;
                     input.required = false;
-                    input.disabled = true;  // ✅ Deshabilitar para que NO participen en validación HTML5
+                    // NO deshabilitar - el wrapper ya está oculto
                 });
                 document.querySelectorAll('input[name="inversor"]').forEach(input => {
                     input.checked = false;
                     input.required = false;
-                    input.disabled = true;  // ✅ Deshabilitar para que NO participen en validación HTML5
+                    // NO deshabilitar - el wrapper ya está oculto
                 });
                 document.querySelectorAll('input[name="bateria"]').forEach(input => {
                     input.checked = false;
-                    input.required = false; // IMPORTANTE: remover required cuando está oculto
-                    input.disabled = true;  // ✅ Deshabilitar para que NO participen en validación HTML5
+                    input.required = false;
+                    // NO deshabilitar - el wrapper ya está oculto
                 });
             }
         }
