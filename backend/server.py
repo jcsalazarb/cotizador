@@ -1675,30 +1675,146 @@ def equipos_publicos(sistemaElectrico: str = None):
         sistemaElectrico: Filtra inversores por tipo (monofasico, bifasico, trifasico).
                          Si no se proporciona, devuelve todos los inversores.
     """
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Panel, Inversor, Bateria
     
-    # Filtrar inversores si se especifica sistema eléctrico
-    inversores = data["inversores"]
-    if sistemaElectrico:
-        sistema_normalizado = sistemaElectrico.lower().strip()
-        inversores = [i for i in inversores if i.get("tipo_sistema", "").lower() == sistema_normalizado]
-    
-    return {
-        "paneles": [{k: v for k, v in p.items() if k in ("id", "nombre", "capacidad", "descripcion")} 
-                    for p in data["paneles"]],
-        "inversores": [{k: v for k, v in i.items() if k in ("id", "nombre", "capacidad", "descripcion", "tipo_sistema")} 
-                       for i in inversores],
-        "baterias": [{k: v for k, v in b.items() if k in ("id", "nombre", "capacidad", "descripcion")} 
-                     for b in data["baterias"]],
-    }
+    session = get_db_session()
+    try:
+        # Obtener paneles desde PostgreSQL
+        paneles_db = session.query(Panel).all()
+        paneles = [
+            {
+                "id": p.id,
+                "nombre": p.nombre,
+                "capacidad": p.capacidad,
+                "descripcion": p.descripcion
+            }
+            for p in paneles_db
+        ]
+        
+        # Obtener inversores con filtro opcional
+        inversores_query = session.query(Inversor)
+        if sistemaElectrico:
+            sistema_normalizado = sistemaElectrico.lower().strip()
+            inversores_query = inversores_query.filter(
+                Inversor.sistemaElectrico.ilike(sistema_normalizado)
+            )
+        
+        inversores_db = inversores_query.all()
+        inversores = [
+            {
+                "id": i.id,
+                "nombre": i.nombre,
+                "capacidad": i.capacidad,
+                "descripcion": i.descripcion,
+                "tipo_sistema": i.sistemaElectrico
+            }
+            for i in inversores_db
+        ]
+        
+        # Obtener baterías
+        baterias_db = session.query(Bateria).all()
+        baterias = [
+            {
+                "id": b.id,
+                "nombre": b.nombre,
+                "capacidad": b.capacidad,
+                "descripcion": b.descripcion
+            }
+            for b in baterias_db
+        ]
+        
+        return {
+            "paneles": paneles,
+            "inversores": inversores,
+            "baterias": baterias
+        }
+    finally:
+        session.close()
 
 @app.get("/api/equipos/precios", tags=["Equipos"], dependencies=[Depends(auth_admin)])
 def equipos_con_precios():
-    return load_json(EQUIPOS_FILE)
+    """Obtiene todos los equipos CON precios (admin only)"""
+    from models import get_db_session, Panel, Inversor, Bateria
+    
+    session = get_db_session()
+    try:
+        # Paneles
+        paneles_db = session.query(Panel).all()
+        paneles = [
+            {
+                "id": p.id,
+                "nombre": p.nombre,
+                "capacidad": p.capacidad,
+                "precio": p.precio,
+                "descripcion": p.descripcion,
+                "eficienciaPanel": p.eficienciaPanel,
+                "area": p.area,
+                "default": p.default
+            }
+            for p in paneles_db
+        ]
+        
+        # Inversores
+        inversores_db = session.query(Inversor).all()
+        inversores = [
+            {
+                "id": i.id,
+                "nombre": i.nombre,
+                "capacidad": i.capacidad,
+                "precio": i.precio,
+                "descripcion": i.descripcion,
+                "eficiencia": i.eficiencia,
+                "sistemaElectrico": i.sistemaElectrico,
+                "tipo": i.tipo,
+                "paneles_por_inversor": i.paneles_por_inversor,
+                "sobredimensionamiento": i.sobredimensionamiento,
+                "default": i.default
+            }
+            for i in inversores_db
+        ]
+        
+        # Baterías
+        baterias_db = session.query(Bateria).all()
+        baterias = [
+            {
+                "id": b.id,
+                "nombre": b.nombre,
+                "capacidad": b.capacidad,
+                "precio": b.precio,
+                "descripcion": b.descripcion,
+                "default": b.default
+            }
+            for b in baterias_db
+        ]
+        
+        return {
+            "paneles": paneles,
+            "inversores": inversores,
+            "baterias": baterias
+        }
+    finally:
+        session.close()
 
 @app.get("/api/ciudades", tags=["Configuración"])
 def ciudades():
-    return load_json(CIUDADES_FILE)
+    """Obtiene todas las ciudades con sus valores HSP"""
+    from models import get_db_session, Ciudad
+    
+    session = get_db_session()
+    try:
+        ciudades_db = session.query(Ciudad).order_by(Ciudad.nombre).all()
+        
+        # Convertir a formato diccionario con key como índice
+        ciudades_dict = {}
+        for c in ciudades_db:
+            ciudades_dict[c.key] = {
+                "nombre": c.nombre,
+                "hsp": c.hsp
+            }
+        
+        return ciudades_dict
+    finally:
+        session.close()
 
 @app.get("/api/template/status", tags=["Template"])
 def template_status():
@@ -1718,8 +1834,20 @@ def template_download():
 @app.get("/api/admin/parametros", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def get_parametros():
     """Obtener todos los parámetros de costos y fiscales"""
-    parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
-    return load_json(parametros_path)
+    from models import get_db_session, Parametro
+    
+    session = get_db_session()
+    try:
+        parametros_db = session.query(Parametro).all()
+        
+        # Reconstruir el diccionario completo de parámetros
+        parametros_dict = {}
+        for p in parametros_db:
+            parametros_dict[p.seccion] = p.data
+        
+        return parametros_dict
+    finally:
+        session.close()
 
 @app.put("/api/admin/parametros", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def update_parametros(parametros: dict):
@@ -1736,8 +1864,27 @@ def update_parametros(parametros: dict):
 @app.get("/api/admin/paneles", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def get_paneles_admin():
     """Obtener todos los paneles con precios (admin)"""
-    data = load_json(EQUIPOS_FILE)
-    return data["paneles"]
+    from models import get_db_session, Panel
+    
+    session = get_db_session()
+    try:
+        paneles_db = session.query(Panel).all()
+        paneles = [
+            {
+                "id": p.id,
+                "nombre": p.nombre,
+                "capacidad": p.capacidad,
+                "precio": p.precio,
+                "descripcion": p.descripcion,
+                "eficienciaPanel": p.eficienciaPanel,
+                "area": p.area,
+                "default": p.default
+            }
+            for p in paneles_db
+        ]
+        return paneles
+    finally:
+        session.close()
 
 @app.post("/api/admin/paneles", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_panel(panel: dict):
@@ -1826,8 +1973,30 @@ def delete_panel(panel_id: str):
 @app.get("/api/admin/inversores", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def get_inversores_admin():
     """Obtener todos los inversores con precios (admin)"""
-    data = load_json(EQUIPOS_FILE)
-    return data["inversores"]
+    from models import get_db_session, Inversor
+    
+    session = get_db_session()
+    try:
+        inversores_db = session.query(Inversor).all()
+        inversores = [
+            {
+                "id": i.id,
+                "nombre": i.nombre,
+                "capacidad": i.capacidad,
+                "precio": i.precio,
+                "descripcion": i.descripcion,
+                "eficiencia": i.eficiencia,
+                "sistemaElectrico": i.sistemaElectrico,
+                "tipo": i.tipo,
+                "paneles_por_inversor": i.paneles_por_inversor,
+                "sobredimensionamiento": i.sobredimensionamiento,
+                "default": i.default
+            }
+            for i in inversores_db
+        ]
+        return inversores
+    finally:
+        session.close()
 
 @app.post("/api/admin/inversores", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_inversor(inversor: dict):
@@ -1919,8 +2088,25 @@ def delete_inversor(inversor_id: str):
 @app.get("/api/admin/baterias", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def get_baterias_admin():
     """Obtener todas las baterías con precios (admin)"""
-    data = load_json(EQUIPOS_FILE)
-    return data["baterias"]
+    from models import get_db_session, Bateria
+    
+    session = get_db_session()
+    try:
+        baterias_db = session.query(Bateria).all()
+        baterias = [
+            {
+                "id": b.id,
+                "nombre": b.nombre,
+                "capacidad": b.capacidad,
+                "precio": b.precio,
+                "descripcion": b.descripcion,
+                "default": b.default
+            }
+            for b in baterias_db
+        ]
+        return baterias
+    finally:
+        session.close()
 
 @app.post("/api/admin/baterias", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_bateria(bateria: dict):
@@ -2092,17 +2278,22 @@ def set_bateria_default(bateria_id: str):
 @app.get("/api/admin/ciudades", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def get_ciudades_admin():
     """Obtener todas las ciudades con HSP (admin)"""
-    data = load_json(CIUDADES_FILE)
-    # Convertir dict a lista para mejor manejo en frontend
-    ciudades_list = []
-    for ciudad_key, ciudad_data in data.items():
-        if ciudad_key != "default":
-            ciudades_list.append({
-                "key": ciudad_key,
-                "nombre": ciudad_data.get("nombre", ciudad_key.replace("_", " ").title()),
-                "hsp": ciudad_data.get("hsp", 5.0)
-            })
-    return ciudades_list
+    from models import get_db_session, Ciudad
+    
+    session = get_db_session()
+    try:
+        ciudades_db = session.query(Ciudad).order_by(Ciudad.nombre).all()
+        ciudades_list = [
+            {
+                "key": c.key,
+                "nombre": c.nombre,
+                "hsp": c.hsp
+            }
+            for c in ciudades_db
+        ]
+        return ciudades_list
+    finally:
+        session.close()
 
 @app.post("/api/admin/ciudades", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_ciudad(ciudad: dict):
