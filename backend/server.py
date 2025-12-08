@@ -1570,6 +1570,62 @@ def migrate_to_postgres():
         print(f"❌ ERROR EN MIGRACIÓN: {error_trace}")
         raise HTTPException(500, f"Error en migración: {str(e)}")
 
+@app.get("/api/admin/verificar-postgres", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def verificar_postgres():
+    """
+    Endpoint para verificar conteos de registros en PostgreSQL
+    """
+    try:
+        # Verificar que DATABASE_URL exista
+        if not os.getenv("DATABASE_URL"):
+            raise HTTPException(500, "DATABASE_URL no configurada")
+        
+        from models import get_db_session, Panel, Inversor, Bateria, Ciudad, Parametro, Consecutivo
+        
+        session = get_db_session()
+        
+        try:
+            # Contar registros
+            paneles_count = session.query(Panel).count()
+            inversores_count = session.query(Inversor).count()
+            baterias_count = session.query(Bateria).count()
+            ciudades_count = session.query(Ciudad).count()
+            parametros_count = session.query(Parametro).count()
+            consecutivo_count = session.query(Consecutivo).count()
+            
+            # Muestra de ciudades
+            ciudades_muestra = session.query(Ciudad).limit(10).all()
+            muestra_data = [
+                {
+                    "key": c.key,
+                    "nombre": c.nombre,
+                    "hsp": c.hsp
+                }
+                for c in ciudades_muestra
+            ]
+            
+            return {
+                "status": "success",
+                "conteos": {
+                    "paneles": paneles_count,
+                    "inversores": inversores_count,
+                    "baterias": baterias_count,
+                    "ciudades": ciudades_count,
+                    "parametros": parametros_count,
+                    "consecutivos": consecutivo_count
+                },
+                "muestra_ciudades": muestra_data,
+                "timestamp": now_colombia().isoformat()
+            }
+        finally:
+            session.close()
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN VERIFICACIÓN: {error_trace}")
+        raise HTTPException(500, f"Error verificando PostgreSQL: {str(e)}")
+
 @app.get("/debug/equipos-file", tags=["Debug"])
 def debug_equipos_file():
     """Endpoint temporal para diagnosticar problema con equipos.json"""
