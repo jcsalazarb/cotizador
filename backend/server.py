@@ -1918,7 +1918,10 @@ def equipos_publicos(sistemaElectrico: str = None):
                 "id": p.id,
                 "nombre": p.nombre,
                 "capacidad": p.capacidad,
-                "descripcion": p.descripcion
+                "descripcion": p.descripcion,
+                "eficienciaPanel": p.eficienciaPanel if hasattr(p, 'eficienciaPanel') else 0.90,
+                "area": p.area if hasattr(p, 'area') else 2.0,
+                "default": p.default if hasattr(p, 'default') else False
             }
             for p in paneles_db
         ]
@@ -1948,7 +1951,12 @@ def equipos_publicos(sistemaElectrico: str = None):
                 "nombre": i.nombre,
                 "capacidad": i.capacidad,
                 "descripcion": i.descripcion,
-                "tipo_sistema": i.sistemaElectrico
+                "tipo_sistema": i.sistemaElectrico,
+                "eficiencia": i.eficiencia if hasattr(i, 'eficiencia') else 0.96,
+                "tipo": i.tipo if hasattr(i, 'tipo') else "STRING",
+                "paneles_por_inversor": i.paneles_por_inversor if hasattr(i, 'paneles_por_inversor') else 0,
+                "sobredimensionamiento": i.sobredimensionamiento if hasattr(i, 'sobredimensionamiento') else 0.40,
+                "default": i.default if hasattr(i, 'default') else False
             }
             for i in inversores_db
         ]
@@ -1960,7 +1968,8 @@ def equipos_publicos(sistemaElectrico: str = None):
                 "id": b.id,
                 "nombre": b.nombre,
                 "capacidad": b.capacidad,
-                "descripcion": b.descripcion
+                "descripcion": b.descripcion,
+                "default": b.default if hasattr(b, 'default') else False
             }
             for b in baterias_db
         ]
