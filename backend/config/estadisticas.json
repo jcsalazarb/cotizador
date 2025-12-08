@@ -1,3 +1,14 @@
 {
-  "cotizaciones": []
+  "cotizaciones": [
+    {
+      "timestamp": "2025-12-05T11:36:36.255279-05:00",
+      "ciudad": "santa_marta",
+      "tipoSistemaFV": "ongrid",
+      "tipo_propiedad": "casa",
+      "legalizacion": "SI",
+      "seleccionManual": "NO",
+      "sistemaElectrico": "bifasico",
+      "porcentajeConsumodia": 70.0
+    }
+  ]
 }

@@ -349,7 +349,14 @@ def cargar_datos_desde_postgres():
         
         # Cargar ciudades
         ciudades_db = session.query(Ciudad).all()
-        ciudades = {c.key: {"hsp": c.hsp, "nombre": c.nombre} for c in ciudades_db}
+        ciudades = {
+            c.key: {
+                "hsp": c.hsp, 
+                "nombre": c.nombre,
+                "factorTemperatura": getattr(c, 'factorTemperatura', 0.90)  # Default 0.90 si no existe
+            } 
+            for c in ciudades_db
+        }
         
         # Cargar parámetros (reconstruir dict anidado)
         parametros_db = session.query(Parametro).all()
@@ -409,6 +416,9 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict, parametros: d
     ciudad_data = ciudades.get(ciudad_key, ciudades.get("default", 4.5))
     hsp_value = ciudad_data.get("hsp") if isinstance(ciudad_data, dict) else ciudad_data
     hsp = float(data.get("hspCalculado") or hsp_value)
+    
+    # NUEVO: Factor de temperatura por ciudad
+    factorTemperatura = ciudad_data.get("factorTemperatura", 0.90) if isinstance(ciudad_data, dict) else 0.90
 
     panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
@@ -422,8 +432,9 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict, parametros: d
     eficiencia_inversor = inversor.get("eficiencia", parametros_sistema.get("eficiencia_inversor_default", 1.0))
     
     # CÁLCULO INICIAL de paneles basado en consumo objetivo
+    # Fórmula: energiaPanelDia = (capacidad * eficiencia_panel * hsp * factorTemperatura) / 1000
     consumoDiario = consumoObjetivo / 30
-    energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp) / 1000
+    energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp * factorTemperatura) / 1000
     numeroPaneles_inicial = int(ceil((consumoDiario * 1.2) / energiaPanelDia))
     
     # PUNTO 5: Lógica de inversores MICRO vs STRING
@@ -652,6 +663,9 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     ciudad_data = ciudades.get(ciudad_key, ciudades.get("default", 4.5))
     hsp_value = ciudad_data.get("hsp") if isinstance(ciudad_data, dict) else ciudad_data
     hsp = float(data.get("hspCalculado") or hsp_value)
+    
+    # NUEVO: Factor de temperatura por ciudad
+    factorTemperatura = ciudad_data.get("factorTemperatura", 0.90) if isinstance(ciudad_data, dict) else 0.90
 
     panel = next((x for x in equipos["paneles"] if x["id"] == data["panel"]), None)
     inversor = next((x for x in equipos["inversores"] if x["id"] == data["inversor"]), None)
@@ -666,7 +680,7 @@ def calcular_segunda_opcion(data: dict, equipos: dict, ciudades: dict, areaDispo
     # Aplicar lógica MICRO/STRING con restricción de área
     eficiencia_panel = panel.get("eficienciaPanel", parametros_sistema.get("eficiencia_panel_default", 1.0))
     eficiencia_inversor = inversor.get("eficiencia", parametros_sistema.get("eficiencia_inversor_default", 1.0))
-    energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp) / 1000
+    energiaPanelDia = (panel["capacidad"] * eficiencia_panel * hsp * factorTemperatura) / 1000
     
     tipo_inversor = inversor.get("tipo", "STRING")
     
@@ -2846,6 +2860,121 @@ def diagnostico_postgres():
         resultado["status"] = "error"
     
     return JSONResponse(resultado)
+
+
+@app.put("/api/admin/ciudades/migrar-temperatura", tags=["Admin"])
+def migrar_factor_temperatura_endpoint(credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    Endpoint admin para agregar columna factorTemperatura a la tabla ciudades.
+    Requiere autenticación HTTP Basic.
+    
+    Valores de referencia:
+    - Costa Caribe: 0.85 (alta temperatura)
+    - Interior/Valles: 0.90 (temperatura moderada)  
+    - Alta Montaña: 0.92 (baja temperatura)
+    """
+    # Verificar credenciales
+    auth_admin(credentials)
+    
+    if not POSTGRES_AVAILABLE:
+        raise HTTPException(status_code=500, detail="PostgreSQL no disponible")
+    
+    # Valores de factorTemperatura por ciudad
+    FACTORES_TEMPERATURA = {
+        # Costa Caribe - Alta temperatura = menor factor (0.85)
+        "santa_marta": 0.85, "barranquilla": 0.85, "cartagena": 0.85,
+        "valledupar": 0.86, "riohacha": 0.85, "sincelejo": 0.86,
+        "monteria": 0.86, "magangue": 0.85, "cienaga": 0.85,
+        "fundacion": 0.85, "aracataca": 0.85, "zona_bananera": 0.85,
+        "pueblo_viejo": 0.85, "algarrobo": 0.85, "albania_guajira": 0.84,
+        "maicao": 0.84, "uribia": 0.84,
+        
+        # Interior/Valles - Temperatura moderada (0.88-0.90)
+        "medellin": 0.89, "cali": 0.88, "bucaramanga": 0.89,
+        "cucuta": 0.88, "pereira": 0.89, "manizales": 0.91,
+        "armenia": 0.89, "ibague": 0.88, "neiva": 0.87,
+        "villavicencio": 0.88, "yopal": 0.87, "florencia": 0.87,
+        
+        # Alta Montaña - Baja temperatura = mayor factor (0.92-0.93)
+        "bogota": 0.92, "tunja": 0.92, "pasto": 0.93,
+        "popayan": 0.91, "duitama": 0.92, "sogamoso": 0.92,
+        "zipaquira": 0.92, "chia": 0.92, "facatativa": 0.92,
+    }
+    
+    session = get_db_session()
+    try:
+        from sqlalchemy import text
+        
+        # 1. Verificar si la columna ya existe
+        result = session.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='ciudades' AND column_name='factorTemperatura'
+        """))
+        
+        columna_existe = result.fetchone() is not None
+        
+        if not columna_existe:
+            # 2. Agregar la columna con valor por defecto 0.90
+            session.execute(text("""
+                ALTER TABLE ciudades 
+                ADD COLUMN "factorTemperatura" DOUBLE PRECISION DEFAULT 0.90
+            """))
+            session.commit()
+        
+        # 3. Actualizar valores específicos por ciudad
+        ciudades_actualizadas = 0
+        for ciudad_key, factor in FACTORES_TEMPERATURA.items():
+            result = session.execute(
+                text("""
+                    UPDATE ciudades 
+                    SET "factorTemperatura" = :factor 
+                    WHERE key = :ciudad_key
+                """),
+                {"factor": factor, "ciudad_key": ciudad_key}
+            )
+            if result.rowcount > 0:
+                ciudades_actualizadas += 1
+        
+        session.commit()
+        
+        # 4. Obtener estadísticas
+        result = session.execute(text("""
+            SELECT COUNT(*) as total,
+                   AVG("factorTemperatura") as promedio,
+                   MIN("factorTemperatura") as minimo,
+                   MAX("factorTemperatura") as maximo
+            FROM ciudades
+        """))
+        stats = result.fetchone()
+        
+        return {
+            "status": "success",
+            "columna_ya_existia": columna_existe,
+            "total_ciudades": stats[0],
+            "ciudades_actualizadas": ciudades_actualizadas,
+            "estadisticas": {
+                "promedio": round(stats[1], 3),
+                "minimo": round(stats[2], 3),
+                "maximo": round(stats[3], 3)
+            },
+            "mensaje": "Migración completada exitosamente. Las ciudades no listadas usan factor default 0.90"
+        }
+        
+    except Exception as e:
+        session.rollback()
+        import traceback
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": str(e),
+                "type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }
+        )
+    finally:
+        session.close()
+
 
 @app.post("/api/cotizar", tags=["Cotización"])
 async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_limit)):

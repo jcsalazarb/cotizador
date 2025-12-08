@@ -1,0 +1,20 @@
+{
+  "nombre": "Test Usuario - Revision Email",
+  "telefono": "3001234567",
+  "email": "jcsalazarb@gmail.com",
+  "ciudad": "barranquilla",
+  "identificacion": "123456789",
+  "direccion": "Calle 72 #54-32",
+  "consumoMensual": 450,
+  "valorFactura": 350000,
+  "nic": "NIC123456789",
+  "valorKwh": 650,
+  "tipoVivienda": "casa",
+  "areaDisponible": 80,
+  "numeroPisos": "2",
+  "sistemaElectrico": "monofasico",
+  "porcentajeConsumodia": "70",
+  "tipoSistemaFV": "ongrid",
+  "legalizacion": "SI",
+  "seleccionManual": "NO"
+}

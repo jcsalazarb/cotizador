@@ -70,6 +70,7 @@ class Ciudad(Base):
     key = Column(String(100), unique=True, nullable=False)  # "santa_marta", "barranquilla"
     nombre = Column(String(200), nullable=False)  # "Santa Marta", "Barranquilla"
     hsp = Column(Float, nullable=False)  # Horas Solar Pico
+    factorTemperatura = Column(Float, default=0.90)  # Factor de corrección por temperatura (0.85-0.95)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

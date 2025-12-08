@@ -64,7 +64,6 @@ Tester prueba: https://web-production-3749b.up.railway.app/test-select.html
 Admin pruebas: https://web-production-3749b.up.railway.app/admin
 
 COMMITS DE LOS DOS ULTIMOS DIAS
-
 VIERNES 28 NOVIEMBRE 2025 (HOY - 14 commits)
 59dd956 | 22:01 | Fix: Mejorar visibilidad select con important y test de diagnostico
 04dc91e | 18:39 | Fix: Mejorar visibilidad de opciones en dropdowns (select)
