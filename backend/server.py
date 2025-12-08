@@ -352,7 +352,7 @@ def cargar_datos_desde_postgres():
             "tipo": i.tipo,
             "paneles_por_inversor": i.paneles_por_inversor,
             "sobredimensionamiento": i.sobredimensionamiento,
-            "sistemaElectrico": i.sistema_electrico,
+            "sistemaElectrico": i.sistemaElectrico,  # Usar camelCase como en el modelo
             "default": i.default
         } for i in inversores_db]
         print(f"✅ [DEBUG] Inversores convertidos a dict: {len(inversores)} items")
