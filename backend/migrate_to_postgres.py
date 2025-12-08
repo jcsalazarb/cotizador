@@ -98,8 +98,6 @@ def migrate():
                 capacidad=bat_data["capacidad"],
                 precio=bat_data["precio"],
                 descripcion=bat_data["descripcion"],
-                voltaje=bat_data.get("voltaje", 48),
-                tecnologia=bat_data.get("tecnologia", "Litio"),
                 default=bat_data.get("default", False)
             )
             session.merge(bateria)
