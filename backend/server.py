@@ -22,6 +22,14 @@ from pptx import Presentation
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Pt
 
+# Importar modelos de SQLAlchemy
+try:
+    from models import get_db_session, Panel, Inversor, Bateria, Ciudad, Parametro, Consecutivo, Estadistica
+    POSTGRES_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Warning: No se pudieron importar modelos de PostgreSQL: {e}")
+    POSTGRES_AVAILABLE = False
+
 load_dotenv()
 
 # ========================================
@@ -297,7 +305,8 @@ def cargar_datos_desde_postgres():
     Carga equipos, ciudades y parámetros desde PostgreSQL.
     Retorna estructura compatible con formato JSON legacy.
     """
-    from models import get_db_session, Panel, Inversor, Bateria, Ciudad, Parametro
+    if not POSTGRES_AVAILABLE:
+        raise RuntimeError("PostgreSQL no está disponible - falló la importación de models")
     
     session = get_db_session()
     try:
