@@ -3141,6 +3141,70 @@ def migrar_factor_temperatura_endpoint(credentials: HTTPBasicCredentials = Depen
     finally:
         session.close()
 
+@app.post("/api/admin/equipos/fix-eficiencias", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def fix_eficiencias_equipos():
+    """
+    🔧 Endpoint de mantenimiento: Corregir eficiencias en formato porcentual
+    Convierte valores >1.0 dividiéndolos entre 100 (ej: 100.0 → 1.0, 98.0 → 0.98)
+    """
+    from models import get_db_session, Panel, Inversor
+    
+    session = get_db_session()
+    try:
+        corregidas_paneles = []
+        corregidas_inversores = []
+        
+        # PANELES: Corregir eficienciaPanel
+        paneles_db = session.query(Panel).all()
+        for p in paneles_db:
+            if hasattr(p, 'eficienciaPanel') and p.eficienciaPanel is not None:
+                valor_original = p.eficienciaPanel
+                
+                if valor_original > 1.0:
+                    # Corregir: dividir entre 100
+                    p.eficienciaPanel = valor_original / 100
+                    corregidas_paneles.append({
+                        "id": p.id,
+                        "nombre": p.nombre,
+                        "anterior": valor_original,
+                        "nuevo": p.eficienciaPanel
+                    })
+                    print(f"✅ Panel {p.id}: eficienciaPanel {valor_original} → {p.eficienciaPanel}")
+        
+        # INVERSORES: Corregir eficiencia
+        inversores_db = session.query(Inversor).all()
+        for i in inversores_db:
+            if hasattr(i, 'eficiencia') and i.eficiencia is not None:
+                valor_original = i.eficiencia
+                
+                if valor_original > 1.0:
+                    # Corregir: dividir entre 100
+                    i.eficiencia = valor_original / 100
+                    corregidas_inversores.append({
+                        "id": i.id,
+                        "nombre": i.nombre,
+                        "anterior": valor_original,
+                        "nuevo": i.eficiencia
+                    })
+                    print(f"✅ Inversor {i.id}: eficiencia {valor_original} → {i.eficiencia}")
+        
+        session.commit()
+        
+        total_corregidas = len(corregidas_paneles) + len(corregidas_inversores)
+        
+        return {
+            "status": "success",
+            "mensaje": f"✅ Proceso completado. {total_corregidas} equipos corregidos",
+            "paneles_corregidos": corregidas_paneles,
+            "inversores_corregidos": corregidas_inversores
+        }
+    except Exception as e:
+        session.rollback()
+        print(f"❌ Error al corregir eficiencias: {e}")
+        raise HTTPException(500, f"Error: {e}")
+    finally:
+        session.close()
+
 
 @app.post("/api/cotizar", tags=["Cotización"])
 async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_limit)):
