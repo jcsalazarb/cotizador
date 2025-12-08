@@ -1916,13 +1916,34 @@ def get_parametros():
 @app.put("/api/admin/parametros", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def update_parametros(parametros: dict):
     """Actualizar parámetros de costos y fiscales"""
-    parametros_path = os.path.join(APP_DIR, "config", "parametros.json")
+    from models import get_db_session, Parametro
+    
+    session = get_db_session()
     try:
-        with open(parametros_path, "w", encoding="utf-8") as f:
-            json.dump(parametros, f, ensure_ascii=False, indent=2)
-        return {"status": "success", "mensaje": "Parámetros actualizados exitosamente"}
+        # Actualizar cada sección de parámetros
+        for seccion, data in parametros.items():
+            # Buscar si existe
+            param = session.query(Parametro).filter_by(seccion=seccion).first()
+            
+            if param:
+                # Actualizar existente
+                param.data = data
+            else:
+                # Crear nuevo
+                param = Parametro(seccion=seccion, data=data)
+                session.add(param)
+        
+        session.commit()
+        return {
+            "status": "success",
+            "mensaje": "Parámetros actualizados exitosamente en PostgreSQL",
+            "secciones_actualizadas": list(parametros.keys())
+        }
     except Exception as e:
+        session.rollback()
         raise HTTPException(500, f"Error al actualizar parámetros: {e}")
+    finally:
+        session.close()
 
 # --- GESTIÓN DE PANELES ---
 @app.get("/api/admin/paneles", tags=["Admin"], dependencies=[Depends(auth_admin)])
@@ -1953,85 +1974,115 @@ def get_paneles_admin():
 @app.post("/api/admin/paneles", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def create_panel(panel: dict):
     """Crear nuevo panel con ID auto-generado"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Panel
     
-    # Auto-generar ID: encontrar el próximo disponible
-    existing_ids = [p["id"] for p in data["paneles"]]
-    counter = 1
-    while f"panel{counter}" in existing_ids:
-        counter += 1
-    panel["id"] = f"panel{counter}"
-    
-    # Validar campos requeridos (sin ID)
-    required = ["nombre", "capacidad", "precio", "descripcion"]
-    if not all(k in panel for k in required):
-        raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
-    
-    # Agregar eficienciaPanel por defecto si no existe (100%)
-    if "eficienciaPanel" not in panel:
-        panel["eficienciaPanel"] = 1.0
-    
-    data["paneles"].append(panel)
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()  # Forzar escritura al disco
-            os.fsync(f.fileno())  # Sincronizar con el sistema de archivos
+        # Validar campos requeridos
+        required = ["nombre", "capacidad", "precio", "descripcion"]
+        if not all(k in panel for k in required):
+            raise HTTPException(400, f"Campos requeridos: {', '.join(required)}")
         
-        print(f"✅ Panel {panel['id']} creado y guardado en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Panel {panel['id']} creado exitosamente", "id": panel["id"]}
+        # Auto-generar ID: encontrar el próximo disponible
+        existing_ids = [p.id for p in session.query(Panel.id).all()]
+        counter = 1
+        while f"panel{counter}" in existing_ids:
+            counter += 1
+        panel_id = f"panel{counter}"
+        
+        # Crear panel
+        new_panel = Panel(
+            id=panel_id,
+            nombre=panel["nombre"],
+            capacidad=panel["capacidad"],
+            precio=panel["precio"],
+            descripcion=panel["descripcion"],
+            eficienciaPanel=panel.get("eficienciaPanel", 0.90),
+            area=panel.get("area", 2.0),
+            default=panel.get("default", False)
+        )
+        
+        session.add(new_panel)
+        session.commit()
+        
+        print(f"✅ Panel {panel_id} creado en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Panel {panel_id} creado exitosamente",
+            "id": panel_id
+        }
     except Exception as e:
-        print(f"❌ Error al guardar panel: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        session.rollback()
+        print(f"❌ Error al crear panel: {e}")
+        raise HTTPException(500, f"Error al crear panel: {e}")
+    finally:
+        session.close()
 
 @app.put("/api/admin/paneles/{panel_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def update_panel(panel_id: str, panel: dict):
     """Actualizar panel existente"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Panel
     
-    idx = next((i for i, p in enumerate(data["paneles"]) if p["id"] == panel_id), None)
-    if idx is None:
-        raise HTTPException(404, f"Panel {panel_id} no encontrado")
-    
-    # Mantener el ID original
-    panel["id"] = panel_id
-    data["paneles"][idx] = panel
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Buscar panel
+        panel_db = session.query(Panel).filter_by(id=panel_id).first()
+        if not panel_db:
+            raise HTTPException(404, f"Panel {panel_id} no encontrado")
         
-        print(f"✅ Panel {panel_id} actualizado en {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Panel {panel_id} actualizado exitosamente"}
+        # Actualizar campos
+        panel_db.nombre = panel.get("nombre", panel_db.nombre)
+        panel_db.capacidad = panel.get("capacidad", panel_db.capacidad)
+        panel_db.precio = panel.get("precio", panel_db.precio)
+        panel_db.descripcion = panel.get("descripcion", panel_db.descripcion)
+        panel_db.eficienciaPanel = panel.get("eficienciaPanel", panel_db.eficienciaPanel)
+        panel_db.area = panel.get("area", panel_db.area)
+        panel_db.default = panel.get("default", panel_db.default)
+        
+        session.commit()
+        
+        print(f"✅ Panel {panel_id} actualizado en PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Panel {panel_id} actualizado exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al actualizar panel: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al actualizar: {e}")
+    finally:
+        session.close()
 
 @app.delete("/api/admin/paneles/{panel_id}", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def delete_panel(panel_id: str):
     """Eliminar panel"""
-    data = load_json(EQUIPOS_FILE)
+    from models import get_db_session, Panel
     
-    original_length = len(data["paneles"])
-    data["paneles"] = [p for p in data["paneles"] if p["id"] != panel_id]
-    
-    if len(data["paneles"]) == original_length:
-        raise HTTPException(404, f"Panel {panel_id} no encontrado")
-    
+    session = get_db_session()
     try:
-        with open(EQUIPOS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
+        # Buscar panel
+        panel_db = session.query(Panel).filter_by(id=panel_id).first()
+        if not panel_db:
+            raise HTTPException(404, f"Panel {panel_id} no encontrado")
         
-        print(f"✅ Panel {panel_id} eliminado de {EQUIPOS_FILE}")
-        return {"status": "success", "mensaje": f"Panel {panel_id} eliminado exitosamente"}
+        session.delete(panel_db)
+        session.commit()
+        
+        print(f"✅ Panel {panel_id} eliminado de PostgreSQL")
+        return {
+            "status": "success",
+            "mensaje": f"Panel {panel_id} eliminado exitosamente"
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        session.rollback()
         print(f"❌ Error al eliminar panel: {e}")
-        raise HTTPException(500, f"Error al guardar: {e}")
+        raise HTTPException(500, f"Error al eliminar: {e}")
+    finally:
+        session.close()
 
 # --- GESTIÓN DE INVERSORES ---
 @app.get("/api/admin/inversores", tags=["Admin"], dependencies=[Depends(auth_admin)])
