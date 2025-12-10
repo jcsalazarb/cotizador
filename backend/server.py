@@ -1150,7 +1150,10 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
         "{{NPISOS}}": str(req.get('numeroPisos', '1')),
         "{{HSPC}}": f"{req.get('hspCalculado') if req.get('hspCalculado') is not None else ''}",
         "{{AREA}}": f"{req.get('areaDisponible', '')}",
-        "{{PCTDIA}}": f"{req.get('porcentajeConsumodia', '')}%"
+        "{{PCTDIA}}": f"{req.get('porcentajeConsumodia', '')}%",
+        # Placeholders de legalización
+        "{{NO_LEGALIZA}}": "Gestión de legalización ante operador del sistema instalado" if req.get("legalizacion", "NO") == "NO" else "",
+        "{{SI_LEGALIZA}}": "Gestión de legalización ante operador de red, contador, documentos eléctricos y acompañamiento técnico en las 3 visitas." if req.get("legalizacion", "NO") == "SI" else ""
     }
 
 def replace_text_in_shape(shape, mapping: dict):
