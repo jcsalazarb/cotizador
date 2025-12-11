@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import socket
 import tempfile
 import shutil
 import subprocess
@@ -1433,7 +1434,7 @@ Expertos en Energía Solar Fotovoltaica
         destinatarios.append(EMAIL_NASSA)
 
     # Intentar primero puerto 465 (SSL) y luego 587 (STARTTLS)
-    puertos_intentar = [465, SMTP_PORT] if SMTP_PORT != 465 else [465]
+    puertos_intentar = [SMTP_PORT, 465, 587] if SMTP_PORT not in [465, 587] else ([SMTP_PORT] if SMTP_PORT == 587 else [465, 587])
     
     print(f"\n📨 Enviando email SMTP...")
     print(f"   From: {EMAIL_FROM}")
@@ -1441,28 +1442,50 @@ Expertos en Energía Solar Fotovoltaica
     if EMAIL_NASSA and EMAIL_NASSA != destino:
         print(f"   CC: {EMAIL_NASSA}")
     print(f"   Attachments: {len(pdf_paths)}")
+    print(f"   Puertos a intentar: {puertos_intentar}")
     
+    ultimo_error = None
     for puerto in puertos_intentar:
         try:
+            print(f"\n⏳ Intentando puerto {puerto}...")
             if puerto == 465:
                 # Usar SMTP_SSL para puerto 465
-                with smtplib.SMTP_SSL(SMTP_HOST, puerto, timeout=60) as server:
+                print(f"   Método: SMTP_SSL (conexión cifrada directa)")
+                with smtplib.SMTP_SSL(SMTP_HOST, puerto, timeout=15) as server:
+                    print(f"   ✓ Conectado a {SMTP_HOST}:{puerto}")
                     server.login(SMTP_USER, SMTP_PASS)
+                    print(f"   ✓ Login exitoso")
                     server.send_message(msg)
+                    print(f"   ✓ Mensaje enviado")
                 print(f"✅ Email enviado via SMTP puerto {puerto} (SSL) a {destino}")
                 return  # Salir si tuvo éxito
             else:
                 # Usar SMTP con STARTTLS para puerto 587
-                with smtplib.SMTP(SMTP_HOST, puerto, timeout=60) as server:
+                print(f"   Método: SMTP + STARTTLS")
+                with smtplib.SMTP(SMTP_HOST, puerto, timeout=15) as server:
+                    print(f"   ✓ Conectado a {SMTP_HOST}:{puerto}")
                     server.starttls()
+                    print(f"   ✓ STARTTLS activado")
                     server.login(SMTP_USER, SMTP_PASS)
+                    print(f"   ✓ Login exitoso")
                     server.send_message(msg)
+                    print(f"   ✓ Mensaje enviado")
                 print(f"✅ Email enviado via SMTP puerto {puerto} (STARTTLS) a {destino}")
                 return  # Salir si tuvo éxito
+        except socket.timeout:
+            ultimo_error = f"Timeout ({15}s) conectando a {SMTP_HOST}:{puerto}"
+            print(f"⚠️ {ultimo_error}")
+        except smtplib.SMTPAuthenticationError as e:
+            ultimo_error = f"Error de autenticación: {str(e)}"
+            print(f"❌ {ultimo_error}")
+            # Si falla auth, no intentar otros puertos (credenciales incorrectas)
+            raise Exception(f"❌ Credenciales SMTP incorrectas: {ultimo_error}")
         except Exception as e:
-            print(f"⚠️ Fallo puerto {puerto}: {str(e)}")
-            if puerto == puertos_intentar[-1]:
-                raise Exception(f"❌ Error SMTP en todos los puertos intentados: {str(e)}")
+            ultimo_error = f"Error en puerto {puerto}: {str(e)}"
+            print(f"⚠️ {ultimo_error}")
+    
+    # Si llegamos aquí, ningún puerto funcionó
+    raise Exception(f"❌ Error SMTP: No se pudo enviar email en ningún puerto. Último error: {ultimo_error}")
 
 def enviar_email_original(destino: str, pdf_path: str, resultado: dict, pptx_path: Optional[str] = None):
     """Enviar email solo con PDF adjunto"""
