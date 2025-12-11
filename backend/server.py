@@ -1341,6 +1341,130 @@ def fill_template_and_convert(req: dict, resultado: dict, opcion: str = "", temp
 # 📧 ENVÍO DE EMAIL
 # ========================================
 def enviar_email(destino: str, pdf_path: str, resultado: dict, pptx_path: Optional[str] = None):
+    """Enviar email solo con PDF adjunto (compatibilidad antigua)"""
+    return enviar_email_smtp([pdf_path], destino, resultado, 1)
+
+def enviar_email_smtp(pdf_paths: list, destino: str, resultado: dict, num_opciones: int = 1):
+    """
+    Enviar email usando SMTP con soporte para múltiples PDFs
+    pdf_paths: lista de rutas a PDFs (uno o más)
+    num_opciones: 1 o 2 opciones de cotización
+    """
+    SMTP_HOST = os.getenv("SMTP_HOST")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER = os.getenv("SMTP_USER")
+    SMTP_PASS = os.getenv("SMTP_PASS")
+    EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
+    EMAIL_NASSA = os.getenv("EMAIL_NASSA", EMAIL_FROM)
+    
+    print(f"\n📧 CONFIGURACIÓN SMTP:")
+    print(f"   SMTP_HOST: {SMTP_HOST}")
+    print(f"   SMTP_PORT: {SMTP_PORT}")
+    print(f"   EMAIL_FROM: {EMAIL_FROM}")
+    print(f"   EMAIL_NASSA: {EMAIL_NASSA}")
+
+    if not all([SMTP_HOST, SMTP_USER, SMTP_PASS, destino]):
+        raise RuntimeError("❌ Configuración SMTP incompleta")
+
+    # Mensaje personalizado según número de opciones
+    mensaje_opciones = "Le presentamos 2 propuestas para su análisis" if num_opciones == 2 else "Hemos preparado una propuesta personalizada para tu proyecto solar"
+
+    msg = EmailMessage()
+    msg["Subject"] = f"Cotización NASSA Solar - {resultado['cotizacionId']}"
+    msg["From"] = EMAIL_FROM
+    msg["To"] = destino
+    if EMAIL_NASSA and EMAIL_NASSA != destino:
+        msg["Cc"] = EMAIL_NASSA
+
+    cuerpo = f"""
+Estimado/a {resultado.get('nombre', 'cliente')},
+
+{mensaje_opciones}
+
+📊 RESUMEN DE TU INVERSIÓN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 ID Cotización:      {resultado['cotizacionId']}
+💰 Inversión Total:    ${resultado['valorTotalSistema']:,.0f} COP
+💡 Ahorro Mensual:     ${resultado['ahorroMensualEnergia']:,.0f} COP
+⏱️  Tiempo de Retorno:  {resultado['tiempoRetorno']} años
+⚡ Capacidad Instalada: {resultado['capacidadInstalada']} kW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌟 BENEFICIOS DE TU SISTEMA SOLAR:
+✓ Ahorro inmediato en tu factura de energía
+✓ Protección contra aumentos de tarifas
+✓ Valorización de tu propiedad hasta 20%
+✓ Contribución ambiental reduciendo CO₂
+
+{'📎 Tus cotizaciones detalladas están adjuntas en formato PDF.' if num_opciones == 2 else '📎 Tu cotización detallada está adjunta en formato PDF.'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💬 CONTÁCTANOS:
+📞 Teléfono: (057) 313 690 9723
+🌐 Web: www.nassasolar.com
+📧 Email: comercial@nassasolar.com
+
+💬 WhatsApp: https://wa.me/573136909723?text=Hola,%20me%20interesa%20la%20cotización%20{resultado['cotizacionId']}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Quedamos atentos a tus consultas.
+Esta cotización tiene una validez de 30 días.
+
+Saludos cordiales,
+Equipo NASSA SOLAR
+Expertos en Energía Solar Fotovoltaica
+"""
+    msg.set_content(cuerpo.strip())
+    
+    # Adjuntar todos los PDFs
+    for i, pdf_path in enumerate(pdf_paths, 1):
+        with open(pdf_path, "rb") as f:
+            # Nombre del archivo según número de opciones
+            if num_opciones == 1:
+                filename = f"Cotizacion_{resultado['cotizacionId']}.pdf"
+            else:
+                filename = f"Cotizacion_{resultado['cotizacionId']}_Opcion{i}.pdf"
+            
+            msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=filename)
+
+    # Construir lista de destinatarios
+    destinatarios = [destino]
+    if EMAIL_NASSA and EMAIL_NASSA != destino:
+        destinatarios.append(EMAIL_NASSA)
+
+    # Intentar primero puerto 465 (SSL) y luego 587 (STARTTLS)
+    puertos_intentar = [465, SMTP_PORT] if SMTP_PORT != 465 else [465]
+    
+    print(f"\n📨 Enviando email SMTP...")
+    print(f"   From: {EMAIL_FROM}")
+    print(f"   To: {destino}")
+    if EMAIL_NASSA and EMAIL_NASSA != destino:
+        print(f"   CC: {EMAIL_NASSA}")
+    print(f"   Attachments: {len(pdf_paths)}")
+    
+    for puerto in puertos_intentar:
+        try:
+            if puerto == 465:
+                # Usar SMTP_SSL para puerto 465
+                with smtplib.SMTP_SSL(SMTP_HOST, puerto, timeout=60) as server:
+                    server.login(SMTP_USER, SMTP_PASS)
+                    server.send_message(msg)
+                print(f"✅ Email enviado via SMTP puerto {puerto} (SSL) a {destino}")
+                return  # Salir si tuvo éxito
+            else:
+                # Usar SMTP con STARTTLS para puerto 587
+                with smtplib.SMTP(SMTP_HOST, puerto, timeout=60) as server:
+                    server.starttls()
+                    server.login(SMTP_USER, SMTP_PASS)
+                    server.send_message(msg)
+                print(f"✅ Email enviado via SMTP puerto {puerto} (STARTTLS) a {destino}")
+                return  # Salir si tuvo éxito
+        except Exception as e:
+            print(f"⚠️ Fallo puerto {puerto}: {str(e)}")
+            if puerto == puertos_intentar[-1]:
+                raise Exception(f"❌ Error SMTP en todos los puertos intentados: {str(e)}")
+
+def enviar_email_original(destino: str, pdf_path: str, resultado: dict, pptx_path: Optional[str] = None):
     """Enviar email solo con PDF adjunto"""
     SMTP_HOST = os.getenv("SMTP_HOST")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -3482,9 +3606,11 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         
         print(f"\n📧 ENVIANDO EMAIL")
         print(f"   Total PDFs: {len(pdf_paths)}")
+        print(f"   Método: SMTP (PrivateEmail/Gmail)")
         
         try:
-            enviar_email_sendgrid(email_cliente, pdf_paths, resumen, num_opciones)
+            # Usar SMTP en lugar de SendGrid
+            enviar_email_smtp(pdf_paths, email_cliente, resumen, num_opciones)
             email_enviado = True
             print(f"✅ Email enviado exitosamente a {email_cliente}")
         except Exception as e:
