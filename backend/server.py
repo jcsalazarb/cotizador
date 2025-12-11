@@ -495,7 +495,7 @@ def calcular_cotizacion(data: dict, equipos: dict, ciudades: dict, parametros: d
         numeroInversores_raw = numeroPaneles_inicial / paneles_por_inversor
         decimal = numeroInversores_raw - int(numeroInversores_raw)
         
-        if decimal < 0.5:
+        if decimal < 0.49:
             numeroInversores = int(numeroInversores_raw)
         else:
             numeroInversores = int(numeroInversores_raw) + 1
@@ -1434,8 +1434,13 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
     EMAIL_FROM = os.getenv("EMAIL_FROM", "nassasolarprecotizacion@gmail.com")
     EMAIL_NASSA = os.getenv("EMAIL_NASSA", EMAIL_FROM)
     
+    print(f"\n📧 CONFIGURACIÓN SENDGRID:")
+    print(f"   API Key configurada: {'Sí' if SENDGRID_API_KEY else 'NO'}")
+    print(f"   EMAIL_FROM: {EMAIL_FROM}")
+    print(f"   EMAIL_NASSA: {EMAIL_NASSA}")
+    
     if not SENDGRID_API_KEY:
-        raise RuntimeError("SENDGRID_API_KEY no configurada en .env")
+        raise RuntimeError("❌ SENDGRID_API_KEY no configurada en variables de entorno")
     
     # Mensaje personalizado según número de opciones
     mensaje_opciones = "Le presentamos 2 propuestas para su análisis" if num_opciones == 2 else "Hemos preparado una propuesta personalizada para tu proyecto solar"
@@ -1650,11 +1655,24 @@ def enviar_email_sendgrid(destino: str, pdf_paths: list, resultado: dict, num_op
     
     # Enviar
     sg = SendGridAPIClient(SENDGRID_API_KEY)
+    
+    print(f"\n📨 Enviando email...")
+    print(f"   From: {EMAIL_FROM}")
+    print(f"   To: {destino}")
+    print(f"   CC: {EMAIL_NASSA}")
+    print(f"   Subject: Cotización NASSA Solar - {resultado['cotizacionId']}")
+    print(f"   Attachments: {len(attachments)}")
+    
     response = sg.send(message)
+    
+    print(f"\n📬 Respuesta SendGrid:")
+    print(f"   Status Code: {response.status_code}")
+    print(f"   Headers: {response.headers}")
     
     if response.status_code in [200, 201, 202]:
         print(f"✅ Email enviado vía SendGrid a {destino}")
     else:
+        print(f"❌ Error SendGrid: {response.status_code} - {response.body}")
         raise RuntimeError(f"SendGrid error: {response.status_code} - {response.body}")
 
 def enviar_email_inteligente(destino: str, pdf_path: str, resultado: dict, pptx_path: Optional[str] = None):
