@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM - Panel Administrativo - NASSA Solar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .stat-card {
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="bg-blue-600 text-white p-6 rounded-lg shadow-lg mb-8">
+            <h1 class="text-3xl font-bold">📊 Panel CRM - NASSA Solar</h1>
+            <p class="mt-2">Sistema de Gestión de Cotizaciones</p>
+            <div class="mt-4 text-sm">
+                <a href="/" class="text-white hover:underline">← Volver al cotizador</a>
+                <span class="mx-2">|</span>
+                <a href="/admin" class="text-white hover:underline">Panel Admin</a>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="flex border-b overflow-x-auto">
+                <button onclick="cambiarTab('dashboard')" id="tab-dashboard" class="px-6 py-3 font-semibold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap">
+                    📊 Dashboard
+                </button>
+                <button onclick="cambiarTab('buscar')" id="tab-buscar" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600 whitespace-nowrap">
+                    🔍 Buscar
+                </button>
+                <button onclick="cambiarTab('reportes')" id="tab-reportes" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600 whitespace-nowrap">
+                    📈 Reportes
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="content-dashboard" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Stat Cards -->
+                <div class="stat-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Total Cotizaciones</p>
+                            <p id="stat-total" class="text-3xl font-bold text-blue-600">-</p>
+                        </div>
+                        <div class="text-blue-600 text-4xl">📝</div>
+                    </div>
+                </div>
+
+                <div class="stat-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Este Mes</p>
+                            <p id="stat-mes" class="text-3xl font-bold text-green-600">-</p>
+                        </div>
+                        <div class="text-green-600 text-4xl">📅</div>
+                    </div>
+                </div>
+
+                <div class="stat-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Emails Enviados</p>
+                            <p id="stat-emails" class="text-3xl font-bold text-purple-600">-</p>
+                        </div>
+                        <div class="text-purple-600 text-4xl">✉️</div>
+                    </div>
+                </div>
+
+                <div class="stat-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Tasa Conversión</p>
+                            <p id="stat-conversion" class="text-3xl font-bold text-orange-600">-</p>
+                        </div>
+                        <div class="text-orange-600 text-4xl">📈</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promedios -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h2 class="text-2xl font-bold mb-4">💰 Promedios del Sistema</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">Paneles</p>
+                        <p id="avg-paneles" class="text-2xl font-bold text-blue-600">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Capacidad (kW)</p>
+                        <p id="avg-capacidad" class="text-2xl font-bold text-green-600">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Valor Total</p>
+                        <p id="avg-valor" class="text-2xl font-bold text-purple-600">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Retorno (años)</p>
+                        <p id="avg-retorno" class="text-2xl font-bold text-orange-600">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Ahorro Mensual</p>
+                        <p id="avg-ahorro" class="text-2xl font-bold text-red-600">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Ciudades -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h2 class="text-2xl font-bold mb-4">🏙️ Top 5 Ciudades</h2>
+                <div id="top-ciudades" class="space-y-3">
+                    <p class="text-gray-500">Cargando...</p>
+                </div>
+            </div>
+
+            <!-- Equipos Populares -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">☀️ Paneles Populares</h2>
+                    <div id="top-paneles" class="space-y-2">
+                        <p class="text-gray-500">Cargando...</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">⚡ Inversores Populares</h2>
+                    <div id="top-inversores" class="space-y-2">
+                        <p class="text-gray-500">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cotizaciones Recientes -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold mb-4">🕒 Últimas 10 Cotizaciones</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">ID</th>
+                                <th class="px-4 py-2 text-left">Fecha</th>
+                                <th class="px-4 py-2 text-left">Cliente</th>
+                                <th class="px-4 py-2 text-left">Ciudad</th>
+                                <th class="px-4 py-2 text-left">Capacidad</th>
+                                <th class="px-4 py-2 text-left">Valor</th>
+                                <th class="px-4 py-2 text-left">Estado</th>
+                                <th class="px-4 py-2 text-left">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cotizaciones-recientes">
+                            <tr><td colspan="8" class="px-4 py-4 text-center text-gray-500">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buscar Tab -->
+        <div id="content-buscar" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+                <h2 class="text-2xl font-bold mb-4">🔍 Buscar Cotizaciones</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input type="text" id="buscar-nombre" placeholder="Nombre cliente" class="border rounded px-4 py-2">
+                    <input type="email" id="buscar-email" placeholder="Email" class="border rounded px-4 py-2">
+                    <input type="text" id="buscar-telefono" placeholder="Teléfono" class="border rounded px-4 py-2">
+                    <input type="text" id="buscar-ciudad" placeholder="Ciudad" class="border rounded px-4 py-2">
+                    <input type="date" id="buscar-fecha-desde" class="border rounded px-4 py-2">
+                    <input type="date" id="buscar-fecha-hasta" class="border rounded px-4 py-2">
+                    
+                    <select id="buscar-email-enviado" class="border rounded px-4 py-2">
+                        <option value="">Todos los estados</option>
+                        <option value="true">Email enviado</option>
+                        <option value="false">Email NO enviado</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="buscarCotizaciones()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                        Buscar
+                    </button>
+                    <button onclick="limpiarBusqueda()" class="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resultados Búsqueda -->
+            <div id="resultados-busqueda" class="bg-white p-6 rounded-lg shadow-lg hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Resultados</h2>
+                    <p id="total-resultados" class="text-gray-600"></p>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">ID</th>
+                                <th class="px-4 py-2 text-left">Fecha</th>
+                                <th class="px-4 py-2 text-left">Cliente</th>
+                                <th class="px-4 py-2 text-left">Email</th>
+                                <th class="px-4 py-2 text-left">Ciudad</th>
+                                <th class="px-4 py-2 text-left">Paneles</th>
+                                <th class="px-4 py-2 text-left">Valor</th>
+                                <th class="px-4 py-2 text-left">Email</th>
+                                <th class="px-4 py-2 text-left">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-busqueda">
+                            <!-- Dinámico -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                <div id="paginacion" class="mt-4 flex justify-center gap-2 flex-wrap">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Reportes Tab -->
+        <div id="content-reportes" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Top Ciudades Reporte -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">📊 Top 10 Ciudades</h2>
+                    <button onclick="cargarTopCiudades()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4">
+                        Cargar Reporte
+                    </button>
+                    <div id="reporte-ciudades" class="space-y-3">
+                        <p class="text-gray-500">Haz clic en "Cargar Reporte"</p>
+                    </div>
+                </div>
+
+                <!-- Estadísticas Generales -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">📈 Estadísticas Generales</h2>
+                    <button onclick="cargarEstadisticas()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-4">
+                        Cargar Estadísticas
+                    </button>
+                    <div id="estadisticas-generales">
+                        <p class="text-gray-500">Haz clic en "Cargar Estadísticas"</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exportar Datos -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold mb-4">💾 Exportar Datos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input type="date" id="export-fecha-desde" class="border rounded px-4 py-2">
+                    <input type="date" id="export-fecha-hasta" class="border rounded px-4 py-2">
+                    <select id="export-formato" class="border rounded px-4 py-2">
+                        <option value="csv">CSV (Excel)</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </div>
+                <button onclick="exportarDatos()" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">
+                    💾 Exportar
+                </button>
+                <p class="text-sm text-gray-600 mt-2">Deja las fechas vacías para exportar todo</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalle Cotización -->
+    <div id="modal-detalle" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Detalle de Cotización</h2>
+                    <button onclick="cerrarModal()" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+                </div>
+                <div id="detalle-contenido">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        const ADMIN_USER = 'admin';
+        const ADMIN_PASS = 'Lu1sF3rN@ss@';
+        
+        const authHeader = 'Basic ' + btoa(ADMIN_USER + ':' + ADMIN_PASS);
+
+        // Tab Management
+        function cambiarTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('content-' + tab).classList.remove('hidden');
+            
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.className = 'px-6 py-3 font-semibold text-gray-600 hover:text-blue-600 whitespace-nowrap';
+            });
+            document.getElementById('tab-' + tab).className = 'px-6 py-3 font-semibold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap';
+            
+            if (tab === 'dashboard') {
+                cargarDashboard();
+            }
+        }
+
+        // Cargar Dashboard
+        async function cargarDashboard() {
+            try {
+                const response = await fetch(API_URL + '/admin/dashboard', {
+                    headers: { 'Authorization': authHeader }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Stats principales
+                document.getElementById('stat-total').textContent = data.resumen.total_cotizaciones;
+                document.getElementById('stat-mes').textContent = data.resumen.cotizaciones_mes;
+                document.getElementById('stat-emails').textContent = data.resumen.emails_enviados;
+                document.getElementById('stat-conversion').textContent = data.resumen.tasa_conversion + '%';
+                
+                // Promedios
+                document.getElementById('avg-paneles').textContent = data.promedios.paneles;
+                document.getElementById('avg-capacidad').textContent = data.promedios.capacidad_kw + ' kW';
+                document.getElementById('avg-valor').textContent = formatCurrency(data.promedios.valor_total);
+                document.getElementById('avg-retorno').textContent = data.promedios.tiempo_retorno_anos + ' años';
+                document.getElementById('avg-ahorro').textContent = formatCurrency(data.promedios.ahorro_mensual);
+                
+                // Top ciudades
+                const ciudadesHTML = data.top_ciudades.map((c, i) => `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <span class="font-semibold">${i + 1}. ${c.ciudad}</span>
+                        <span class="text-blue-600 font-bold">${c.count} cotizaciones</span>
+                    </div>
+                `).join('');
+                document.getElementById('top-ciudades').innerHTML = ciudadesHTML || '<p class="text-gray-500">No hay datos</p>';
+                
+                // Top paneles
+                const panelesHTML = data.equipos_populares.paneles.map(p => `
+                    <div class="flex justify-between items-center">
+                        <span>${p.nombre}</span>
+                        <span class="font-bold text-green-600">${p.count}</span>
+                    </div>
+                `).join('');
+                document.getElementById('top-paneles').innerHTML = panelesHTML || '<p class="text-gray-500">No hay datos</p>';
+                
+                // Top inversores
+                const inversoresHTML = data.equipos_populares.inversores.map(i => `
+                    <div class="flex justify-between items-center">
+                        <span>${i.nombre}</span>
+                        <span class="font-bold text-blue-600">${i.count}</span>
+                    </div>
+                `).join('');
+                document.getElementById('top-inversores').innerHTML = inversoresHTML || '<p class="text-gray-500">No hay datos</p>';
+                
+                // Cotizaciones recientes
+                const recientesHTML = data.cotizaciones_recientes.map(c => `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-2 font-mono text-sm">${c.id}</td>
+                        <td class="px-4 py-2 text-sm">${formatFecha(c.fecha)}</td>
+                        <td class="px-4 py-2">${c.nombre}</td>
+                        <td class="px-4 py-2">${c.ciudad}</td>
+                        <td class="px-4 py-2">${c.capacidad}</td>
+                        <td class="px-4 py-2">${c.valor}</td>
+                        <td class="px-4 py-2">
+                            ${c.email_enviado 
+                                ? '<span class="text-green-600 font-bold">✓ Enviado</span>' 
+                                : '<span class="text-orange-600 font-bold">⏳ Pendiente</span>'}
+                        </td>
+                        <td class="px-4 py-2">
+                            <button onclick="verDetalle('${c.id}')" class="text-blue-600 hover:underline font-semibold">Ver</button>
+                        </td>
+                    </tr>
+                `).join('');
+                document.getElementById('cotizaciones-recientes').innerHTML = recientesHTML || 
+                    '<tr><td colspan="8" class="px-4 py-4 text-center text-gray-500">No hay cotizaciones</td></tr>';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error cargando dashboard: ' + error.message + '\n\nVerifica que estás usando las credenciales correctas.');
+            }
+        }
+
+        // Buscar Cotizaciones
+        async function buscarCotizaciones(pagina = 1) {
+            try {
+                const params = new URLSearchParams();
+                
+                const nombre = document.getElementById('buscar-nombre').value;
+                const email = document.getElementById('buscar-email').value;
+                const telefono = document.getElementById('buscar-telefono').value;
+                const ciudad = document.getElementById('buscar-ciudad').value;
+                const fechaDesde = document.getElementById('buscar-fecha-desde').value;
+                const fechaHasta = document.getElementById('buscar-fecha-hasta').value;
+                const emailEnviado = document.getElementById('buscar-email-enviado').value;
+                
+                if (nombre) params.append('nombre', nombre);
+                if (email) params.append('email', email);
+                if (telefono) params.append('telefono', telefono);
+                if (ciudad) params.append('ciudad', ciudad);
+                if (fechaDesde) params.append('fecha_desde', fechaDesde);
+                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+                if (emailEnviado) params.append('email_enviado', emailEnviado);
+                params.append('pagina', pagina);
+                
+                const response = await fetch(API_URL + '/admin/cotizaciones/buscar?' + params, {
+                    headers: { 'Authorization': authHeader }
+                });
+                
+                if (!response.ok) throw new Error('Error en búsqueda');
+                
+                const data = await response.json();
+                
+                document.getElementById('resultados-busqueda').classList.remove('hidden');
+                document.getElementById('total-resultados').textContent = 
+                    `${data.paginacion.total_resultados} resultados encontrados`;
+                
+                const tablaBusqueda = document.getElementById('tabla-busqueda');
+                tablaBusqueda.innerHTML = data.resultados.map(c => `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-2 font-mono text-sm">${c.id}</td>
+                        <td class="px-4 py-2 text-sm">${formatFecha(c.fecha_creacion)}</td>
+                        <td class="px-4 py-2">${c.nombre}</td>
+                        <td class="px-4 py-2">${c.email}</td>
+                        <td class="px-4 py-2">${c.ciudad}</td>
+                        <td class="px-4 py-2">${c.num_paneles}</td>
+                        <td class="px-4 py-2">${formatCurrency(c.valor_total)}</td>
+                        <td class="px-4 py-2">
+                            ${c.email_enviado 
+                                ? '<span class="text-green-600 font-bold">✓</span>' 
+                                : '<span class="text-orange-600 font-bold">✗</span>'}
+                        </td>
+                        <td class="px-4 py-2">
+                            <button onclick="verDetalle('${c.id}')" class="text-blue-600 hover:underline font-semibold">Ver</button>
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="9" class="px-4 py-4 text-center">No hay resultados</td></tr>';
+                
+                // Paginación
+                const paginacionHTML = [];
+                const totalPaginas = data.paginacion.total_paginas;
+                const paginaActual = data.paginacion.pagina_actual;
+                
+                if (totalPaginas > 1) {
+                    for (let i = 1; i <= Math.min(totalPaginas, 10); i++) {
+                        paginacionHTML.push(`
+                            <button onclick="buscarCotizaciones(${i})" 
+                                    class="px-4 py-2 ${i === paginaActual ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'} rounded">
+                                ${i}
+                            </button>
+                        `);
+                    }
+                }
+                document.getElementById('paginacion').innerHTML = paginacionHTML.join('');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error en búsqueda: ' + error.message);
+            }
+        }
+
+        function limpiarBusqueda() {
+            document.getElementById('buscar-nombre').value = '';
+            document.getElementById('buscar-email').value = '';
+            document.getElementById('buscar-telefono').value = '';
+            document.getElementById('buscar-ciudad').value = '';
+            document.getElementById('buscar-fecha-desde').value = '';
+            document.getElementById('buscar-fecha-hasta').value = '';
+            document.getElementById('buscar-email-enviado').value = '';
+            document.getElementById('resultados-busqueda').classList.add('hidden');
+        }
+
+        // Ver Detalle
+        async function verDetalle(cotizacionId) {
+            try {
+                const response = await fetch(API_URL + `/admin/cotizaciones/${cotizacionId}`, {
+                    headers: { 'Authorization': authHeader }
+                });
+                
+                if (!response.ok) throw new Error('Error obteniendo detalle');
+                
+                const data = await response.json();
+                const c = data.cotizacion;
+                
+                const detalleHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 p-4 rounded">
+                            <h3 class="font-bold text-lg mb-2">📋 Información General</h3>
+                            <p><strong>ID:</strong> ${c.id}</p>
+                            <p><strong>Fecha:</strong> ${formatFecha(c.fecha_creacion)}</p>
+                        </div>
+                        
+                        <div class="bg-green-50 p-4 rounded">
+                            <h3 class="font-bold text-lg mb-2">👤 Cliente</h3>
+                            <p><strong>Nombre:</strong> ${c.cliente.nombre}</p>
+                            <p><strong>Email:</strong> ${c.cliente.email}</p>
+                            <p><strong>Teléfono:</strong> ${c.cliente.telefono}</p>
+                            <p><strong>Ciudad:</strong> ${c.cliente.ciudad}</p>
+                            <p><strong>Dirección:</strong> ${c.cliente.direccion || 'N/A'}</p>
+                        </div>
+                        
+                        <div class="bg-yellow-50 p-4 rounded">
+                            <h3 class="font-bold text-lg mb-2">🏠 Sistema</h3>
+                            <p><strong>Tipo Vivienda:</strong> ${c.sistema.tipo_vivienda}</p>
+                            <p><strong>Sistema Eléctrico:</strong> ${c.sistema.sistema_electrico}</p>
+                            <p><strong>Tipo Sistema FV:</strong> ${c.sistema.tipo_sistema_fv}</p>
+                        </div>
+                        
+                        <div class="bg-purple-50 p-4 rounded">
+                            <h3 class="font-bold text-lg mb-2">⚡ Consumo</h3>
+                            <p><strong>Consumo Mensual:</strong> ${c.consumo.consumo_mensual} kWh</p>
+                            <p><strong>Valor Factura:</strong> ${formatCurrency(c.consumo.valor_factura)}</p>
+                            <p><strong>Área Disponible:</strong> ${c.consumo.area_disponible} m²</p>
+                        </div>
+                        
+                        <div class="bg-orange-50 p-4 rounded">
+                            <h3 class="font-bold text-lg mb-2">☀️ Opción 1 - Sistema Ideal</h3>
+                            <p><strong>Paneles:</strong> ${c.opcion1.num_paneles}</p>
+                            <p><strong>Capacidad:</strong> ${c.opcion1.capacidad_instalada.toFixed(2)} kW</p>
+                            <p><strong>Área:</strong> ${c.opcion1.area_requerida.toFixed(2)} m²</p>
+                            <p><strong>Valor:</strong> ${formatCurrency(c.opcion1.valor_total)}</p>
+                            <p><strong>Ahorro Mensual:</strong> ${formatCurrency(c.opcion1.ahorro_mensual)}</p>
+                            <p><strong>Tiempo Retorno:</strong> ${c.opcion1.tiempo_retorno.toFixed(1)} años</p>
+                        </div>
+                        
+                        ${c.opcion2 ? `
+                        <div class="bg-red-50 p-4 rounded">
+                            <h3 class="font-bold text-lg mb-2">🔧 Opción 2 - Ajustada a Área</h3>
+                            <p><strong>Paneles:</strong> ${c.opcion2.num_paneles}</p>
+                            <p><strong>Capacidad:</strong> ${c.opcion2.capacidad_instalada.toFixed(2)} kW</p>
+                            <p><strong>Valor:</strong> ${formatCurrency(c.opcion2.valor_total)}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="bg-gray-50 p-4 rounded">
+                            <h3 class="font-bold text-lg mb-2">📧 Estado</h3>
+                            <p><strong>Email Enviado:</strong> ${c.estado.email_enviado ? '✅ Sí' : '❌ No'}</p>
+                            ${c.estado.fecha_envio_email ? `<p><strong>Fecha Envío:</strong> ${formatFecha(c.estado.fecha_envio_email)}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('detalle-contenido').innerHTML = detalleHTML;
+                document.getElementById('modal-detalle').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error obteniendo detalle: ' + error.message);
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-detalle').classList.add('hidden');
+        }
+
+        // Cargar Top Ciudades
+        async function cargarTopCiudades() {
+            try {
+                const response = await fetch(API_URL + '/admin/reportes/top-ciudades?limit=10', {
+                    headers: { 'Authorization': authHeader }
+                });
+                
+                if (!response.ok) throw new Error('Error cargando reporte');
+                
+                const data = await response.json();
+                
+                const html = data.resultados.map((c, i) => `
+                    <div class="p-4 bg-gray-50 rounded">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-lg">${i + 1}. ${c.ciudad}</span>
+                            <span class="text-blue-600 font-bold">${c.total_cotizaciones} cotizaciones</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <p>💰 Valor Total: ${formatCurrency(c.valor_total_acumulado)}</p>
+                            <p>⚡ Capacidad Promedio: ${c.capacidad_promedio_kw} kW</p>
+                            <p>☀️ Total Paneles: ${c.total_paneles}</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('reporte-ciudades').innerHTML = html || '<p class="text-gray-500">No hay datos</p>';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error cargando reporte: ' + error.message);
+            }
+        }
+
+        // Cargar Estadísticas
+        async function cargarEstadisticas() {
+            try {
+                const response = await fetch(API_URL + '/admin/reportes/estadisticas', {
+                    headers: { 'Authorization': authHeader }
+                });
+                
+                if (!response.ok) throw new Error('Error cargando estadísticas');
+                
+                const data = await response.json();
+                const stats = data.estadisticas_generales;
+                
+                const html = `
+                    <div class="space-y-3">
+                        <div class="p-3 bg-blue-50 rounded">
+                            <p class="text-sm text-gray-600">Total Cotizaciones</p>
+                            <p class="text-2xl font-bold text-blue-600">${stats.total_cotizaciones}</p>
+                        </div>
+                        <div class="p-3 bg-green-50 rounded">
+                            <p class="text-sm text-gray-600">💰 Valor Total Mercado</p>
+                            <p class="text-xl font-bold text-green-600">${formatCurrency(stats.valor_total_mercado)}</p>
+                        </div>
+                        <div class="p-3 bg-purple-50 rounded">
+                            <p class="text-sm text-gray-600">📊 Promedio Sistema</p>
+                            <p class="text-xl font-bold text-purple-600">${formatCurrency(stats.promedio_valor)}</p>
+                        </div>
+                        <div class="p-3 bg-orange-50 rounded">
+                            <p class="text-sm text-gray-600">📈 Rango Valores</p>
+                            <p class="text-sm font-semibold">${formatCurrency(stats.valor_min)} - ${formatCurrency(stats.valor_max)}</p>
+                        </div>
+                        <div class="p-3 bg-yellow-50 rounded">
+                            <p class="text-sm text-gray-600">🔧 Adopción Opción 2</p>
+                            <p class="text-2xl font-bold text-yellow-600">${data.adopcion_opcion2.porcentaje}%</p>
+                            <p class="text-xs text-gray-600">${data.adopcion_opcion2.cotizaciones_con_opcion2} de ${stats.total_cotizaciones}</p>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('estadisticas-generales').innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error cargando estadísticas: ' + error.message);
+            }
+        }
+
+        // Exportar Datos
+        function exportarDatos() {
+            try {
+                const fechaDesde = document.getElementById('export-fecha-desde').value;
+                const fechaHasta = document.getElementById('export-fecha-hasta').value;
+                const formato = document.getElementById('export-formato').value;
+                
+                const params = new URLSearchParams();
+                if (fechaDesde) params.append('fecha_desde', fechaDesde);
+                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+                params.append('formato', formato);
+                
+                const url = API_URL + '/admin/reportes/export?' + params;
+                
+                // Abrir en nueva ventana con autenticación
+                const newWindow = window.open(url, '_blank');
+                if (!newWindow) {
+                    alert('Por favor permite las ventanas emergentes para descargar el archivo');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error exportando: ' + error.message);
+            }
+        }
+
+        // Utilidades
+        function formatCurrency(value) {
+            if (!value) return '$0';
+            return '$' + Math.round(value).toLocaleString('es-CO');
+        }
+
+        function formatFecha(fecha) {
+            if (!fecha) return 'N/A';
+            const d = new Date(fecha);
+            return d.toLocaleDateString('es-CO', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Cerrar modal con ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                cerrarModal();
+            }
+        });
+
+        // Cargar dashboard al iniciar
+        window.addEventListener('load', () => {
+            cargarDashboard();
+        });
+    </script>
+</body>
+</html>

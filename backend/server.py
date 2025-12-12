@@ -2233,6 +2233,14 @@ def admin_panel():
         return FileResponse(admin_path, media_type="text/html")
     raise HTTPException(404, "Panel administrativo no encontrado")
 
+@app.get("/crm", tags=["General"])
+def crm_panel():
+    """Servir panel CRM"""
+    crm_path = os.path.join(STATIC_DIR, "crm.html")
+    if os.path.exists(crm_path):
+        return FileResponse(crm_path, media_type="text/html")
+    raise HTTPException(404, "Panel CRM no encontrado")
+
 @app.get("/health", tags=["General"])
 def health():
     return {"status": "ok", "timestamp": now_colombia().isoformat()}
@@ -2509,6 +2517,669 @@ def debug_equipos_file():
         }
     except Exception as e:
         return {"error": str(e), "file_path": EQUIPOS_FILE}
+
+# ========================================
+# 📊 CRM ENDPOINTS
+# ========================================
+
+@app.get("/api/admin/dashboard", tags=["CRM"], dependencies=[Depends(auth_admin)])
+def crm_dashboard():
+    """
+    Dashboard administrativo con métricas principales del CRM
+    """
+    try:
+        from models import get_db_session, Cotizacion
+        from sqlalchemy import func, extract
+        from datetime import datetime, timedelta
+        
+        session = get_db_session()
+        
+        try:
+            now = now_colombia()
+            mes_actual = now.month
+            anio_actual = now.year
+            
+            # Total de cotizaciones
+            total_cotizaciones = session.query(Cotizacion).count()
+            
+            # Cotizaciones este mes
+            cotizaciones_mes = session.query(Cotizacion).filter(
+                extract('month', Cotizacion.fecha_creacion) == mes_actual,
+                extract('year', Cotizacion.fecha_creacion) == anio_actual
+            ).count()
+            
+            # Cotizaciones este año
+            cotizaciones_anio = session.query(Cotizacion).filter(
+                extract('year', Cotizacion.fecha_creacion) == anio_actual
+            ).count()
+            
+            # Tasa de conversión (emails enviados)
+            emails_enviados = session.query(Cotizacion).filter(
+                Cotizacion.email_enviado == True
+            ).count()
+            tasa_conversion = (emails_enviados / total_cotizaciones * 100) if total_cotizaciones > 0 else 0
+            
+            # Top 5 ciudades
+            top_ciudades = session.query(
+                Cotizacion.ciudad,
+                func.count(Cotizacion.id).label('count')
+            ).group_by(Cotizacion.ciudad).order_by(func.count(Cotizacion.id).desc()).limit(5).all()
+            
+            # Equipos más populares
+            top_paneles = session.query(
+                Cotizacion.panel_nombre,
+                func.count(Cotizacion.id).label('count')
+            ).filter(Cotizacion.panel_nombre.isnot(None)).group_by(
+                Cotizacion.panel_nombre
+            ).order_by(func.count(Cotizacion.id).desc()).limit(5).all()
+            
+            top_inversores = session.query(
+                Cotizacion.inversor_nombre,
+                func.count(Cotizacion.id).label('count')
+            ).filter(Cotizacion.inversor_nombre.isnot(None)).group_by(
+                Cotizacion.inversor_nombre
+            ).order_by(func.count(Cotizacion.id).desc()).limit(5).all()
+            
+            # Promedios
+            promedios = session.query(
+                func.avg(Cotizacion.num_paneles_op1).label('avg_paneles'),
+                func.avg(Cotizacion.capacidad_instalada_op1).label('avg_capacidad'),
+                func.avg(Cotizacion.valor_total_op1).label('avg_valor'),
+                func.avg(Cotizacion.tiempo_retorno_op1).label('avg_retorno'),
+                func.avg(Cotizacion.ahorro_mensual_op1).label('avg_ahorro')
+            ).first()
+            
+            # Adopción de Opción 2
+            cotizaciones_con_op2 = session.query(Cotizacion).filter(
+                Cotizacion.tiene_opcion2 == True
+            ).count()
+            tasa_opcion2 = (cotizaciones_con_op2 / total_cotizaciones * 100) if total_cotizaciones > 0 else 0
+            
+            # Cotizaciones recientes (últimas 10)
+            recientes = session.query(Cotizacion).order_by(
+                Cotizacion.fecha_creacion.desc()
+            ).limit(10).all()
+            
+            cotizaciones_recientes = [
+                {
+                    "id": c.id,
+                    "fecha": c.fecha_creacion.isoformat() if c.fecha_creacion else None,
+                    "nombre": c.nombre,
+                    "email": c.email,
+                    "ciudad": c.ciudad,
+                    "capacidad": f"{c.capacidad_instalada_op1:.2f} kW" if c.capacidad_instalada_op1 else "N/A",
+                    "valor": f"${c.valor_total_op1:,.0f}" if c.valor_total_op1 else "N/A",
+                    "email_enviado": c.email_enviado,
+                    "num_opciones": c.num_opciones
+                }
+                for c in recientes
+            ]
+            
+            return {
+                "status": "success",
+                "timestamp": now.isoformat(),
+                "resumen": {
+                    "total_cotizaciones": total_cotizaciones,
+                    "cotizaciones_mes": cotizaciones_mes,
+                    "cotizaciones_anio": cotizaciones_anio,
+                    "emails_enviados": emails_enviados,
+                    "tasa_conversion": round(tasa_conversion, 2)
+                },
+                "top_ciudades": [
+                    {"ciudad": ciudad, "count": count}
+                    for ciudad, count in top_ciudades
+                ],
+                "equipos_populares": {
+                    "paneles": [
+                        {"nombre": nombre, "count": count}
+                        for nombre, count in top_paneles
+                    ],
+                    "inversores": [
+                        {"nombre": nombre, "count": count}
+                        for nombre, count in top_inversores
+                    ]
+                },
+                "promedios": {
+                    "paneles": round(promedios.avg_paneles, 1) if promedios.avg_paneles else 0,
+                    "capacidad_kw": round(promedios.avg_capacidad, 2) if promedios.avg_capacidad else 0,
+                    "valor_total": round(promedios.avg_valor, 0) if promedios.avg_valor else 0,
+                    "tiempo_retorno_anos": round(promedios.avg_retorno, 1) if promedios.avg_retorno else 0,
+                    "ahorro_mensual": round(promedios.avg_ahorro, 0) if promedios.avg_ahorro else 0
+                },
+                "tendencias": {
+                    "cotizaciones_con_opcion2": cotizaciones_con_op2,
+                    "tasa_opcion2_pct": round(tasa_opcion2, 2)
+                },
+                "cotizaciones_recientes": cotizaciones_recientes
+            }
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN DASHBOARD: {error_trace}")
+        raise HTTPException(500, f"Error generando dashboard: {str(e)}")
+
+@app.get("/api/admin/cotizaciones/buscar", tags=["CRM"], dependencies=[Depends(auth_admin)])
+def buscar_cotizaciones(
+    nombre: str = None,
+    email: str = None,
+    telefono: str = None,
+    ciudad: str = None,
+    fecha_desde: str = None,
+    fecha_hasta: str = None,
+    email_enviado: bool = None,
+    pagina: int = 1,
+    por_pagina: int = 50
+):
+    """
+    Buscar cotizaciones con filtros múltiples
+    
+    Query params:
+    - nombre: Búsqueda parcial por nombre de cliente
+    - email: Búsqueda parcial por email
+    - telefono: Búsqueda parcial por teléfono
+    - ciudad: Búsqueda exacta por ciudad
+    - fecha_desde: Formato ISO (YYYY-MM-DD)
+    - fecha_hasta: Formato ISO (YYYY-MM-DD)
+    - email_enviado: true/false
+    - pagina: Número de página (default 1)
+    - por_pagina: Resultados por página (default 50, max 200)
+    """
+    try:
+        from models import get_db_session, Cotizacion
+        from sqlalchemy import and_, or_
+        
+        session = get_db_session()
+        
+        try:
+            # Construir query base
+            query = session.query(Cotizacion)
+            
+            # Aplicar filtros
+            filtros = []
+            
+            if nombre:
+                filtros.append(Cotizacion.nombre.ilike(f"%{nombre}%"))
+            
+            if email:
+                filtros.append(Cotizacion.email.ilike(f"%{email}%"))
+            
+            if telefono:
+                filtros.append(Cotizacion.telefono.ilike(f"%{telefono}%"))
+            
+            if ciudad:
+                filtros.append(Cotizacion.ciudad == ciudad)
+            
+            if fecha_desde:
+                try:
+                    from datetime import datetime
+                    fecha_desde_dt = datetime.fromisoformat(fecha_desde)
+                    filtros.append(Cotizacion.fecha_creacion >= fecha_desde_dt)
+                except ValueError:
+                    raise HTTPException(400, "fecha_desde debe estar en formato ISO (YYYY-MM-DD)")
+            
+            if fecha_hasta:
+                try:
+                    from datetime import datetime, timedelta
+                    fecha_hasta_dt = datetime.fromisoformat(fecha_hasta) + timedelta(days=1)
+                    filtros.append(Cotizacion.fecha_creacion < fecha_hasta_dt)
+                except ValueError:
+                    raise HTTPException(400, "fecha_hasta debe estar en formato ISO (YYYY-MM-DD)")
+            
+            if email_enviado is not None:
+                filtros.append(Cotizacion.email_enviado == email_enviado)
+            
+            # Aplicar todos los filtros
+            if filtros:
+                query = query.filter(and_(*filtros))
+            
+            # Contar total
+            total = query.count()
+            
+            # Validar paginación
+            por_pagina = min(por_pagina, 200)  # Max 200 por página
+            offset = (pagina - 1) * por_pagina
+            
+            # Obtener resultados paginados
+            resultados = query.order_by(
+                Cotizacion.fecha_creacion.desc()
+            ).offset(offset).limit(por_pagina).all()
+            
+            cotizaciones = [
+                {
+                    "id": c.id,
+                    "fecha_creacion": c.fecha_creacion.isoformat() if c.fecha_creacion else None,
+                    "nombre": c.nombre,
+                    "email": c.email,
+                    "telefono": c.telefono,
+                    "ciudad": c.ciudad,
+                    "tipo_sistema_fv": c.tipo_sistema_fv,
+                    "consumo_mensual": c.consumo_mensual,
+                    "num_paneles": c.num_paneles_op1,
+                    "capacidad_instalada": f"{c.capacidad_instalada_op1:.2f} kW" if c.capacidad_instalada_op1 else None,
+                    "valor_total": c.valor_total_op1,
+                    "tiempo_retorno": c.tiempo_retorno_op1,
+                    "email_enviado": c.email_enviado,
+                    "fecha_envio_email": c.fecha_envio_email.isoformat() if c.fecha_envio_email else None,
+                    "tiene_opcion2": c.tiene_opcion2,
+                    "num_opciones": c.num_opciones
+                }
+                for c in resultados
+            ]
+            
+            total_paginas = (total + por_pagina - 1) // por_pagina
+            
+            return {
+                "status": "success",
+                "resultados": cotizaciones,
+                "paginacion": {
+                    "pagina_actual": pagina,
+                    "por_pagina": por_pagina,
+                    "total_resultados": total,
+                    "total_paginas": total_paginas
+                },
+                "filtros_aplicados": {
+                    "nombre": nombre,
+                    "email": email,
+                    "telefono": telefono,
+                    "ciudad": ciudad,
+                    "fecha_desde": fecha_desde,
+                    "fecha_hasta": fecha_hasta,
+                    "email_enviado": email_enviado
+                }
+            }
+            
+        finally:
+            session.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN BÚSQUEDA: {error_trace}")
+        raise HTTPException(500, f"Error buscando cotizaciones: {str(e)}")
+
+@app.get("/api/admin/cotizaciones/{cotizacion_id}", tags=["CRM"], dependencies=[Depends(auth_admin)])
+def detalle_cotizacion(cotizacion_id: str):
+    """
+    Obtener detalle completo de una cotización específica
+    """
+    try:
+        from models import get_db_session, Cotizacion
+        
+        session = get_db_session()
+        
+        try:
+            cotizacion = session.query(Cotizacion).filter(
+                Cotizacion.id == cotizacion_id
+            ).first()
+            
+            if not cotizacion:
+                raise HTTPException(404, f"Cotización {cotizacion_id} no encontrada")
+            
+            # Construir respuesta completa
+            detalle = {
+                "id": cotizacion.id,
+                "fecha_creacion": cotizacion.fecha_creacion.isoformat() if cotizacion.fecha_creacion else None,
+                
+                # Cliente
+                "cliente": {
+                    "nombre": cotizacion.nombre,
+                    "email": cotizacion.email,
+                    "telefono": cotizacion.telefono,
+                    "direccion": cotizacion.direccion,
+                    "ciudad": cotizacion.ciudad,
+                    "nic": cotizacion.nic
+                },
+                
+                # Sistema
+                "sistema": {
+                    "tipo_vivienda": cotizacion.tipo_vivienda,
+                    "sistema_electrico": cotizacion.sistema_electrico,
+                    "tipo_sistema_fv": cotizacion.tipo_sistema_fv
+                },
+                
+                # Consumo
+                "consumo": {
+                    "consumo_mensual": cotizacion.consumo_mensual,
+                    "valor_factura": cotizacion.valor_factura,
+                    "valor_kwh": cotizacion.valor_kwh,
+                    "porcentaje_consumo_dia": cotizacion.porcentaje_consumo_dia,
+                    "hsp_calculado": cotizacion.hsp_calculado,
+                    "area_disponible": cotizacion.area_disponible
+                },
+                
+                # Equipos
+                "equipos": {
+                    "panel": {
+                        "id": cotizacion.panel_id,
+                        "nombre": cotizacion.panel_nombre
+                    },
+                    "inversor": {
+                        "id": cotizacion.inversor_id,
+                        "nombre": cotizacion.inversor_nombre
+                    },
+                    "bateria": {
+                        "id": cotizacion.bateria_id,
+                        "nombre": cotizacion.bateria_nombre
+                    } if cotizacion.bateria_id else None
+                },
+                
+                # Opción 1
+                "opcion1": {
+                    "num_paneles": cotizacion.num_paneles_op1,
+                    "capacidad_instalada": cotizacion.capacidad_instalada_op1,
+                    "area_requerida": cotizacion.area_requerida_op1,
+                    "valor_total": cotizacion.valor_total_op1,
+                    "ahorro_mensual": cotizacion.ahorro_mensual_op1,
+                    "tiempo_retorno": cotizacion.tiempo_retorno_op1
+                },
+                
+                # Opción 2 (si existe)
+                "opcion2": {
+                    "tiene_opcion2": cotizacion.tiene_opcion2,
+                    "num_paneles": cotizacion.num_paneles_op2,
+                    "capacidad_instalada": cotizacion.capacidad_instalada_op2,
+                    "area_requerida": cotizacion.area_requerida_op2,
+                    "valor_total": cotizacion.valor_total_op2,
+                    "ahorro_mensual": cotizacion.ahorro_mensual_op2,
+                    "tiempo_retorno": cotizacion.tiempo_retorno_op2
+                } if cotizacion.tiene_opcion2 else None,
+                
+                # Estado
+                "estado": {
+                    "email_enviado": cotizacion.email_enviado,
+                    "fecha_envio_email": cotizacion.fecha_envio_email.isoformat() if cotizacion.fecha_envio_email else None,
+                    "num_opciones": cotizacion.num_opciones
+                },
+                
+                # Metadata
+                "metadata": {
+                    "legalizacion": cotizacion.legalizacion,
+                    "seleccion_manual": cotizacion.seleccion_manual,
+                    "created_at": cotizacion.created_at.isoformat() if cotizacion.created_at else None,
+                    "updated_at": cotizacion.updated_at.isoformat() if cotizacion.updated_at else None
+                },
+                
+                # Datos completos JSON
+                "datos_completos": cotizacion.datos_completos
+            }
+            
+            return {
+                "status": "success",
+                "cotizacion": detalle
+            }
+            
+        finally:
+            session.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN DETALLE: {error_trace}")
+        raise HTTPException(500, f"Error obteniendo detalle: {str(e)}")
+
+@app.get("/api/admin/reportes/top-ciudades", tags=["CRM"], dependencies=[Depends(auth_admin)])
+def reporte_top_ciudades(limit: int = 10):
+    """
+    Reporte de ciudades con más cotizaciones
+    """
+    try:
+        from models import get_db_session, Cotizacion
+        from sqlalchemy import func
+        
+        session = get_db_session()
+        
+        try:
+            top_ciudades = session.query(
+                Cotizacion.ciudad,
+                func.count(Cotizacion.id).label('total_cotizaciones'),
+                func.sum(Cotizacion.valor_total_op1).label('valor_total'),
+                func.avg(Cotizacion.capacidad_instalada_op1).label('capacidad_promedio'),
+                func.sum(Cotizacion.num_paneles_op1).label('total_paneles')
+            ).filter(
+                Cotizacion.ciudad.isnot(None)
+            ).group_by(
+                Cotizacion.ciudad
+            ).order_by(
+                func.count(Cotizacion.id).desc()
+            ).limit(limit).all()
+            
+            resultados = [
+                {
+                    "ciudad": ciudad,
+                    "total_cotizaciones": total,
+                    "valor_total_acumulado": round(float(valor), 0) if valor else 0,
+                    "capacidad_promedio_kw": round(float(capacidad), 2) if capacidad else 0,
+                    "total_paneles": int(paneles) if paneles else 0
+                }
+                for ciudad, total, valor, capacidad, paneles in top_ciudades
+            ]
+            
+            return {
+                "status": "success",
+                "reporte": "Top Ciudades",
+                "timestamp": now_colombia().isoformat(),
+                "resultados": resultados
+            }
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN REPORTE: {error_trace}")
+        raise HTTPException(500, f"Error generando reporte: {str(e)}")
+
+@app.get("/api/admin/reportes/estadisticas", tags=["CRM"], dependencies=[Depends(auth_admin)])
+def reporte_estadisticas():
+    """
+    Reporte de estadísticas generales del sistema
+    """
+    try:
+        from models import get_db_session, Cotizacion
+        from sqlalchemy import func
+        
+        session = get_db_session()
+        
+        try:
+            # Estadísticas generales
+            stats = session.query(
+                func.count(Cotizacion.id).label('total'),
+                func.avg(Cotizacion.num_paneles_op1).label('avg_paneles'),
+                func.avg(Cotizacion.capacidad_instalada_op1).label('avg_capacidad'),
+                func.avg(Cotizacion.valor_total_op1).label('avg_valor'),
+                func.avg(Cotizacion.tiempo_retorno_op1).label('avg_retorno'),
+                func.sum(Cotizacion.valor_total_op1).label('valor_total'),
+                func.min(Cotizacion.valor_total_op1).label('valor_min'),
+                func.max(Cotizacion.valor_total_op1).label('valor_max')
+            ).first()
+            
+            # Adopción de Opción 2
+            con_opcion2 = session.query(Cotizacion).filter(
+                Cotizacion.tiene_opcion2 == True
+            ).count()
+            
+            # Por tipo de sistema
+            por_tipo_sistema = session.query(
+                Cotizacion.tipo_sistema_fv,
+                func.count(Cotizacion.id).label('count')
+            ).group_by(
+                Cotizacion.tipo_sistema_fv
+            ).all()
+            
+            # Por tipo de vivienda
+            por_tipo_vivienda = session.query(
+                Cotizacion.tipo_vivienda,
+                func.count(Cotizacion.id).label('count')
+            ).group_by(
+                Cotizacion.tipo_vivienda
+            ).all()
+            
+            return {
+                "status": "success",
+                "timestamp": now_colombia().isoformat(),
+                "estadisticas_generales": {
+                    "total_cotizaciones": stats.total or 0,
+                    "promedio_paneles": round(float(stats.avg_paneles), 1) if stats.avg_paneles else 0,
+                    "promedio_capacidad_kw": round(float(stats.avg_capacidad), 2) if stats.avg_capacidad else 0,
+                    "promedio_valor": round(float(stats.avg_valor), 0) if stats.avg_valor else 0,
+                    "promedio_tiempo_retorno_anos": round(float(stats.avg_retorno), 1) if stats.avg_retorno else 0,
+                    "valor_total_mercado": round(float(stats.valor_total), 0) if stats.valor_total else 0,
+                    "valor_min": round(float(stats.valor_min), 0) if stats.valor_min else 0,
+                    "valor_max": round(float(stats.valor_max), 0) if stats.valor_max else 0
+                },
+                "adopcion_opcion2": {
+                    "cotizaciones_con_opcion2": con_opcion2,
+                    "porcentaje": round((con_opcion2 / stats.total * 100), 2) if stats.total else 0
+                },
+                "por_tipo_sistema": [
+                    {"tipo": tipo, "cantidad": count}
+                    for tipo, count in por_tipo_sistema
+                ],
+                "por_tipo_vivienda": [
+                    {"tipo": tipo, "cantidad": count}
+                    for tipo, count in por_tipo_vivienda
+                ]
+            }
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN ESTADÍSTICAS: {error_trace}")
+        raise HTTPException(500, f"Error generando estadísticas: {str(e)}")
+
+@app.get("/api/admin/reportes/export", tags=["CRM"], dependencies=[Depends(auth_admin)])
+def export_cotizaciones(
+    fecha_desde: str = None,
+    fecha_hasta: str = None,
+    formato: str = "csv"
+):
+    """
+    Exportar cotizaciones a CSV o JSON
+    
+    Query params:
+    - fecha_desde: Formato ISO (YYYY-MM-DD)
+    - fecha_hasta: Formato ISO (YYYY-MM-DD)
+    - formato: "csv" o "json" (default: csv)
+    """
+    try:
+        from models import get_db_session, Cotizacion
+        from sqlalchemy import and_
+        import io
+        import csv
+        
+        session = get_db_session()
+        
+        try:
+            # Construir query
+            query = session.query(Cotizacion)
+            
+            filtros = []
+            if fecha_desde:
+                from datetime import datetime
+                fecha_desde_dt = datetime.fromisoformat(fecha_desde)
+                filtros.append(Cotizacion.fecha_creacion >= fecha_desde_dt)
+            
+            if fecha_hasta:
+                from datetime import datetime, timedelta
+                fecha_hasta_dt = datetime.fromisoformat(fecha_hasta) + timedelta(days=1)
+                filtros.append(Cotizacion.fecha_creacion < fecha_hasta_dt)
+            
+            if filtros:
+                query = query.filter(and_(*filtros))
+            
+            cotizaciones = query.order_by(Cotizacion.fecha_creacion.desc()).all()
+            
+            if formato == "json":
+                # Exportar como JSON
+                datos = [
+                    {
+                        "id": c.id,
+                        "fecha_creacion": c.fecha_creacion.isoformat() if c.fecha_creacion else None,
+                        "nombre": c.nombre,
+                        "email": c.email,
+                        "telefono": c.telefono,
+                        "ciudad": c.ciudad,
+                        "consumo_mensual": c.consumo_mensual,
+                        "num_paneles": c.num_paneles_op1,
+                        "capacidad_instalada": c.capacidad_instalada_op1,
+                        "valor_total": c.valor_total_op1,
+                        "ahorro_mensual": c.ahorro_mensual_op1,
+                        "tiempo_retorno": c.tiempo_retorno_op1,
+                        "email_enviado": c.email_enviado,
+                        "tiene_opcion2": c.tiene_opcion2
+                    }
+                    for c in cotizaciones
+                ]
+                
+                return {
+                    "status": "success",
+                    "total": len(datos),
+                    "datos": datos
+                }
+            
+            else:
+                # Exportar como CSV
+                output = io.StringIO()
+                writer = csv.writer(output)
+                
+                # Headers
+                writer.writerow([
+                    "ID", "Fecha", "Nombre", "Email", "Teléfono", "Ciudad",
+                    "Consumo (kWh/mes)", "Num Paneles", "Capacidad (kW)",
+                    "Valor Total", "Ahorro Mensual", "Tiempo Retorno (años)",
+                    "Email Enviado", "Tiene Opción 2"
+                ])
+                
+                # Data
+                for c in cotizaciones:
+                    writer.writerow([
+                        c.id,
+                        c.fecha_creacion.strftime("%Y-%m-%d %H:%M") if c.fecha_creacion else "",
+                        c.nombre or "",
+                        c.email or "",
+                        c.telefono or "",
+                        c.ciudad or "",
+                        c.consumo_mensual or "",
+                        c.num_paneles_op1 or "",
+                        round(c.capacidad_instalada_op1, 2) if c.capacidad_instalada_op1 else "",
+                        round(c.valor_total_op1, 0) if c.valor_total_op1 else "",
+                        round(c.ahorro_mensual_op1, 0) if c.ahorro_mensual_op1 else "",
+                        round(c.tiempo_retorno_op1, 1) if c.tiempo_retorno_op1 else "",
+                        "Sí" if c.email_enviado else "No",
+                        "Sí" if c.tiene_opcion2 else "No"
+                    ])
+                
+                from fastapi.responses import StreamingResponse
+                output.seek(0)
+                
+                return StreamingResponse(
+                    iter([output.getvalue()]),
+                    media_type="text/csv",
+                    headers={
+                        "Content-Disposition": f"attachment; filename=cotizaciones_{now_colombia().strftime('%Y%m%d')}.csv"
+                    }
+                )
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR EN EXPORTACIÓN: {error_trace}")
+        raise HTTPException(500, f"Error exportando datos: {str(e)}")
 
 @app.get("/api/equipos", tags=["Equipos"])
 def equipos_publicos(sistemaElectrico: str = None):

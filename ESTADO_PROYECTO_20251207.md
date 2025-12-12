@@ -1,17 +1,4 @@
-# 📊 Estado del Proyecto - 7 de Diciembre 2025, 7:30 PM
 
-## 🎯 Resumen Ejecutivo
-
-**Sistema de Cotización Solar NASSA** - Sistema completo funcionando en producción con PostgreSQL configurado pero AÚN NO ACTIVADO. Los datos ya están migrados a PostgreSQL, pero el sistema continúa usando JSON files por seguridad.
-
----
-
-## 🌐 URLs y Accesos
-
-### **Producción (Railway)**
-- URL: https://web-production-3749b.up.railway.app/
-- Panel Admin: https://web-production-3749b.up.railway.app/admin.html
-- Health Check: https://web-production-3749b.up.railway.app/health
 
 ### **Credenciales Admin**
 - Usuario: `admin`
