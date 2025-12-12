@@ -3736,7 +3736,7 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
             pdf_paths.append(pdf_path2)
             pptx_paths.append(pptx_path2)
         
-        # ENVIAR EMAIL
+        # ENVIAR EMAIL (NO CRÍTICO - Sistema continúa si falla)
         email_enviado = False
         email_error = None
         
@@ -3751,8 +3751,9 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
             print(f"✅ Email enviado exitosamente a {email_cliente}")
         except Exception as e:
             email_error = str(e)
-            print(f"❌ Error enviando email: {e}")
-            raise HTTPException(500, f"Error al enviar email: {e}")
+            print(f"⚠️ Warning - No se pudo enviar email: {e}")
+            print(f"⚠️ Cotización generada correctamente. Email pendiente por configuración SMTP.")
+            # NO lanzar excepción - permitir que la cotización continúe
         finally:
             # Limpiar archivos temporales
             print("\n🧹 Limpiando archivos temporales...")
@@ -3772,10 +3773,17 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
                     except Exception as e:
                         print(f"   ⚠️ Error eliminando: {e}")
         
+        # Determinar mensaje de respuesta según estado del email
+        if email_enviado:
+            mensaje_respuesta = f"✅ Cotización enviada exitosamente a {email_cliente}"
+        else:
+            mensaje_respuesta = f"✅ Cotización generada correctamente. Email pendiente por configuración de servidor SMTP."
+        
         return JSONResponse({
             "status": "success",
-            "mensaje": f"✅ Cotización enviada exitosamente a {email_cliente}",
+            "mensaje": mensaje_respuesta,
             "emailEnviado": email_enviado,
+            "emailError": email_error if not email_enviado else None,
             "numOpciones": num_opciones
         })
         
