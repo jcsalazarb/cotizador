@@ -4625,15 +4625,28 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         "bateriaSeleccionada": resultado_opcion1["bateria"],
         "hora": now_colombia().strftime("%H:%M:%S"),
         "numOpciones": num_opciones,
+        # Opción 2: Incluir TODOS los campos, no solo resumen
         "opcion2": {
-            "numeroPaneles": resultado_opcion2["numeroPaneles"],
-            "capacidadInstalada": resultado_opcion2["capacidadInstalada"],
-            "areaRequerida": resultado_opcion2["areaRequerida"],
-            "valorTotalSistema": resultado_opcion2["valorTotalSistema"],
-            "ahorroMensualEnergia": resultado_opcion2["ahorroMensualEnergia"],
-            "tiempoRetorno": resultado_opcion2["tiempoRetorno"],
-            "desgloseCostos": resultado_opcion2["desgloseCostos"],
-            "proyeccion25Anos": resultado_opcion2.get("proyeccion25Anos", [])
+            **resultado_opcion2,  # Spread completo de resultado_opcion2
+            # Agregar datos del cliente para mostrar en modal
+            "nombre": req.nombre,
+            "email": req.email,
+            "telefono": req.telefono,
+            "ciudad": req.ciudad,
+            "direccion": req.direccion,
+            "tipoVivienda": req.tipoVivienda,
+            "sistemaElectrico": req.sistemaElectrico,
+            "tipoSistemaFV": req.tipoSistemaFV,
+            "consumoMensual": req.consumoMensual,
+            "valorFactura": req.valorFactura,
+            "valorKwh": req.valorKwh,
+            "porcentajeConsumodia": req.porcentajeConsumodia,
+            "hspCalculado": req.hspCalculado,
+            "panelSeleccionado": resultado_opcion2["panel"],
+            "inversorSeleccionado": resultado_opcion2["inversor"],
+            "bateriaSeleccionada": resultado_opcion2["bateria"],
+            "hora": now_colombia().strftime("%H:%M:%S"),
+            "cotizacionId": resultado_opcion1["cotizacionId"]  # Mismo ID para ambas opciones
         } if resultado_opcion2 else None
     }
     

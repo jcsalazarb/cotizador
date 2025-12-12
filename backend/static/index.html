@@ -187,76 +187,75 @@
    </div>
   <!-- Modal de Resultado -->
   <div id="modalResultado" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-   <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-    <!-- Header del Modal -->
-    <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-2xl">
-     <div class="flex justify-between items-center">
-      <div>
-       <h2 class="text-3xl font-bold">🎉 ¡Cotización Técnica Completa!</h2>
-       <p class="text-blue-100 text-sm mt-1">Revisa tu propuesta personalizada de energía solar</p>
+   <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+    <!-- Header del Modal con Logo -->
+    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-2xl px-4 py-3 no-print flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="/static/images/loggo-Nassa.png" alt="NASSA SOLAR" class="h-10 w-auto">
+        <div>
+          <h2 class="text-xl font-bold">🎉 Cotización Técnica Completa</h2>
+          <p class="text-blue-100 text-xs">Propuesta personalizada de energía solar</p>
+        </div>
       </div>
-      <button onclick="cerrarModal()" class="text-white hover:text-gray-200 text-3xl font-bold bg-white/20 hover:bg-white/30 rounded-full w-10 h-10 flex items-center justify-center transition">×</button>
-     </div>
+      <button onclick="cerrarModal()" class="text-white hover:text-gray-200 text-2xl font-bold bg-white/20 hover:bg-white/30 rounded-full w-8 h-8 flex items-center justify-center transition">×</button>
     </div>
     
-    <!-- Tabs para opciones (solo visible si hay opción 2) - MEJORADAS -->
-    <div id="tabsOpciones" class="hidden bg-gray-50 px-6 border-b-2 border-gray-200">
-     <div class="flex gap-2">
-      <button id="tabOpcion1" onclick="cambiarOpcion(1)" class="relative px-8 py-4 font-bold text-lg transition-all duration-200 bg-white text-blue-600 shadow-md rounded-t-lg -mb-0.5 border-b-2 border-blue-600 z-10">
-       <span class="flex items-center gap-2">
-        <span class="text-2xl">⭐</span>
-        <span>Opción 1 - Ideal</span>
-       </span>
-      </button>
-      <button id="tabOpcion2" onclick="cambiarOpcion(2)" class="relative px-8 py-4 font-bold text-lg transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t-lg">
-       <span class="flex items-center gap-2">
-        <span class="text-2xl">🔧</span>
-        <span>Opción 2 - Ajustada</span>
-       </span>
-      </button>
-     </div>
-    </div>
-    
-    <!-- Área de Acciones Principales - NUEVA SECCIÓN DESTACADA -->
-    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b-2 border-blue-200 no-print">
-     <div class="flex flex-col gap-4">
-      <!-- Botón Enviar Email - PRINCIPAL -->
-      <div class="bg-white rounded-lg p-4 shadow-lg border-2 border-blue-300">
-       <button id="btnEnviarEmailModal" onclick="enviarCotizacionPorEmail()" class="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-bold text-xl shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-3">
-        <span class="text-3xl">📧</span>
-        <span>Enviar Cotización por Email</span>
-        <span class="text-3xl">✨</span>
-       </button>
-       <p id="estadoEnvioEmail" class="text-center text-sm mt-2 text-gray-600 font-medium"></p>
+    <!-- Tabs y Botones Sticky - SIEMPRE VISIBLES -->
+    <div class="sticky top-0 z-20 bg-white shadow-md no-print">
+      <!-- Tabs para opciones (solo visible si hay opción 2) -->
+      <div id="tabsOpciones" class="hidden bg-gray-50 px-3 border-b border-gray-200">
+        <div class="flex gap-1">
+          <button id="tabOpcion1" onclick="cambiarOpcion(1)" class="relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10">
+            <span class="flex items-center gap-1">
+              <span>⭐</span>
+              <span>Opción 1 - Ideal</span>
+            </span>
+          </button>
+          <button id="tabOpcion2" onclick="cambiarOpcion(2)" class="relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t">
+            <span class="flex items-center gap-1">
+              <span>🔧</span>
+              <span>Opción 2 - Ajustada</span>
+            </span>
+          </button>
+        </div>
       </div>
       
-      <!-- Botones Secundarios -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-       <button onclick="modificarDatos()" class="flex flex-col items-center gap-2 px-4 py-3 bg-white hover:bg-orange-50 border-2 border-orange-400 text-orange-600 hover:text-orange-700 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all duration-200">
-        <span class="text-3xl">✏️</span>
-        <span class="text-sm">Modificar Datos</span>
-       </button>
-       
-       <button onclick="abrirWhatsApp()" class="flex flex-col items-center gap-2 px-4 py-3 bg-white hover:bg-green-50 border-2 border-green-500 text-green-600 hover:text-green-700 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all duration-200">
-        <span class="text-3xl">💬</span>
-        <span class="text-sm">WhatsApp</span>
-       </button>
-       
-       <button onclick="window.print()" class="flex flex-col items-center gap-2 px-4 py-3 bg-white hover:bg-blue-50 border-2 border-blue-400 text-blue-600 hover:text-blue-700 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all duration-200">
-        <span class="text-3xl">🖨️</span>
-        <span class="text-sm">Imprimir</span>
-       </button>
-       
-       <button onclick="nuevaCotizacion()" class="flex flex-col items-center gap-2 px-4 py-3 bg-white hover:bg-purple-50 border-2 border-purple-400 text-purple-600 hover:text-purple-700 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all duration-200">
-        <span class="text-3xl">🔄</span>
-        <span class="text-sm">Nueva Cotización</span>
-       </button>
+      <!-- Área de Botones Compacta -->
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 border-b border-blue-200">
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Botón Enviar Email - Compacto -->
+          <button id="btnEnviarEmailModal" onclick="enviarCotizacionPorEmail()" class="flex-1 min-w-[200px] px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded text-sm font-semibold shadow transition flex items-center justify-center gap-2">
+            <span>📧</span>
+            <span>Enviar por Email</span>
+          </button>
+          
+          <!-- Botones Secundarios Compactos -->
+          <button onclick="modificarDatos()" class="px-3 py-2 bg-white hover:bg-orange-50 border border-orange-400 text-orange-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+            <span>✏️</span>
+            <span>Modificar</span>
+          </button>
+          
+          <button onclick="abrirWhatsApp()" class="px-3 py-2 bg-white hover:bg-green-50 border border-green-500 text-green-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+            <span>💬</span>
+            <span>WhatsApp</span>
+          </button>
+          
+          <button onclick="window.print()" class="px-3 py-2 bg-white hover:bg-blue-50 border border-blue-400 text-blue-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+            <span>🖨️</span>
+            <span>Imprimir</span>
+          </button>
+          
+          <button onclick="nuevaCotizacion()" class="px-3 py-2 bg-white hover:bg-purple-50 border border-purple-400 text-purple-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+            <span>🔄</span>
+            <span>Nueva</span>
+          </button>
+        </div>
+        <p id="estadoEnvioEmail" class="text-center text-xs mt-1 text-gray-600"></p>
       </div>
-     </div>
     </div>
     
-    <!-- Contenido del Resultado -->
-    <div id="contenidoResultado" class="p-6">
+    <!-- Contenido del Resultado - SCROLLABLE -->
+    <div id="contenidoResultado" class="flex-1 overflow-y-auto p-6">
      <!-- El contenido se genera dinámicamente -->
     </div>
    </div>
@@ -268,34 +267,46 @@
         let opcionActiva = 1; // Track active option
         const API_BASE_URL = window.location.origin + '/api';
         
-        // Función para cambiar entre opciones
+        // Función para cambiar entre opciones con efecto de transición
         function cambiarOpcion(numeroOpcion) {
             opcionActiva = numeroOpcion;
             
             console.log(`🔄 Cambiando a Opción ${numeroOpcion}`);
             
-            // Update tab styles con las clases mejoradas
-            const tab1 = document.getElementById('tabOpcion1');
-            const tab2 = document.getElementById('tabOpcion2');
+            // Fade out
+            const contenido = document.getElementById('contenidoResultado');
+            contenido.style.opacity = '0.3';
+            contenido.style.transition = 'opacity 150ms';
             
-            if (numeroOpcion === 1) {
-                // Tab 1 activo
-                tab1.className = 'relative px-8 py-4 font-bold text-lg transition-all duration-200 bg-white text-blue-600 shadow-md rounded-t-lg -mb-0.5 border-b-2 border-blue-600 z-10';
-                // Tab 2 inactivo
-                tab2.className = 'relative px-8 py-4 font-bold text-lg transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t-lg';
+            setTimeout(() => {
+                // Update tab styles con clases compactas
+                const tab1 = document.getElementById('tabOpcion1');
+                const tab2 = document.getElementById('tabOpcion2');
                 
-                // Mostrar Opción 1
-                mostrarResultadoOpcion(cotizacionActual, null);
-            } else {
-                // Tab 1 inactivo
-                tab1.className = 'relative px-8 py-4 font-bold text-lg transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t-lg';
-                // Tab 2 activo
-                tab2.className = 'relative px-8 py-4 font-bold text-lg transition-all duration-200 bg-white text-blue-600 shadow-md rounded-t-lg -mb-0.5 border-b-2 border-blue-600 z-10';
+                if (numeroOpcion === 1) {
+                    // Tab 1 activo - clases compactas
+                    tab1.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10';
+                    // Tab 2 inactivo
+                    tab2.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t';
+                    
+                    // Mostrar Opción 1
+                    mostrarResultadoOpcion(cotizacionActual, null);
+                } else {
+                    // Tab 1 inactivo
+                    tab1.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t';
+                    // Tab 2 activo - clases compactas
+                    tab2.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10';
+                    
+                    // Mostrar Opción 2
+                    console.log('📋 Datos de opción 2:', cotizacionActual.opcion2);
+                    mostrarResultadoOpcion(cotizacionActual.opcion2, cotizacionActual);
+                }
                 
-                // Mostrar Opción 2
-                console.log('📋 Datos de opción 2:', cotizacionActual.opcion2);
-                mostrarResultadoOpcion(cotizacionActual.opcion2, cotizacionActual);
-            }
+                // Fade in
+                setTimeout(() => {
+                    contenido.style.opacity = '1';
+                }, 50);
+            }, 150);
         }
         
         async function cargarEquipos(sistemaElectrico = null) {
@@ -736,15 +747,15 @@
                 console.log('ℹ️ Solo hay opción 1 - Tabs ocultos');
             }
             
-            // Reset a opción 1 con las nuevas clases
+            // Reset a opción 1 con las nuevas clases compactas
             opcionActiva = 1;
             const tab1 = document.getElementById('tabOpcion1');
             const tab2 = document.getElementById('tabOpcion2');
             if (tab1 && tab2) {
-                // Tab 1 activo
-                tab1.className = 'relative px-8 py-4 font-bold text-lg transition-all duration-200 bg-white text-blue-600 shadow-md rounded-t-lg -mb-0.5 border-b-2 border-blue-600 z-10';
+                // Tab 1 activo - clases compactas
+                tab1.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10';
                 // Tab 2 inactivo
-                tab2.className = 'relative px-8 py-4 font-bold text-lg transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t-lg';
+                tab2.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t';
             }
             
             // Mostrar opción 1
@@ -795,11 +806,6 @@
             contenido.innerHTML = `
                 ${mensajeOpcion}
                 <div class="space-y-6">
-                    <!-- Logo y Header -->
-                    <div class="text-center mb-6">
-                        <img src="/static/images/loggo-Nassa.png" alt="NASSA SOLAR" class="mx-auto h-20 w-auto mb-4">
-                    </div>
-                    
                     <!-- Resumen Ejecutivo -->
                     <div class="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-xl border-l-4 border-blue-500">
                         <h3 class="text-2xl font-bold text-gray-900 mb-4">📊 Resumen Ejecutivo</h3>
@@ -926,15 +932,6 @@
                                 <span>TOTAL SISTEMA:</span>
                                 <span class="text-indigo-600 font-mono text-2xl">$${cotizacion.valorTotalSistema.toLocaleString()}</span>
                             </div>
-                        </div>
-                        
-                        <!-- Botón Enviar Email (NUEVO) -->
-                        <div class="mt-6 pt-4 border-t">
-                            <button id="btnEnviarEmailModal" onclick="enviarCotizacionPorEmail()" class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-bold text-lg shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2">
-                                <span class="text-2xl">📧</span>
-                                <span>Enviar Cotización por Email</span>
-                            </button>
-                            <p id="estadoEnvioEmail" class="text-center text-sm mt-2 text-gray-600"></p>
                         </div>
                     </div>
                     ` : ''}
