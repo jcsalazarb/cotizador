@@ -2280,6 +2280,37 @@ def crear_tabla_cotizaciones_endpoint():
         print(f"❌ ERROR: {error_trace}")
         raise HTTPException(500, f"Error creando tabla: {str(e)}")
 
+@app.post("/api/admin/init-database", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def init_database_endpoint():
+    """
+    Inicializa TODAS las tablas en PostgreSQL usando SQLAlchemy
+    Incluye la nueva tabla de cotizaciones
+    """
+    try:
+        if not os.getenv("DATABASE_URL"):
+            raise HTTPException(500, "DATABASE_URL no configurada")
+        
+        from models import init_database
+        
+        print("🔄 Inicializando base de datos...")
+        init_database()
+        print("✅ Base de datos inicializada correctamente")
+        
+        return {
+            "status": "success",
+            "mensaje": "✅ Todas las tablas creadas exitosamente",
+            "tablas": [
+                "paneles", "inversores", "baterias", "ciudades", 
+                "parametros", "consecutivos", "estadisticas", "cotizaciones"
+            ]
+        }
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR: {error_trace}")
+        raise HTTPException(500, f"Error inicializando base de datos: {str(e)}")
+
 @app.post("/api/admin/migrate-to-postgres", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def migrate_to_postgres():
     """
@@ -2327,7 +2358,7 @@ def verificar_postgres():
         if not os.getenv("DATABASE_URL"):
             raise HTTPException(500, "DATABASE_URL no configurada")
         
-        from models import get_db_session, Panel, Inversor, Bateria, Ciudad, Parametro, Consecutivo
+        from models import get_db_session, Panel, Inversor, Bateria, Ciudad, Parametro, Consecutivo, Cotizacion
         
         session = get_db_session()
         
@@ -2339,6 +2370,7 @@ def verificar_postgres():
             ciudades_count = session.query(Ciudad).count()
             parametros_count = session.query(Parametro).count()
             consecutivo_count = session.query(Consecutivo).count()
+            cotizaciones_count = session.query(Cotizacion).count()
             
             # Muestra de ciudades
             ciudades_muestra = session.query(Ciudad).limit(10).all()
@@ -2359,7 +2391,8 @@ def verificar_postgres():
                     "baterias": baterias_count,
                     "ciudades": ciudades_count,
                     "parametros": parametros_count,
-                    "consecutivos": consecutivo_count
+                    "consecutivos": consecutivo_count,
+                    "cotizaciones": cotizaciones_count
                 },
                 "muestra_ciudades": muestra_data,
                 "timestamp": now_colombia().isoformat()
