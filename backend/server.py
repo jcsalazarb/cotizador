@@ -4628,10 +4628,12 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         "opcion2": {
             "numeroPaneles": resultado_opcion2["numeroPaneles"],
             "capacidadInstalada": resultado_opcion2["capacidadInstalada"],
+            "areaRequerida": resultado_opcion2["areaRequerida"],
             "valorTotalSistema": resultado_opcion2["valorTotalSistema"],
             "ahorroMensualEnergia": resultado_opcion2["ahorroMensualEnergia"],
             "tiempoRetorno": resultado_opcion2["tiempoRetorno"],
-            "desgloseCostos": resultado_opcion2["desgloseCostos"]
+            "desgloseCostos": resultado_opcion2["desgloseCostos"],
+            "proyeccion25Anos": resultado_opcion2.get("proyeccion25Anos", [])
         } if resultado_opcion2 else None
     }
     
