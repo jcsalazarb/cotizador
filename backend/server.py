@@ -291,40 +291,94 @@ def load_json(path: str) -> dict:
 def obtener_siguiente_consecutivo() -> str:
     """
     Genera el siguiente número de cotización con formato NASSA-YYYY-#### 
-    Usa lock de archivo para evitar duplicados en concurrencia
+    Usa PostgreSQL para evitar duplicados en concurrencia
     """
-    import fcntl
+    ano_actual = now_colombia().year
     
-    consecutivo_file = os.path.join(CONFIG_DIR, "consecutivo.json")
-    
-    # Abrir con lock exclusivo
-    with open(consecutivo_file, "r+", encoding="utf-8") as f:
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+    if not POSTGRES_AVAILABLE:
+        # Fallback a archivo JSON si PostgreSQL no disponible
+        print("⚠️ PostgreSQL no disponible, usando archivo JSON como fallback")
+        import fcntl
+        consecutivo_file = os.path.join(CONFIG_DIR, "consecutivo.json")
         
-        try:
-            data = json.load(f)
-            ano_actual = now_colombia().year
+        if not os.path.exists(consecutivo_file):
+            data_inicial = {"ano_actual": ano_actual, "ultimo_consecutivo": 0}
+            with open(consecutivo_file, "w", encoding="utf-8") as f:
+                json.dump(data_inicial, f, ensure_ascii=False, indent=2)
+        
+        with open(consecutivo_file, "r+", encoding="utf-8") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                data = json.load(f)
+                if data.get("ano_actual") != ano_actual:
+                    data["ano_actual"] = ano_actual
+                    data["ultimo_consecutivo"] = 0
+                data["ultimo_consecutivo"] += 1
+                consecutivo = data["ultimo_consecutivo"]
+                f.seek(0)
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.truncate()
+                cotizacion_id = f"NASSA-{ano_actual}-{consecutivo:04d}"
+                return cotizacion_id
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    
+    # Usar PostgreSQL (RECOMENDADO)
+    try:
+        with get_db_session() as session:
+            # Buscar consecutivo del año actual con FOR UPDATE (lock de fila)
+            consecutivo_obj = session.query(Consecutivo).filter(
+                Consecutivo.ano_actual == ano_actual
+            ).with_for_update().first()
             
-            # Si cambió el año, resetear consecutivo
-            if data.get("ano_actual") != ano_actual:
-                data["ano_actual"] = ano_actual
-                data["ultimo_consecutivo"] = 0
+            if consecutivo_obj is None:
+                # Crear nuevo registro para el año
+                print(f"📅 Creando nuevo consecutivo para el año {ano_actual}")
+                consecutivo_obj = Consecutivo(
+                    ano_actual=ano_actual,
+                    ultimo_consecutivo=1
+                )
+                session.add(consecutivo_obj)
+                session.commit()
+                consecutivo = 1
+            else:
+                # Incrementar consecutivo existente
+                consecutivo_obj.ultimo_consecutivo += 1
+                consecutivo = consecutivo_obj.ultimo_consecutivo
+                session.commit()
             
-            # Incrementar consecutivo
-            data["ultimo_consecutivo"] += 1
-            consecutivo = data["ultimo_consecutivo"]
-            
-            # Escribir de vuelta
-            f.seek(0)
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.truncate()
-            
-            # Formatear: NASSA-2025-0001
             cotizacion_id = f"NASSA-{ano_actual}-{consecutivo:04d}"
+            print(f"✅ Cotización ID generado: {cotizacion_id} (consecutivo {consecutivo} del año {ano_actual})")
             return cotizacion_id
             
-        finally:
-            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    except Exception as e:
+        print(f"❌ Error obteniendo consecutivo de PostgreSQL: {e}")
+        # Fallback a archivo JSON si falla PostgreSQL
+        print("⚠️ Usando fallback a archivo JSON")
+        import fcntl
+        consecutivo_file = os.path.join(CONFIG_DIR, "consecutivo.json")
+        
+        if not os.path.exists(consecutivo_file):
+            data_inicial = {"ano_actual": ano_actual, "ultimo_consecutivo": 0}
+            with open(consecutivo_file, "w", encoding="utf-8") as f:
+                json.dump(data_inicial, f, ensure_ascii=False, indent=2)
+        
+        with open(consecutivo_file, "r+", encoding="utf-8") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                data = json.load(f)
+                if data.get("ano_actual") != ano_actual:
+                    data["ano_actual"] = ano_actual
+                    data["ultimo_consecutivo"] = 0
+                data["ultimo_consecutivo"] += 1
+                consecutivo = data["ultimo_consecutivo"]
+                f.seek(0)
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.truncate()
+                cotizacion_id = f"NASSA-{ano_actual}-{consecutivo:04d}"
+                return cotizacion_id
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 def calcular_valor_legalizacion(capacidad_instalada_w: float, parametros: dict) -> float:
     """
