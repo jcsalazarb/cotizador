@@ -220,32 +220,31 @@
         </div>
       </div>
       
-      <!-- Área de Botones Compacta -->
+      <!-- Área de Botones Compacta - TODOS MISMO TAMAÑO -->
       <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 border-b border-blue-200">
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Botón Enviar Email - Compacto -->
-          <button id="btnEnviarEmailModal" onclick="enviarCotizacionPorEmail()" class="flex-1 min-w-[200px] px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded text-sm font-semibold shadow transition flex items-center justify-center gap-2">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <!-- Todos los botones con mismo tamaño usando grid -->
+          <button id="btnEnviarEmailModal" onclick="enviarCotizacionPorEmail()" class="px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded text-xs font-semibold shadow transition flex items-center justify-center gap-1">
             <span>📧</span>
-            <span>Enviar por Email</span>
+            <span>Email</span>
           </button>
           
-          <!-- Botones Secundarios Compactos -->
-          <button onclick="modificarDatos()" class="px-3 py-2 bg-white hover:bg-orange-50 border border-orange-400 text-orange-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+          <button onclick="modificarDatos()" class="px-3 py-2 bg-white hover:bg-orange-50 border border-orange-400 text-orange-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
             <span>✏️</span>
             <span>Modificar</span>
           </button>
           
-          <button onclick="abrirWhatsApp()" class="px-3 py-2 bg-white hover:bg-green-50 border border-green-500 text-green-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+          <button onclick="abrirWhatsApp()" class="px-3 py-2 bg-white hover:bg-green-50 border border-green-500 text-green-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
             <span>💬</span>
             <span>WhatsApp</span>
           </button>
           
-          <button onclick="window.print()" class="px-3 py-2 bg-white hover:bg-blue-50 border border-blue-400 text-blue-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+          <button onclick="window.print()" class="px-3 py-2 bg-white hover:bg-blue-50 border border-blue-400 text-blue-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
             <span>🖨️</span>
             <span>Imprimir</span>
           </button>
           
-          <button onclick="nuevaCotizacion()" class="px-3 py-2 bg-white hover:bg-purple-50 border border-purple-400 text-purple-600 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
+          <button onclick="nuevaCotizacion()" class="px-3 py-2 bg-white hover:bg-purple-50 border border-purple-400 text-purple-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
             <span>🔄</span>
             <span>Nueva</span>
           </button>
@@ -966,22 +965,6 @@
                             </table>
                         </div>
                     </div>
-
-                    <!-- Botones de acción -->
-                    <div class="flex flex-wrap gap-4 justify-center pt-4 no-print">
-                        <button onclick="modificarDatos()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
-                            <span class="text-xl">✏️</span> Modificar Datos
-                        </button>
-                        <button onclick="abrirWhatsApp()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
-                            <span class="text-xl">💬</span> WhatsApp
-                        </button>
-                        <button onclick="window.print()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
-                            <span class="text-xl">🖨️</span> Imprimir
-                        </button>
-                        <button onclick="nuevaCotizacion()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
-                            <span class="text-xl">🔄</span> Nueva Cotización
-                        </button>
-                    </div>
                 </div>
             `;
             
@@ -1021,6 +1004,26 @@
         }
 
         // Función para cerrar modal
+        /**
+         * Función: modificarDatos()
+         * 
+         * PROPÓSITO:
+         * Permite al usuario regresar al formulario principal para modificar
+         * los datos ingresados sin perder la información actual.
+         * 
+         * ACCIONES:
+         * 1. Cierra el modal de resultados
+         * 2. Hace scroll suave hacia el formulario de cotización
+         * 3. Enfoca automáticamente el primer campo (nombre) para facilitar edición
+         * 
+         * USO:
+         * - Usuario revisa cotización y desea cambiar algún valor (área, consumo, etc.)
+         * - Click en botón "Modificar Datos" → Vuelve al formulario
+         * - Los campos ya tienen los valores previos (no se pierden)
+         * - Usuario modifica y vuelve a generar cotización
+         * 
+         * NOTA: No borra datos, solo cierra modal y mueve vista al formulario
+         */
         function modificarDatos() {
             // Cerrar modal
             cerrarModal();
@@ -1031,7 +1034,7 @@
                 formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             
-            // Opcional: Enfocar el primer campo
+            // Opcional: Enfocar el primer campo para facilitar edición
             const primerCampo = document.getElementById('nombre');
             if (primerCampo) {
                 setTimeout(() => primerCampo.focus(), 500);

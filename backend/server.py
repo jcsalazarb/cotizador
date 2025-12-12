@@ -1353,7 +1353,7 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
         # Campos adicionales solicitados
         "{{NPISOS}}": str(req.get('numeroPisos', '1')),
         "{{HSPC}}": f"{req.get('hspCalculado') if req.get('hspCalculado') is not None else ''}",
-        "{{AREA}}": f"{req.get('areaDisponible', '')}",
+        "{{AREA}}": f"{req.get('areaDisponible', 0) if req.get('areaDisponible') else 0} m²" if req.get('areaDisponible') else "N/A",
         "{{PCTDIA}}": f"{req.get('porcentajeConsumodia', '')}%",
         # Placeholders de legalización
         "{{NO_LEGALIZA}}": "Gestión de legalización ante operador del sistema instalado" if req.get("legalizacion", "NO") == "NO" else "",
@@ -4642,6 +4642,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             "valorKwh": req.valorKwh,
             "porcentajeConsumodia": req.porcentajeConsumodia,
             "hspCalculado": req.hspCalculado,
+            "areaDisponible": req.areaDisponible,  # ← AGREGAR PARA MENSAJE EN MODAL
             "panelSeleccionado": resultado_opcion2["panel"],
             "inversorSeleccionado": resultado_opcion2["inversor"],
             "bateriaSeleccionada": resultado_opcion2["bateria"],
@@ -4815,7 +4816,7 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         
         session.close()
         
-        # Extraer datos necesarios
+        # Extraer datos necesarios - INCLUIR TODOS LOS CAMPOS
         datos_cliente = {
             "nombre": datos_completos["nombre"],
             "email": datos_completos["email"],
@@ -4831,8 +4832,11 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
             "valorKwh": datos_completos["valorKwh"],
             "porcentajeConsumodia": datos_completos["porcentajeConsumodia"],
             "hspCalculado": datos_completos["hspCalculado"],
-            "legalizacion": datos_completos.get("legalizacion", "no"),
-            "seleccionManual": datos_completos.get("seleccionManual", "no")
+            # AGREGAR CAMPOS FALTANTES PARA PLACEHOLDERS
+            "areaDisponible": datos_completos.get("areaDisponible", 0),
+            "numeroPisos": datos_completos.get("numeroPisos", "1"),
+            "legalizacion": datos_completos.get("legalizacion", "NO"),
+            "seleccionManual": datos_completos.get("seleccionManual", "NO")
         }
         
         resumen_opcion1 = datos_completos  # Ya tiene todos los campos necesarios
