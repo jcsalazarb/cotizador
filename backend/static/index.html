@@ -568,12 +568,13 @@
         function mostrarOpcionesBaterias() {
             const tipoSistema = document.getElementById('tipoSistemaFV').value;
             const seccionBaterias = document.getElementById('seccionBaterias');
+            const seleccionManual = document.getElementById('seleccionManual').value;
             
             if (tipoSistema === 'offgrid' || tipoSistema === 'hibrido_incluido') {
                 seccionBaterias.style.display = 'block';
-                // Hacer baterías obligatorias
+                // Hacer baterías obligatorias SOLO si selección manual está activa
                 document.querySelectorAll('input[name="bateria"]').forEach(input => {
-                    input.required = true;
+                    input.required = (seleccionManual === 'SI');
                 });
             } else if (tipoSistema === 'hibrido_opcional') {
                 seccionBaterias.style.display = 'block';
@@ -608,6 +609,7 @@
                     // NO deshabilitar - solo ocultar con CSS
                 });
                 // Batería se maneja con mostrarOpcionesBaterias()
+                mostrarOpcionesBaterias(); // ✅ Actualizar estado de baterías
             } else {
                 wrapper.style.display = 'none';
                 // Limpiar selecciones y REMOVER required (pero NO deshabilitar)
