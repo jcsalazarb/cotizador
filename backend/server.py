@@ -16,7 +16,8 @@ from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ValidationError
+from fastapi.exceptions import RequestValidationError
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from pptx import Presentation
@@ -77,7 +78,119 @@ app.add_middleware(
 )
 
 # ========================================
-# 📁 CONFIGURACIÓN DE ARCHIVOS ESTÁTICOS
+# �️ MANEJADOR DE ERRORES DE VALIDACIÓN
+# ========================================
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Captura errores de validación de Pydantic y devuelve mensajes amigables en español
+    """
+    errores_amigables = []
+    
+    # Diccionario de traducción de campos
+    campo_nombres = {
+        "nombre": "Nombre",
+        "telefono": "Teléfono",
+        "email": "Correo electrónico",
+        "ciudad": "Ciudad",
+        "direccion": "Dirección",
+        "consumoMensual": "Consumo mensual",
+        "valorFactura": "Valor de la factura",
+        "valorKwh": "Valor kWh",
+        "nic": "NIC/Número de instalación",
+        "tipoVivienda": "Tipo de vivienda",
+        "areaDisponible": "Área disponible",
+        "numeroPisos": "Número de pisos",
+        "sistemaElectrico": "Sistema eléctrico",
+        "porcentajeConsumodia": "Porcentaje consumo día",
+        "porcentajeAhorroEnergia": "Porcentaje de ahorro energético",
+        "tipoSistemaFV": "Tipo de sistema fotovoltaico",
+        "legalizacion": "Legalización",
+        "seleccionManual": "Selección manual",
+        "panel": "Panel",
+        "inversor": "Inversor",
+        "bateria": "Batería",
+        "identificacion": "Identificación"
+    }
+    
+    for error in exc.errors():
+        campo = error["loc"][-1] if error["loc"] else "campo"
+        tipo_error = error["type"]
+        mensaje_original = error["msg"]
+        
+        # Obtener nombre amigable del campo
+        nombre_campo = campo_nombres.get(campo, campo)
+        
+        # Generar mensaje amigable según el tipo de error
+        if tipo_error == "string_too_short":
+            min_length = error.get("ctx", {}).get("min_length", "")
+            valor_actual = error.get("input", "")
+            mensaje = f"{nombre_campo}: debe tener al menos {min_length} caracteres (actualmente tiene {len(str(valor_actual))})"
+        
+        elif tipo_error == "string_too_long":
+            max_length = error.get("ctx", {}).get("max_length", "")
+            mensaje = f"{nombre_campo}: no puede exceder {max_length} caracteres"
+        
+        elif tipo_error == "string_pattern_mismatch":
+            if campo == "telefono":
+                mensaje = f"{nombre_campo}: debe tener un formato válido (7-20 dígitos, puede incluir +, espacios, guiones o paréntesis)"
+            elif campo == "tipoVivienda":
+                mensaje = f"{nombre_campo}: debe ser 'casa', 'apartamento', 'local' o 'empresa'"
+            elif campo == "sistemaElectrico":
+                mensaje = f"{nombre_campo}: debe ser 'monofasico', 'bifasico' o 'trifasico'"
+            elif campo == "tipoSistemaFV":
+                mensaje = f"{nombre_campo}: debe ser 'ongrid', 'offgrid', 'hibrido_incluido' o 'hibrido_opcional'"
+            elif campo in ["legalizacion", "seleccionManual"]:
+                mensaje = f"{nombre_campo}: debe ser 'SI' o 'NO'"
+            else:
+                mensaje = f"{nombre_campo}: formato inválido"
+        
+        elif tipo_error == "value_error.email":
+            mensaje = f"{nombre_campo}: debe ser un correo electrónico válido"
+        
+        elif tipo_error == "greater_than":
+            limite = error.get("ctx", {}).get("gt", "")
+            mensaje = f"{nombre_campo}: debe ser mayor a {limite}"
+        
+        elif tipo_error == "less_than":
+            limite = error.get("ctx", {}).get("lt", "")
+            mensaje = f"{nombre_campo}: debe ser menor a {limite}"
+        
+        elif tipo_error == "greater_than_equal":
+            limite = error.get("ctx", {}).get("ge", "")
+            mensaje = f"{nombre_campo}: debe ser mayor o igual a {limite}"
+        
+        elif tipo_error == "less_than_equal":
+            limite = error.get("ctx", {}).get("le", "")
+            mensaje = f"{nombre_campo}: debe ser menor o igual a {limite}"
+        
+        elif tipo_error == "missing":
+            mensaje = f"{nombre_campo}: es obligatorio"
+        
+        elif tipo_error == "value_error":
+            # Errores personalizados de validadores
+            mensaje = f"{nombre_campo}: {mensaje_original}"
+        
+        else:
+            # Fallback para otros tipos de error
+            mensaje = f"{nombre_campo}: {mensaje_original}"
+        
+        errores_amigables.append({
+            "campo": campo,
+            "mensaje": mensaje
+        })
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "Errores de validación",
+            "mensaje": "Por favor, corrige los siguientes campos:",
+            "errores": errores_amigables
+        }
+    )
+
+# ========================================
+# �📁 CONFIGURACIÓN DE ARCHIVOS ESTÁTICOS
 # ========================================
 STATIC_DIR = os.path.join(APP_DIR, "static")
 if os.path.exists(STATIC_DIR):
@@ -131,7 +244,7 @@ class CotizarRequest(BaseModel):
     consumoMensual: float = Field(..., gt=50, lt=50000)
     valorFactura: float = Field(..., gt=10000, lt=100000000)
     valorKwh: float = Field(..., gt=100, lt=5000)
-    nic: str = Field(..., min_length=5, max_length=25)
+    nic: str = Field(..., min_length=3, max_length=25)
     tipoVivienda: str = Field(..., pattern=r'^(casa|apartamento|local|empresa)$')
     areaDisponible: Optional[float] = Field(0, ge=0, lt=20000)
     numeroPisos: Optional[str] = Field("1", pattern=r'^[1-6]$')
