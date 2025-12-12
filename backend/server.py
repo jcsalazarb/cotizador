@@ -1357,7 +1357,7 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
         "{{AREA}}": f"{req.get('areaDisponible', 0)} m²" if req.get('areaDisponible') is not None else "N/A",
         "{{PCTDIA}}": f"{req.get('porcentajeConsumodia', '')}%",
         # Placeholders de legalización - DEBUG
-        "{{NO_LEGALIZA}}": "Gestión de legalización ante operador del sistema instalado" if str(req.get("legalizacion", "NO")).upper() == "NO" else "",
+        "{{NO_LEGALIZA}}": "Gestión de legalización del Sistema Fotovoltaico ante el Operador de red" if str(req.get("legalizacion", "NO")).upper() == "NO" else "",
         "{{SI_LEGALIZA}}": "Gestión de legalización ante operador de red, contador, documentos eléctricos y acompañamiento técnico en las 3 visitas." if str(req.get("legalizacion", "NO")).upper() == "SI" else ""
     }
     
