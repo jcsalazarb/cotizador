@@ -2252,9 +2252,22 @@ def admin_panel():
 def crm_panel():
     """Servir panel CRM"""
     crm_path = os.path.join(STATIC_DIR, "crm.html")
+    logger.info(f"🔍 Buscando CRM en: {crm_path}")
+    logger.info(f"📁 STATIC_DIR: {STATIC_DIR}")
+    logger.info(f"📂 APP_DIR: {APP_DIR}")
+    logger.info(f"✅ Existe crm.html: {os.path.exists(crm_path)}")
+    
     if os.path.exists(crm_path):
         return FileResponse(crm_path, media_type="text/html")
-    raise HTTPException(404, "Panel CRM no encontrado")
+    
+    # Debug: listar archivos en static
+    if os.path.exists(STATIC_DIR):
+        archivos = os.listdir(STATIC_DIR)
+        logger.error(f"❌ crm.html no encontrado. Archivos en static: {archivos}")
+    else:
+        logger.error(f"❌ STATIC_DIR no existe: {STATIC_DIR}")
+    
+    raise HTTPException(404, f"Panel CRM no encontrado en {crm_path}")
 
 @app.get("/health", tags=["General"])
 def health():
