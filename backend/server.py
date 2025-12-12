@@ -481,80 +481,116 @@ def cargar_datos_desde_postgres():
     """
     Carga equipos, ciudades y parámetros desde PostgreSQL.
     Retorna estructura compatible con formato JSON legacy.
+    FALLBACK: Si PostgreSQL no está disponible, carga desde archivos JSON.
     """
-    if not POSTGRES_AVAILABLE:
-        raise RuntimeError("PostgreSQL no está disponible - falló la importación de models")
+    # Intentar cargar desde PostgreSQL
+    if POSTGRES_AVAILABLE:
+        try:
+            session = get_db_session()
+            try:
+                # Cargar paneles
+                paneles_db = session.query(Panel).all()
+                paneles = [{
+                    "id": p.id,
+                    "nombre": p.nombre,
+                    "capacidad": p.capacidad,
+                    "precio": p.precio,
+                    "area": p.area,
+                    "eficienciaPanel": p.eficienciaPanel,
+                    "default": p.default
+                } for p in paneles_db]
+                
+                # Cargar inversores
+                inversores_db = session.query(Inversor).all()
+                inversores = [{
+                    "id": i.id,
+                    "nombre": i.nombre,
+                    "capacidad": i.capacidad,
+                    "precio": i.precio,
+                    "eficiencia": i.eficiencia,
+                    "tipo": i.tipo,
+                    "paneles_por_inversor": i.paneles_por_inversor,
+                    "sobredimensionamiento": i.sobredimensionamiento,
+                    "sistemaElectrico": i.sistemaElectrico,
+                    "default": i.default
+                } for i in inversores_db]
+                
+                # Cargar baterías
+                baterias_db = session.query(Bateria).all()
+                baterias = [{
+                    "id": b.id,
+                    "nombre": b.nombre,
+                    "capacidad": b.capacidad,
+                    "precio": b.precio,
+                    "default": b.default
+                } for b in baterias_db]
+                
+                # Cargar ciudades
+                ciudades_db = session.query(Ciudad).all()
+                ciudades = {
+                    c.key: {
+                        "hsp": c.hsp, 
+                        "nombre": c.nombre,
+                        "factorTemperatura": getattr(c, 'factorTemperatura', 0.90)  # Default 0.90 si no existe
+                    } 
+                    for c in ciudades_db
+                }
+                
+                # Cargar parámetros (reconstruir dict anidado)
+                parametros_db = session.query(Parametro).all()
+                parametros = {}
+                for p in parametros_db:
+                    parametros[p.seccion] = p.data
+                
+                equipos = {
+                    "paneles": paneles,
+                    "inversores": inversores,
+                    "baterias": baterias
+                }
+                
+                print(f"✅ Datos cargados desde PostgreSQL: {len(paneles)} paneles, {len(inversores)} inversores, {len(baterias)} baterías, {len(ciudades)} ciudades")
+                return equipos, ciudades, parametros
+                
+            finally:
+                session.close()
+        except Exception as e:
+            print(f"⚠️ Error conectando a PostgreSQL ({type(e).__name__}: {str(e)[:100]})")
+            print(f"   → Usando archivos JSON como fallback")
+    else:
+        print(f"⚠️ PostgreSQL no disponible (models no importados)")
+        print(f"   → Usando archivos JSON como fallback")
     
-    session = get_db_session()
+    # FALLBACK: Cargar desde archivos JSON
     try:
-        # Cargar paneles
-        paneles_db = session.query(Panel).all()
-        paneles = [{
-            "id": p.id,
-            "nombre": p.nombre,
-            "capacidad": p.capacidad,
-            "precio": p.precio,
-            "area": p.area,
-            "eficienciaPanel": p.eficienciaPanel,
-            "default": p.default
-        } for p in paneles_db]
+        equipos = load_json(EQUIPOS_FILE)
+        ciudades = load_json(CIUDADES_FILE)
         
-        # Cargar inversores
-        inversores_db = session.query(Inversor).all()
-        inversores = [{
-            "id": i.id,
-            "nombre": i.nombre,
-            "capacidad": i.capacidad,
-            "precio": i.precio,
-            "eficiencia": i.eficiencia,
-            "tipo": i.tipo,
-            "paneles_por_inversor": i.paneles_por_inversor,
-            "sobredimensionamiento": i.sobredimensionamiento,
-            "sistemaElectrico": i.sistemaElectrico,
-            "default": i.default
-        } for i in inversores_db]
+        # Parametros tiene estructura diferente en JSON
+        parametros_path = os.path.join(CONFIG_DIR, "parametros.json")
+        if os.path.exists(parametros_path):
+            parametros = load_json(parametros_path)
+        else:
+            # Valores por defecto si no existe el archivo
+            parametros = {
+                "depreciation": {
+                    "enabled": True,
+                    "years": 3,
+                    "percentage": 0.35
+                },
+                "rent_deduction": {
+                    "enabled": True,
+                    "years": 5,
+                    "percentage_base": 0.50,
+                    "percentage_effective": 0.35
+                }
+            }
         
-        # Cargar baterías
-        baterias_db = session.query(Bateria).all()
-        baterias = [{
-            "id": b.id,
-            "nombre": b.nombre,
-            "capacidad": b.capacidad,
-            "precio": b.precio,
-            "default": b.default
-        } for b in baterias_db]
-        
-        # Cargar ciudades
-        ciudades_db = session.query(Ciudad).all()
-        ciudades = {
-            c.key: {
-                "hsp": c.hsp, 
-                "nombre": c.nombre,
-                "factorTemperatura": getattr(c, 'factorTemperatura', 0.90)  # Default 0.90 si no existe
-            } 
-            for c in ciudades_db
-        }
-        
-        # Cargar parámetros (reconstruir dict anidado)
-        parametros_db = session.query(Parametro).all()
-        parametros = {}
-        for p in parametros_db:
-            parametros[p.seccion] = p.data
-        
-        equipos = {
-            "paneles": paneles,
-            "inversores": inversores,
-            "baterias": baterias
-        }
-        
-        print(f"✅ Datos cargados desde PostgreSQL: {len(paneles)} paneles, {len(inversores)} inversores, {len(baterias)} baterías, {len(ciudades)} ciudades")
+        print(f"✅ Datos cargados desde JSON: {len(equipos.get('paneles', []))} paneles, {len(equipos.get('inversores', []))} inversores, {len(equipos.get('baterias', []))} baterías, {len(ciudades)} ciudades")
         return equipos, ciudades, parametros
         
     except Exception as e:
-        print(f"❌ Error en cargar_datos_desde_postgres(): {type(e).__name__}: {e}")
+        print(f"❌ Error crítico cargando datos desde JSON: {type(e).__name__}: {e}")
         raise
-    finally:
-        session.close()
 
 # ========================================
 # 🧮 FUNCIÓN DE CÁLCULO
@@ -3883,10 +3919,45 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     except Exception as e:
         print(f"⚠️ Error en tracking (no crítico): {e}")
     
+    # GUARDAR COTIZACIÓN EN POSTGRESQL para uso posterior en envío de email
+    cotizacion_id_guardado = None
+    try:
+        conn = obtener_conexion_postgres()
+        cursor = conn.cursor()
+        
+        cotizacion_id_guardado = resultado_opcion1["cotizacionId"]
+        
+        # Guardar cotización completa
+        cursor.execute("""
+            INSERT INTO cotizaciones (id, datos_completos, num_opciones, email_cliente, fecha_creacion)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                datos_completos = EXCLUDED.datos_completos,
+                num_opciones = EXCLUDED.num_opciones,
+                fecha_creacion = EXCLUDED.fecha_creacion
+        """, (
+            cotizacion_id_guardado,
+            json.dumps(resumen_completo, ensure_ascii=False),
+            num_opciones,
+            req.email,
+            now_colombia()
+        ))
+        
+        conn.commit()
+        print(f"💾 Cotización guardada en PostgreSQL: {cotizacion_id_guardado}")
+        
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ Error guardando cotización en PostgreSQL (no crítico): {e}")
+        import traceback
+        traceback.print_exc()
+    
     return JSONResponse({
         "status": "success",
         "mensaje": f"✅ Cotización calculada exitosamente. {num_opciones} opción(es) disponible(s).",
         "numOpciones": num_opciones,
+        "cotizacionId": cotizacion_id_guardado,  # ID para envío posterior
         "resumen": resumen_completo,
         "diagnostico": diagnostico  # Agregar diagnóstico para debug
     })
@@ -3896,36 +3967,77 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
 async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_limit)):
     """
     Genera PDFs y envía cotización por email.
-    Requiere los datos completos de la cotización previamente calculada.
+    Solo requiere cotizacionId - el backend ya tiene todos los datos.
     """
     try:
-        # Validar campos requeridos
-        campos_requeridos = ["email", "resumen", "datosCliente"]
-        for campo in campos_requeridos:
-            if campo not in data:
-                raise HTTPException(400, f"Campo requerido faltante: {campo}")
+        # Validar campo requerido
+        if "cotizacionId" not in data:
+            raise HTTPException(400, "Campo requerido: cotizacionId")
         
-        email_cliente = data["email"]
-        resumen = data["resumen"]
-        datos_cliente = data["datosCliente"]
-        opcion2 = data.get("opcion2")  # Opcional
-        num_opciones = 2 if opcion2 else 1
+        cotizacion_id = data["cotizacionId"]
         
-        # MIGRACIÓN POSTGRESQL: Cargar desde BD en lugar de archivos JSON
+        # Recuperar cotización desde PostgreSQL
+        print(f"\n📧 RECUPERANDO COTIZACIÓN PARA ENVÍO")
+        print(f"   ID: {cotizacion_id}")
+        
+        # MIGRACIÓN POSTGRESQL: Cargar desde BD
         equipos, ciudades, parametros = cargar_datos_desde_postgres()
+        
+        # Obtener cotización de la base de datos
+        conn = obtener_conexion_postgres()
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute("""
+                SELECT datos_completos, num_opciones, email_cliente
+                FROM cotizaciones
+                WHERE id = %s
+            """, (cotizacion_id,))
+            
+            resultado = cursor.fetchone()
+            if not resultado:
+                raise HTTPException(404, f"Cotización {cotizacion_id} no encontrada")
+            
+            datos_completos, num_opciones, email_cliente = resultado
+            
+            print(f"   Email destino: {email_cliente}")
+            print(f"   Número de opciones: {num_opciones}")
+            
+        finally:
+            cursor.close()
+            conn.close()
+        
+        # Extraer datos necesarios
+        datos_cliente = {
+            "nombre": datos_completos["nombre"],
+            "email": datos_completos["email"],
+            "telefono": datos_completos["telefono"],
+            "ciudad": datos_completos["ciudad"],
+            "direccion": datos_completos["direccion"],
+            "nic": datos_completos.get("nic", ""),
+            "tipoVivienda": datos_completos["tipoVivienda"],
+            "sistemaElectrico": datos_completos["sistemaElectrico"],
+            "tipoSistemaFV": datos_completos["tipoSistemaFV"],
+            "consumoMensual": datos_completos["consumoMensual"],
+            "valorFactura": datos_completos["valorFactura"],
+            "valorKwh": datos_completos["valorKwh"],
+            "porcentajeConsumodia": datos_completos["porcentajeConsumodia"],
+            "hspCalculado": datos_completos["hspCalculado"],
+            "legalizacion": datos_completos.get("legalizacion", "no"),
+            "seleccionManual": datos_completos.get("seleccionManual", "no")
+        }
+        
+        resumen_opcion1 = datos_completos  # Ya tiene todos los campos necesarios
+        opcion2 = datos_completos.get("opcion2")
         
         pdf_paths = []
         pptx_paths = []
-        
-        print(f"\n📧 GENERANDO PDFs PARA ENVÍO")
-        print(f"   Email destino: {email_cliente}")
-        print(f"   Número de opciones: {num_opciones}")
         
         # GENERAR OPCIÓN 1
         print(f"\n🔄 Generando PDF Opción 1...")
         pptx_path1, pdf_path1 = fill_template_and_convert(
             datos_cliente,
-            resumen,
+            resumen_opcion1,
             opcion="" if num_opciones == 1 else "OPCIÓN 1 DE 2"
         )
         pdf_paths.append(pdf_path1)
@@ -3933,13 +4045,16 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         print(f"✅ Opción 1: {os.path.basename(pdf_path1)}")
         
         # GENERAR OPCIÓN 2 si existe
-        if opcion2:
+        if opcion2 and num_opciones == 2:
             print(f"\n🔄 Generando PDF Opción 2...")
+            # Preparar resumen completo para opción 2
+            resumen_opcion2 = {**datos_cliente, **opcion2}
+            
             # Verificar que existe Template-PreCotizacion2.pptx
             if os.path.isfile(TEMPLATE_PPTX_OP2):
                 pptx_path2, pdf_path2 = fill_template_and_convert(
                     datos_cliente,
-                    opcion2,
+                    resumen_opcion2,
                     opcion="OPCIÓN 2 - Ajustada a área disponible",
                     template_path=TEMPLATE_PPTX_OP2
                 )
@@ -3947,7 +4062,7 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
             else:
                 pptx_path2, pdf_path2 = fill_template_and_convert(
                     datos_cliente,
-                    opcion2,
+                    resumen_opcion2,
                     opcion="OPCIÓN 2 - Ajustada a área disponible"
                 )
                 print(f"✅ Opción 2 (template principal): {os.path.basename(pdf_path2)}")
@@ -3967,14 +4082,14 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
             SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
             if SENDGRID_API_KEY:
                 print(f"   Método: SendGrid API")
-                enviar_email_sendgrid(email_cliente, pdf_paths, resumen, num_opciones)
+                enviar_email_sendgrid(email_cliente, pdf_paths, resumen_opcion1, num_opciones)
                 email_enviado = True
                 print(f"✅ Email enviado exitosamente via SendGrid a {email_cliente}")
             else:
                 # Fallback a SMTP (local/desarrollo)
                 print(f"   Método: SMTP (PrivateEmail/Gmail)")
                 print(f"   ⚠️ SendGrid no configurado, usando SMTP como fallback")
-                enviar_email_smtp(pdf_paths, email_cliente, resumen, num_opciones)
+                enviar_email_smtp(pdf_paths, email_cliente, resumen_opcion1, num_opciones)
                 email_enviado = True
                 print(f"✅ Email enviado exitosamente via SMTP a {email_cliente}")
         except Exception as e:

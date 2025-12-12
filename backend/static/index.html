@@ -897,23 +897,13 @@
             estadoMsg.className = 'text-center text-sm mt-2 text-blue-600';
             
             try {
-                // Incluir opción 2 si existe en la cotización
-                const opcion2Data = cotizacionActual.opcion2 && cotizacionActual.opcion2.numeroPaneles 
-                    ? cotizacionActual.opcion2 
-                    : null;
-                
+                // Solo enviar el ID de cotización - el backend ya tiene todos los datos
                 const payload = {
-                    email: datosCliente.email,
-                    resumen: cotizacionActual,
-                    datosCliente: datosCliente,
-                    opcion2: opcion2Data
+                    cotizacionId: cotizacionActual.cotizacionId
                 };
                 
                 console.log('📧 Enviando cotización por email...');
-                console.log('   Número de opciones:', opcion2Data ? 2 : 1);
-                if (opcion2Data) {
-                    console.log('   ✅ Opción 2 incluida con', opcion2Data.numeroPaneles, 'paneles');
-                }
+                console.log('   Cotización ID:', payload.cotizacionId);
                 
                 const response = await fetch(`${API_BASE_URL}/enviar-cotizacion`, {
                     method: 'POST',
