@@ -897,6 +897,9 @@
 
                     <!-- Botones de acción -->
                     <div class="flex flex-wrap gap-4 justify-center pt-4 no-print">
+                        <button onclick="modificarDatos()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
+                            <span class="text-xl">✏️</span> Modificar Datos
+                        </button>
                         <button onclick="abrirWhatsApp()" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold shadow-lg transform hover:scale-105 transition">
                             <span class="text-xl">💬</span> WhatsApp
                         </button>
@@ -946,6 +949,25 @@
         }
 
         // Función para cerrar modal
+        function modificarDatos() {
+            // Cerrar modal
+            cerrarModal();
+            
+            // Scroll al formulario
+            const formulario = document.getElementById('cotizacionForm');
+            if (formulario) {
+                formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            // Opcional: Enfocar el primer campo
+            const primerCampo = document.getElementById('nombre');
+            if (primerCampo) {
+                setTimeout(() => primerCampo.focus(), 500);
+            }
+            
+            console.log('✏️ Modo edición: El usuario puede modificar los datos del formulario');
+        }
+        
         function cerrarModal() {
             document.getElementById('modalResultado').classList.add('hidden');
             document.getElementById('modalResultado').classList.remove('flex');
@@ -956,9 +978,21 @@
             const btn = document.getElementById('btnEnviarEmailModal');
             const estadoMsg = document.getElementById('estadoEnvioEmail');
             
+            console.log('🔍 Debug envío email:');
+            console.log('   cotizacionActual:', cotizacionActual);
+            console.log('   cotizacionActual.cotizacionId:', cotizacionActual?.cotizacionId);
+            console.log('   datosCliente:', datosCliente);
+            
             if (!cotizacionActual || !datosCliente) {
                 estadoMsg.textContent = '❌ Error: No hay cotización para enviar';
                 estadoMsg.className = 'text-center text-sm mt-2 text-red-600';
+                return;
+            }
+            
+            if (!cotizacionActual.cotizacionId) {
+                estadoMsg.textContent = '❌ Error: Falta ID de cotización';
+                estadoMsg.className = 'text-center text-sm mt-2 text-red-600';
+                console.error('❌ cotizacionActual no tiene cotizacionId:', cotizacionActual);
                 return;
             }
             
@@ -1198,23 +1232,28 @@
                         throw new Error('Respuesta inválida del servidor');
                     }
                     
-                    cotizacionActual = resultado.resumen;
+                    // Guardar cotización con cotizacionId incluido
+                    cotizacionActual = {
+                        ...resultado.resumen,
+                        cotizacionId: resultado.cotizacionId
+                    };
                     
                     // Registrar cotización en local storage (opcional)
                     try {
-                        localStorage.setItem('ultimaCotizacion', JSON.stringify(resultado.resumen));
+                        localStorage.setItem('ultimaCotizacion', JSON.stringify(cotizacionActual));
                     } catch (e) {
                         console.warn('No se pudo guardar en localStorage:', e);
                     }
                     
                     console.log('✅ Cotización recibida del backend');
+                    console.log('📋 cotizacionActual con ID:', cotizacionActual);
                     
                     // Desbloquear formulario después de éxito
                     desbloquearFormulario();
                     
-                    // Mostrar resultado
-                    mostrarNotificacion(`✅ ${resultado.mensaje || 'Cotización generada y email enviado exitosamente'}`, 'success');
-                    mostrarResultadoCompleto(resultado.resumen);
+                    // Mostrar resultado (usar cotizacionActual que incluye cotizacionId)
+                    mostrarNotificacion(`✅ ${resultado.mensaje || 'Cotización generada exitosamente'}`, 'success');
+                    mostrarResultadoCompleto(cotizacionActual);
                     
                 } catch (calcError) {
                     console.error('❌ Error en cotización:', calcError);
