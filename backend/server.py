@@ -2237,6 +2237,49 @@ def admin_panel():
 def health():
     return {"status": "ok", "timestamp": now_colombia().isoformat()}
 
+@app.post("/api/admin/crear-tabla-cotizaciones", tags=["Admin"], dependencies=[Depends(auth_admin)])
+def crear_tabla_cotizaciones_endpoint():
+    """
+    Crear tabla cotizaciones en PostgreSQL
+    Ejecutar después de actualizar models.py con el modelo Cotizacion
+    """
+    try:
+        if not os.getenv("DATABASE_URL"):
+            raise HTTPException(500, "DATABASE_URL no configurada")
+        
+        from models import Cotizacion, create_db_engine
+        
+        print("🔄 Creando tabla cotizaciones...")
+        engine = create_db_engine()
+        
+        # Crear solo la tabla Cotizacion
+        Cotizacion.__table__.create(bind=engine, checkfirst=True)
+        
+        print("✅ Tabla cotizaciones creada!")
+        
+        return {
+            "status": "success",
+            "mensaje": "Tabla cotizaciones creada exitosamente",
+            "timestamp": now_colombia().isoformat(),
+            "campos": [
+                "id", "fecha_creacion",
+                "nombre", "email", "telefono", "direccion", "ciudad", "nic",
+                "tipo_vivienda", "sistema_electrico", "tipo_sistema_fv",
+                "consumo_mensual", "valor_factura", "valor_kwh", "porcentaje_consumo_dia", "hsp_calculado", "area_disponible",
+                "panel_id", "panel_nombre", "inversor_id", "inversor_nombre", "bateria_id", "bateria_nombre",
+                "num_paneles_op1", "capacidad_instalada_op1", "area_requerida_op1", "valor_total_op1", "ahorro_mensual_op1", "tiempo_retorno_op1",
+                "tiene_opcion2", "num_paneles_op2", "capacidad_instalada_op2", "area_requerida_op2", "valor_total_op2", "ahorro_mensual_op2", "tiempo_retorno_op2",
+                "datos_completos", "email_enviado", "fecha_envio_email", "num_opciones",
+                "legalizacion", "seleccion_manual", "created_at", "updated_at"
+            ]
+        }
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR: {error_trace}")
+        raise HTTPException(500, f"Error creando tabla: {str(e)}")
+
 @app.post("/api/admin/migrate-to-postgres", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def migrate_to_postgres():
     """
