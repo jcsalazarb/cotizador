@@ -40,14 +40,8 @@ tmp/
 test_*.py
 !backend/test_email.py
 
-# Archivos HTML antiguos/experimentales en raíz (mantener solo backend/static/)
-/Index.html
-/Index2.html
-/index_Original.html
-/index_Original_modificado.html
-/indexcanva.html
-/indexcanva2.html
-/admin.html
+# Archivos HTML antiguos/backups (mantener solo backend/static/)
+_backups/
 
 # Frontend antiguo
 /frontend/
