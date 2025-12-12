@@ -3961,17 +3961,26 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         
         print(f"\n📧 ENVIANDO EMAIL")
         print(f"   Total PDFs: {len(pdf_paths)}")
-        print(f"   Método: SMTP (PrivateEmail/Gmail)")
         
         try:
-            # Usar SMTP en lugar de SendGrid
-            enviar_email_smtp(pdf_paths, email_cliente, resumen, num_opciones)
-            email_enviado = True
-            print(f"✅ Email enviado exitosamente a {email_cliente}")
+            # Intentar SendGrid primero (configurado para Railway)
+            SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+            if SENDGRID_API_KEY:
+                print(f"   Método: SendGrid API")
+                enviar_email_sendgrid(email_cliente, pdf_paths, resumen, num_opciones)
+                email_enviado = True
+                print(f"✅ Email enviado exitosamente via SendGrid a {email_cliente}")
+            else:
+                # Fallback a SMTP (local/desarrollo)
+                print(f"   Método: SMTP (PrivateEmail/Gmail)")
+                print(f"   ⚠️ SendGrid no configurado, usando SMTP como fallback")
+                enviar_email_smtp(pdf_paths, email_cliente, resumen, num_opciones)
+                email_enviado = True
+                print(f"✅ Email enviado exitosamente via SMTP a {email_cliente}")
         except Exception as e:
             email_error = str(e)
             print(f"⚠️ Warning - No se pudo enviar email: {e}")
-            print(f"⚠️ Cotización generada correctamente. Email pendiente por configuración SMTP.")
+            print(f"⚠️ Cotización generada correctamente. Email pendiente por configuración.")
             # NO lanzar excepción - permitir que la cotización continúe
         finally:
             # Limpiar archivos temporales
