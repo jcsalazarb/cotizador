@@ -1353,12 +1353,27 @@ def build_placeholders(req: dict, resultado: dict, opcion: str = "") -> dict:
         # Campos adicionales solicitados
         "{{NPISOS}}": str(req.get('numeroPisos', '1')),
         "{{HSPC}}": f"{req.get('hspCalculado') if req.get('hspCalculado') is not None else ''}",
-        "{{AREA}}": f"{req.get('areaDisponible', 0) if req.get('areaDisponible') else 0} m²" if req.get('areaDisponible') else "N/A",
+        # AREA: Corregir lógica - mostrar valor si existe (incluso si es 0)
+        "{{AREA}}": f"{req.get('areaDisponible', 0)} m²" if req.get('areaDisponible') is not None else "N/A",
         "{{PCTDIA}}": f"{req.get('porcentajeConsumodia', '')}%",
-        # Placeholders de legalización
-        "{{NO_LEGALIZA}}": "Gestión de legalización ante operador del sistema instalado" if req.get("legalizacion", "NO") == "NO" else "",
-        "{{SI_LEGALIZA}}": "Gestión de legalización ante operador de red, contador, documentos eléctricos y acompañamiento técnico en las 3 visitas." if req.get("legalizacion", "NO") == "SI" else ""
+        # Placeholders de legalización - DEBUG
+        "{{NO_LEGALIZA}}": "Gestión de legalización ante operador del sistema instalado" if str(req.get("legalizacion", "NO")).upper() == "NO" else "",
+        "{{SI_LEGALIZA}}": "Gestión de legalización ante operador de red, contador, documentos eléctricos y acompañamiento técnico en las 3 visitas." if str(req.get("legalizacion", "NO")).upper() == "SI" else ""
     }
+    
+    # DEBUG: Imprimir valores de legalización
+    print(f"\n🔍 DEBUG PLACEHOLDERS:")
+    print(f"   legalizacion raw: {req.get('legalizacion')} (tipo: {type(req.get('legalizacion'))})")
+    print(f"   areaDisponible: {req.get('areaDisponible')} (tipo: {type(req.get('areaDisponible'))})")
+    print(f"   NO_LEGALIZA: '{mapping['{{NO_LEGALIZA}}']}'")
+    print(f"   SI_LEGALIZA: '{mapping['{{SI_LEGALIZA}}']}'")
+    print(f"   AREA: '{mapping['{{AREA}}']}'")
+    
+    return mapping
+
+def create_placeholder_mapping_old(req: dict, resultado: dict, opcion: str = "") -> dict:
+    """VERSIÓN ANTIGUA - Mantener para compatibilidad"""
+    return create_placeholder_mapping(req, resultado, opcion)
 
 def replace_text_in_shape(shape, mapping: dict):
     """Reemplaza texto en un shape individual manejando placeholders divididos entre runs"""
@@ -4612,6 +4627,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         "telefono": req.telefono,
         "ciudad": req.ciudad,
         "direccion": req.direccion,
+        "nic": req.nic,
         "tipoVivienda": req.tipoVivienda,
         "sistemaElectrico": req.sistemaElectrico,
         "tipoSistemaFV": req.tipoSistemaFV,
@@ -4620,6 +4636,12 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
         "valorKwh": req.valorKwh,
         "porcentajeConsumodia": req.porcentajeConsumodia,
         "hspCalculado": req.hspCalculado,
+        # AGREGAR CAMPOS FALTANTES (CRÍTICO PARA PLACEHOLDERS)
+        "areaDisponible": req.areaDisponible,
+        "numeroPisos": req.numeroPisos,
+        "legalizacion": req.legalizacion,
+        "seleccionManual": req.seleccionManual,
+        # Equipos seleccionados
         "panelSeleccionado": resultado_opcion1["panel"],
         "inversorSeleccionado": resultado_opcion1["inversor"],
         "bateriaSeleccionada": resultado_opcion1["bateria"],
@@ -4634,6 +4656,7 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             "telefono": req.telefono,
             "ciudad": req.ciudad,
             "direccion": req.direccion,
+            "nic": req.nic,
             "tipoVivienda": req.tipoVivienda,
             "sistemaElectrico": req.sistemaElectrico,
             "tipoSistemaFV": req.tipoSistemaFV,
@@ -4642,7 +4665,12 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
             "valorKwh": req.valorKwh,
             "porcentajeConsumodia": req.porcentajeConsumodia,
             "hspCalculado": req.hspCalculado,
-            "areaDisponible": req.areaDisponible,  # ← AGREGAR PARA MENSAJE EN MODAL
+            # AGREGAR CAMPOS FALTANTES (CRÍTICO PARA PLACEHOLDERS Y MENSAJE)
+            "areaDisponible": req.areaDisponible,
+            "numeroPisos": req.numeroPisos,
+            "legalizacion": req.legalizacion,
+            "seleccionManual": req.seleccionManual,
+            # Equipos
             "panelSeleccionado": resultado_opcion2["panel"],
             "inversorSeleccionado": resultado_opcion2["inversor"],
             "bateriaSeleccionada": resultado_opcion2["bateria"],
@@ -4816,6 +4844,12 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         
         session.close()
         
+        # DEBUG: Ver qué datos vienen de la BD
+        print(f"\n🔍 DEBUG datos_completos desde PostgreSQL:")
+        print(f"   legalizacion: {datos_completos.get('legalizacion')} (tipo: {type(datos_completos.get('legalizacion'))})")
+        print(f"   areaDisponible: {datos_completos.get('areaDisponible')} (tipo: {type(datos_completos.get('areaDisponible'))})")
+        print(f"   numeroPisos: {datos_completos.get('numeroPisos')}")
+        
         # Extraer datos necesarios - INCLUIR TODOS LOS CAMPOS
         datos_cliente = {
             "nombre": datos_completos["nombre"],
@@ -4838,6 +4872,10 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
             "legalizacion": datos_completos.get("legalizacion", "NO"),
             "seleccionManual": datos_completos.get("seleccionManual", "NO")
         }
+        
+        print(f"\n🔍 DEBUG datos_cliente construido:")
+        print(f"   legalizacion: {datos_cliente.get('legalizacion')} (tipo: {type(datos_cliente.get('legalizacion'))})")
+        print(f"   areaDisponible: {datos_cliente.get('areaDisponible')} (tipo: {type(datos_cliente.get('areaDisponible'))})")
         
         resumen_opcion1 = datos_completos  # Ya tiene todos los campos necesarios
         opcion2 = datos_completos.get("opcion2")

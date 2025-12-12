@@ -777,11 +777,19 @@
             
             // Determinar si es opción 2 para mostrar mensaje especial
             const esOpcion2 = opcionActiva === 2;
+            
+            // DEBUG
+            console.log('🔍 DEBUG mostrarResultadoOpcion:');
+            console.log('   opcionActiva:', opcionActiva);
+            console.log('   esOpcion2:', esOpcion2);
+            console.log('   cotizacion.areaDisponible:', cotizacion.areaDisponible);
+            console.log('   cotizacionCompleta?.areaDisponible:', cotizacionCompleta?.areaDisponible);
+            
             const mensajeOpcion = esOpcion2 ? 
                 `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
                     <p class="text-sm text-yellow-800">
                         ⚠️ <strong>Opción ajustada a área disponible:</strong> 
-                        Esta propuesta está optimizada para el espacio disponible de ${cotizacionCompleta.areaDisponible || 'N/A'} m². 
+                        Esta propuesta está optimizada para el espacio disponible de ${cotizacion.areaDisponible || cotizacionCompleta?.areaDisponible || 'N/A'} m². 
                         La generación será menor que la opción ideal, pero se adapta a sus limitaciones de espacio.
                     </p>
                 </div>` : '';
