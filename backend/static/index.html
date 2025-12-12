@@ -63,35 +63,35 @@
      <section>
       <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span> Información Personal</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-       <div><label for="nombre" class="block text-sm font-medium text-blue-100 mb-2">Nombre Completo *</label> <input type="text" id="nombre" name="nombre" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu nombre completo">
+       <div><label for="nombre" class="block text-sm font-medium text-blue-100 mb-2">Nombre Completo *</label> <input type="text" id="nombre" name="nombre" required minlength="3" maxlength="100" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu nombre completo" title="El nombre debe tener al menos 3 caracteres">
        </div>
-       <div><label for="telefono" class="block text-sm font-medium text-blue-100 mb-2">Teléfono/WhatsApp *</label> <input type="tel" id="telefono" name="telefono" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="+57 300 123 4567">
+       <div><label for="telefono" class="block text-sm font-medium text-blue-100 mb-2">Teléfono/WhatsApp *</label> <input type="tel" id="telefono" name="telefono" required minlength="7" maxlength="15" pattern="[0-9+\s\-()]+" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="+57 300 123 4567" title="Ingresa un número de teléfono válido (7-15 dígitos)">
        </div>
-       <div><label for="email" class="block text-sm font-medium text-blue-100 mb-2">Correo Electrónico *</label> <input type="email" id="email" name="email" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="tu@email.com">
+       <div><label for="email" class="block text-sm font-medium text-blue-100 mb-2">Correo Electrónico *</label> <input type="email" id="email" name="email" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="tu@email.com" title="Ingresa un correo electrónico válido">
        </div>
         <div><label for="ciudad" class="block text-sm font-medium text-blue-100 mb-2">Ciudad *</label> <select id="ciudad" name="ciudad" required onchange="calcularHSP()" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400" style="background-color: #ffffff !important; color: #111827 !important;"> <option value="">Selecciona tu ciudad</option> </select>
   </div>
        <div><label for="identificacion" class="block text-sm font-medium text-blue-100 mb-2">Identificación</label> <input type="text" id="identificacion" name="identificacion" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de cédula (opcional)">
        </div>
-       <div><label for="direccion" class="block text-sm font-medium text-blue-100 mb-2">Dirección *</label> <input type="text" id="direccion" name="direccion" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu dirección completa">
+       <div><label for="direccion" class="block text-sm font-medium text-blue-100 mb-2">Dirección *</label> <input type="text" id="direccion" name="direccion" required minlength="5" maxlength="200" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Tu dirección completa" title="La dirección debe tener al menos 5 caracteres">
        </div>
       </div>
      </section><!-- Información Técnica -->
      <section>
       <h2 class="text-2xl font-semibold text-white mb-6 flex items-center"><span class="bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span> Información Técnica y Consumo</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-       <div><label for="consumoMensual" class="block text-sm font-medium text-blue-100 mb-2">Consumo Mensual (kWh) *</label> <input type="number" id="consumoMensual" name="consumoMensual" required min="50" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="300">
+       <div><label for="consumoMensual" class="block text-sm font-medium text-blue-100 mb-2">Consumo Mensual (kWh) *</label> <input type="number" id="consumoMensual" name="consumoMensual" required min="50" max="100000" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="300" title="El consumo mensual debe estar entre 50 y 100,000 kWh">
         <p class="text-xs text-blue-200 mt-1">Revisa tu factura de luz</p>
        </div>
        <div><label for="porcentajeAhorroEnergia" class="block text-sm font-medium text-blue-100 mb-2">% Ahorro Energía Deseado *</label> <input type="number" id="porcentajeAhorroEnergia" name="porcentajeAhorroEnergia" required min="10" max="100" step="5" value="100" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="100">
         <p class="text-xs text-blue-200 mt-1">¿Qué % de su consumo desea cubrir con energía solar?</p>
        </div>
-       <div><label for="valorFactura" class="block text-sm font-medium text-blue-100 mb-2">Valor Factura Mensual ($) *</label> <input type="number" id="valorFactura" name="valorFactura" required min="50000" step="1000" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="150000">
+       <div><label for="valorFactura" class="block text-sm font-medium text-blue-100 mb-2">Valor Factura Mensual ($) *</label> <input type="number" id="valorFactura" name="valorFactura" required min="50000" max="100000000" step="1000" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="150000" title="El valor de la factura debe ser mayor a $50,000 COP">
        </div>
-       <div><label for="nic" class="block text-sm font-medium text-blue-100 mb-2">NIC (Número de Instalación) *</label> <input type="text" id="nic" name="nic" required class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de tu medidor">
-        <p class="text-xs text-blue-200 mt-1">Aparece en tu factura de luz</p>
+       <div><label for="nic" class="block text-sm font-medium text-blue-100 mb-2">NIC (Número de Instalación) *</label> <input type="text" id="nic" name="nic" required minlength="3" maxlength="25" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Número de tu medidor" title="El NIC debe tener entre 3 y 25 caracteres">
+        <p class="text-xs text-blue-200 mt-1">Aparece en tu factura de luz (mínimo 3 caracteres)</p>
        </div>
-       <div><label for="valorKwh" class="block text-sm font-medium text-blue-100 mb-2">Valor kWh ($) *</label> <input type="number" id="valorKwh" name="valorKwh" required min="100" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="500">
+       <div><label for="valorKwh" class="block text-sm font-medium text-blue-100 mb-2">Valor kWh ($) *</label> <input type="number" id="valorKwh" name="valorKwh" required min="100" max="5000" step="1" class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="500" title="El valor por kWh debe estar entre $100 y $5,000 COP">
         <p class="text-xs text-blue-200 mt-1">Costo por kWh en tu factura</p>
        </div>
        <div><label for="tipoVivienda" class="block text-sm font-medium text-blue-100 mb-2">Tipo de Propiedad *</label> <select id="tipoVivienda" name="tipoVivienda" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400" style="background-color: #ffffff !important; color: #111827 !important;"> <option value="">Selecciona una opción</option> <option value="casa">Casa</option> <option value="apartamento">Apartamento</option> <option value="local">Local Comercial</option> <option value="empresa">Empresa</option> </select>
@@ -1095,7 +1095,29 @@
                         const error = await response.json();
                         console.error('❌ Error del servidor:', error);
                         console.error('❌ Status:', response.status);
-                        throw new Error(JSON.stringify(error.detail || error) || 'Error en el servidor');
+                        
+                        // Manejar errores de validación específicos
+                        if (response.status === 422 && error.errores && Array.isArray(error.errores)) {
+                            // Mostrar errores de validación de forma amigable
+                            const mensajesError = error.errores.map(e => `• ${e.mensaje}`).join('\n');
+                            mostrarNotificacion(`⚠️ Por favor corrige los siguientes campos:\n${mensajesError}`, 'error');
+                            
+                            // Enfocar el primer campo con error
+                            if (error.errores.length > 0) {
+                                const primerCampo = error.errores[0].campo;
+                                const campoElemento = document.getElementById(primerCampo) || 
+                                                     document.querySelector(`[name="${primerCampo}"]`);
+                                if (campoElemento) {
+                                    campoElemento.focus();
+                                    campoElemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }
+                            
+                            desbloquearFormulario();
+                            return;
+                        }
+                        
+                        throw new Error(error.mensaje || JSON.stringify(error.detail || error) || 'Error en el servidor');
                     }
                     
                     const resultado = await response.json();
