@@ -3919,35 +3919,89 @@ async def cotizar(request: Request, req: CotizarRequest, _: Any = Depends(rate_l
     except Exception as e:
         print(f"⚠️ Error en tracking (no crítico): {e}")
     
-    # GUARDAR COTIZACIÓN EN POSTGRESQL para uso posterior en envío de email
+    # GUARDAR COTIZACIÓN COMPLETA EN POSTGRESQL (para CRM y trazabilidad)
     cotizacion_id_guardado = None
     try:
-        conn = obtener_conexion_postgres()
-        cursor = conn.cursor()
+        from models import get_db_session, Cotizacion
         
+        session = get_db_session()
         cotizacion_id_guardado = resultado_opcion1["cotizacionId"]
         
-        # Guardar cotización completa
-        cursor.execute("""
-            INSERT INTO cotizaciones (id, datos_completos, num_opciones, email_cliente, fecha_creacion)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                datos_completos = EXCLUDED.datos_completos,
-                num_opciones = EXCLUDED.num_opciones,
-                fecha_creacion = EXCLUDED.fecha_creacion
-        """, (
-            cotizacion_id_guardado,
-            json.dumps(resumen_completo, ensure_ascii=False),
-            num_opciones,
-            req.email,
-            now_colombia()
-        ))
+        # Extraer datos de opción 2 si existe
+        op2_data = {}
+        if resultado_opcion2:
+            op2_data = {
+                "tiene_opcion2": True,
+                "num_paneles_op2": resultado_opcion2["numeroPaneles"],
+                "capacidad_instalada_op2": resultado_opcion2["capacidadInstalada"],
+                "area_requerida_op2": resultado_opcion2["areaRequerida"],
+                "valor_total_op2": resultado_opcion2["valorTotalSistema"],
+                "ahorro_mensual_op2": resultado_opcion2["ahorroMensualEnergia"],
+                "tiempo_retorno_op2": resultado_opcion2["tiempoRetorno"]
+            }
+        else:
+            op2_data = {"tiene_opcion2": False}
         
-        conn.commit()
+        # Crear registro completo
+        cotizacion = Cotizacion(
+            id=cotizacion_id_guardado,
+            fecha_creacion=now_colombia(),
+            # Datos del cliente
+            nombre=req.nombre,
+            email=req.email,
+            telefono=req.telefono,
+            direccion=req.direccion,
+            ciudad=req.ciudad,
+            nic=req.nic if hasattr(req, 'nic') else None,
+            # Datos del sistema
+            tipo_vivienda=req.tipoVivienda,
+            sistema_electrico=req.sistemaElectrico,
+            tipo_sistema_fv=req.tipoSistemaFV,
+            # Datos de consumo
+            consumo_mensual=req.consumoMensual,
+            valor_factura=req.valorFactura,
+            valor_kwh=req.valorKwh,
+            porcentaje_consumo_dia=req.porcentajeConsumodia,
+            hsp_calculado=req.hspCalculado,
+            area_disponible=req.areaDisponible if hasattr(req, 'areaDisponible') and req.areaDisponible else None,
+            # Equipos
+            panel_id=resultado_opcion1["panel"]["id"],
+            panel_nombre=resultado_opcion1["panel"]["nombre"],
+            inversor_id=resultado_opcion1["inversor"]["id"],
+            inversor_nombre=resultado_opcion1["inversor"]["nombre"],
+            bateria_id=resultado_opcion1["bateria"]["id"] if resultado_opcion1["bateria"] else None,
+            bateria_nombre=resultado_opcion1["bateria"]["nombre"] if resultado_opcion1["bateria"] else None,
+            # Resultados opción 1
+            num_paneles_op1=resultado_opcion1["numeroPaneles"],
+            capacidad_instalada_op1=resultado_opcion1["capacidadInstalada"],
+            area_requerida_op1=resultado_opcion1["areaRequerida"],
+            valor_total_op1=resultado_opcion1["valorTotalSistema"],
+            ahorro_mensual_op1=resultado_opcion1["ahorroMensualEnergia"],
+            tiempo_retorno_op1=resultado_opcion1["tiempoRetorno"],
+            # Resultados opción 2 (si existe)
+            **op2_data,
+            # JSON completo
+            datos_completos=resumen_completo,
+            # Estado
+            email_enviado=False,
+            num_opciones=num_opciones,
+            # Metadata
+            legalizacion=req.legalizacion if hasattr(req, 'legalizacion') else "no",
+            seleccion_manual=req.seleccionManual if hasattr(req, 'seleccionManual') else "no"
+        )
+        
+        session.merge(cotizacion)  # merge = insert or update
+        session.commit()
+        session.close()
+        
         print(f"💾 Cotización guardada en PostgreSQL: {cotizacion_id_guardado}")
-        
-        cursor.close()
-        conn.close()
+        print(f"   📊 Cliente: {req.nombre} ({req.email})")
+        print(f"   🏠 Ciudad: {req.ciudad}")
+        print(f"   ⚡ Paneles: {resultado_opcion1['numeroPaneles']} x {resultado_opcion1['panel']['nombre']}")
+        print(f"   💰 Valor: ${resultado_opcion1['valorTotalSistema']:,.0f}")
+        if resultado_opcion2:
+            print(f"   📋 Opción 2: {resultado_opcion2['numeroPaneles']} paneles, ${resultado_opcion2['valorTotalSistema']:,.0f}")
+
     except Exception as e:
         print(f"⚠️ Error guardando cotización en PostgreSQL (no crítico): {e}")
         import traceback
@@ -3976,36 +4030,28 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         
         cotizacion_id = data["cotizacionId"]
         
-        # Recuperar cotización desde PostgreSQL
+        # Recuperar cotización desde PostgreSQL usando SQLAlchemy
         print(f"\n📧 RECUPERANDO COTIZACIÓN PARA ENVÍO")
         print(f"   ID: {cotizacion_id}")
         
-        # MIGRACIÓN POSTGRESQL: Cargar desde BD
-        equipos, ciudades, parametros = cargar_datos_desde_postgres()
+        from models import get_db_session, Cotizacion
         
-        # Obtener cotización de la base de datos
-        conn = obtener_conexion_postgres()
-        cursor = conn.cursor()
+        session = get_db_session()
+        cotizacion = session.query(Cotizacion).filter(Cotizacion.id == cotizacion_id).first()
         
-        try:
-            cursor.execute("""
-                SELECT datos_completos, num_opciones, email_cliente
-                FROM cotizaciones
-                WHERE id = %s
-            """, (cotizacion_id,))
-            
-            resultado = cursor.fetchone()
-            if not resultado:
-                raise HTTPException(404, f"Cotización {cotizacion_id} no encontrada")
-            
-            datos_completos, num_opciones, email_cliente = resultado
-            
-            print(f"   Email destino: {email_cliente}")
-            print(f"   Número de opciones: {num_opciones}")
-            
-        finally:
-            cursor.close()
-            conn.close()
+        if not cotizacion:
+            session.close()
+            raise HTTPException(404, f"Cotización {cotizacion_id} no encontrada")
+        
+        # Extraer datos completos
+        datos_completos = cotizacion.datos_completos
+        num_opciones = cotizacion.num_opciones
+        email_cliente = cotizacion.email
+        
+        print(f"   Email destino: {email_cliente}")
+        print(f"   Número de opciones: {num_opciones}")
+        
+        session.close()
         
         # Extraer datos necesarios
         datos_cliente = {
@@ -4119,6 +4165,20 @@ async def enviar_cotizacion(request: Request, data: dict, _: Any = Depends(rate_
         # Determinar mensaje de respuesta según estado del email
         if email_enviado:
             mensaje_respuesta = f"✅ Cotización enviada exitosamente a {email_cliente}"
+            
+            # Actualizar estado en PostgreSQL
+            try:
+                from models import get_db_session, Cotizacion
+                session = get_db_session()
+                cotizacion = session.query(Cotizacion).filter(Cotizacion.id == cotizacion_id).first()
+                if cotizacion:
+                    cotizacion.email_enviado = True
+                    cotizacion.fecha_envio_email = now_colombia()
+                    session.commit()
+                    print(f"💾 Estado actualizado: email_enviado = True")
+                session.close()
+            except Exception as e:
+                print(f"⚠️ Error actualizando estado (no crítico): {e}")
         else:
             mensaje_respuesta = f"✅ Cotización generada correctamente. Email pendiente por configuración de servidor SMTP."
         

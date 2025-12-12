@@ -102,6 +102,82 @@ class Estadistica(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class Cotizacion(Base):
+    """
+    Tabla completa de cotizaciones para CRM y trazabilidad
+    Guarda TODOS los datos de cada cotización generada
+    """
+    __tablename__ = "cotizaciones"
+    
+    # Identificación
+    id = Column(String(50), primary_key=True)  # NASSA-2025-0001
+    fecha_creacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Datos del cliente
+    nombre = Column(String(200), nullable=False)
+    email = Column(String(200), nullable=False)
+    telefono = Column(String(50), nullable=False)
+    direccion = Column(String(500), nullable=False)
+    ciudad = Column(String(100), nullable=False)
+    nic = Column(String(50))
+    
+    # Datos del sistema
+    tipo_vivienda = Column(String(50), nullable=False)  # residencial, comercial, industrial
+    sistema_electrico = Column(String(50), nullable=False)  # monofasico, bifasico, trifasico
+    tipo_sistema_fv = Column(String(50), nullable=False)  # ongrid, offgrid, hibrido
+    
+    # Datos de consumo
+    consumo_mensual = Column(Float, nullable=False)  # kWh/mes
+    valor_factura = Column(Float, nullable=False)  # COP
+    valor_kwh = Column(Float, nullable=False)  # COP/kWh
+    porcentaje_consumo_dia = Column(Integer, nullable=False)  # 30-70%
+    hsp_calculado = Column(Float, nullable=False)  # Horas Solar Pico
+    
+    # Área disponible
+    area_disponible = Column(Float)  # m² (opcional)
+    
+    # Equipos seleccionados (IDs)
+    panel_id = Column(String(50), nullable=False)
+    panel_nombre = Column(String(200), nullable=False)
+    inversor_id = Column(String(50), nullable=False)
+    inversor_nombre = Column(String(200), nullable=False)
+    bateria_id = Column(String(50))
+    bateria_nombre = Column(String(200))
+    
+    # Resultados OPCIÓN 1
+    num_paneles_op1 = Column(Integer, nullable=False)
+    capacidad_instalada_op1 = Column(Float, nullable=False)  # kW
+    area_requerida_op1 = Column(Float, nullable=False)  # m²
+    valor_total_op1 = Column(Float, nullable=False)  # COP
+    ahorro_mensual_op1 = Column(Float, nullable=False)  # COP/mes
+    tiempo_retorno_op1 = Column(Float, nullable=False)  # años
+    
+    # Resultados OPCIÓN 2 (si existe)
+    tiene_opcion2 = Column(Boolean, default=False)
+    num_paneles_op2 = Column(Integer)
+    capacidad_instalada_op2 = Column(Float)  # kW
+    area_requerida_op2 = Column(Float)  # m²
+    valor_total_op2 = Column(Float)  # COP
+    ahorro_mensual_op2 = Column(Float)  # COP/mes
+    tiempo_retorno_op2 = Column(Float)  # años
+    
+    # Datos completos (JSON)
+    datos_completos = Column(JSON, nullable=False)  # Toda la respuesta del cálculo
+    
+    # Estado
+    email_enviado = Column(Boolean, default=False)
+    fecha_envio_email = Column(DateTime)
+    num_opciones = Column(Integer, default=1)  # 1 o 2
+    
+    # Metadata
+    legalizacion = Column(String(10))  # si/no
+    seleccion_manual = Column(String(10))  # si/no
+    
+    # Índices para búsquedas comunes
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # ==================== CONFIGURACIÓN DE BASE DE DATOS ====================
 
 def get_database_url():
