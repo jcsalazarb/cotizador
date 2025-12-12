@@ -192,6 +192,15 @@
      <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-gray-900">🎉 ¡Cotización Técnica Completa!</h2><button onclick="cerrarModal()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">×</button>
      </div>
+     <!-- Tabs para opciones (solo visible si hay opción 2) -->
+     <div id="tabsOpciones" class="hidden mt-4 flex space-x-2 border-b border-gray-300">
+      <button id="tabOpcion1" onclick="cambiarOpcion(1)" class="px-6 py-2 font-semibold text-blue-600 border-b-2 border-blue-600">
+       Opción 1 - Ideal
+      </button>
+      <button id="tabOpcion2" onclick="cambiarOpcion(2)" class="px-6 py-2 font-semibold text-gray-600 hover:text-blue-600">
+       Opción 2 - Ajustada a Área Disponible
+      </button>
+     </div>
     </div>
     <div id="contenidoResultado" class="p-6"><!-- El contenido se genera dinámicamente -->
     </div>
@@ -201,7 +210,27 @@
         // Variables globales para acceso directo
         let datosCliente = {};
         let cotizacionActual = {};
+        let opcionActiva = 1; // Track active option
         const API_BASE_URL = window.location.origin + '/api';
+        
+        // Función para cambiar entre opciones
+        function cambiarOpcion(numeroOpcion) {
+            opcionActiva = numeroOpcion;
+            
+            // Update tab styles
+            const tab1 = document.getElementById('tabOpcion1');
+            const tab2 = document.getElementById('tabOpcion2');
+            
+            if (numeroOpcion === 1) {
+                tab1.className = 'px-6 py-2 font-semibold text-blue-600 border-b-2 border-blue-600';
+                tab2.className = 'px-6 py-2 font-semibold text-gray-600 hover:text-blue-600';
+                mostrarResultadoOpcion(cotizacionActual, null);
+            } else {
+                tab1.className = 'px-6 py-2 font-semibold text-gray-600 hover:text-blue-600';
+                tab2.className = 'px-6 py-2 font-semibold text-blue-600 border-b-2 border-blue-600';
+                mostrarResultadoOpcion(cotizacionActual.opcion2, cotizacionActual);
+            }
+        }
         
         async function cargarEquipos(sistemaElectrico = null) {
             try {
@@ -619,8 +648,36 @@
             window.open(url, '_blank', 'noopener,noreferrer');
         }
 
-        // Función para mostrar resultado completo
+        // Función para mostrar resultado completo (con tabs si hay opción 2)
         function mostrarResultadoCompleto(cotizacion) {
+            // Verificar si hay opción 2
+            const tieneOpcion2 = cotizacion.opcion2 && cotizacion.opcion2.numeroPaneles;
+            
+            // Mostrar/ocultar tabs
+            const tabsContainer = document.getElementById('tabsOpciones');
+            if (tieneOpcion2) {
+                tabsContainer.classList.remove('hidden');
+                console.log('✅ Mostrando tabs - Opción 2 disponible');
+            } else {
+                tabsContainer.classList.add('hidden');
+                console.log('ℹ️ Solo hay opción 1');
+            }
+            
+            // Reset a opción 1
+            opcionActiva = 1;
+            const tab1 = document.getElementById('tabOpcion1');
+            const tab2 = document.getElementById('tabOpcion2');
+            if (tab1 && tab2) {
+                tab1.className = 'px-6 py-2 font-semibold text-blue-600 border-b-2 border-blue-600';
+                tab2.className = 'px-6 py-2 font-semibold text-gray-600 hover:text-blue-600';
+            }
+            
+            // Mostrar opción 1
+            mostrarResultadoOpcion(cotizacion, tieneOpcion2 ? cotizacion : null);
+        }
+        
+        // Función para mostrar una opción específica
+        function mostrarResultadoOpcion(opcionData, cotizacionCompleta) {
             const contenido = document.getElementById('contenidoResultado');
             
             // Verificar que el elemento existe
@@ -629,6 +686,20 @@
                 mostrarNotificacion('❌ Error mostrando resultado: elemento no encontrado', 'error');
                 return;
             }
+            
+            // Si opcionData es null, usar cotizacionCompleta.opcion2
+            const cotizacion = opcionData || cotizacionCompleta.opcion2;
+            
+            // Determinar si es opción 2 para mostrar mensaje especial
+            const esOpcion2 = opcionActiva === 2;
+            const mensajeOpcion = esOpcion2 ? 
+                `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+                    <p class="text-sm text-yellow-800">
+                        ⚠️ <strong>Opción ajustada a área disponible:</strong> 
+                        Esta propuesta está optimizada para el espacio disponible de ${cotizacionCompleta.areaDisponible || 'N/A'} m². 
+                        La generación será menor que la opción ideal, pero se adapta a sus limitaciones de espacio.
+                    </p>
+                </div>` : '';
             
             // Crear tabla de ahorros para los primeros 10 años con datos corregidos
             const tablaAhorros10 = cotizacion.tablaAhorros.slice(0, 10).map(item => `
@@ -647,6 +718,7 @@
             `).join('');
 
             contenido.innerHTML = `
+                ${mensajeOpcion}
                 <div class="space-y-6">
                     <!-- Logo y Header -->
                     <div class="text-center mb-6">
