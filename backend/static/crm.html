@@ -57,6 +57,43 @@
         #crmDashboard.active {
             display: block;
         }
+        
+        /* Estilos de impresión */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #modalDetalle, #modalDetalle * {
+                visibility: visible;
+            }
+            #modalDetalle {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .modal-backdrop {
+                display: none !important;
+            }
+            .modal-content {
+                box-shadow: none;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            /* Asegurar que todo el contenido sea visible */
+            .overflow-y-auto {
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            /* Mejorar legibilidad en impresión */
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
 <body>
@@ -393,20 +430,10 @@
                 
                 <!-- Área de Botones Compacta -->
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 border-b border-blue-200">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div class="grid grid-cols-2 gap-2">
                         <button onclick="imprimirCotizacion()" class="px-3 py-2 bg-white hover:bg-blue-50 border border-blue-400 text-blue-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
                             <span>🖨️</span>
                             <span>Imprimir</span>
-                        </button>
-                        
-                        <button onclick="exportarPDF()" class="px-3 py-2 bg-white hover:bg-red-50 border border-red-400 text-red-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
-                            <span>📄</span>
-                            <span>PDF</span>
-                        </button>
-                        
-                        <button onclick="abrirWhatsApp()" class="px-3 py-2 bg-white hover:bg-green-50 border border-green-500 text-green-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
-                            <span>💬</span>
-                            <span>WhatsApp</span>
                         </button>
                         
                         <button onclick="cerrarModal()" class="px-3 py-2 bg-white hover:bg-gray-50 border border-gray-400 text-gray-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
@@ -710,15 +737,17 @@
         function mostrarResultadoCompleto(cotizacion) {
             console.log('📊 Mostrando resultado completo:', cotizacion);
             
-            // Verificar si hay opción 2
-            const tieneOpcion2 = cotizacion.opcion2 && cotizacion.opcion2.numeroPaneles;
+            // Verificar si hay opción 2 (más estricto)
+            const tieneOpcion2 = cotizacion.opcion2 && 
+                                 cotizacion.opcion2.numeroPaneles && 
+                                 cotizacion.opcion2.numeroPaneles > 0;
             
             console.log(`🔍 ¿Tiene Opción 2?: ${tieneOpcion2}`);
             if (tieneOpcion2) {
                 console.log('📋 Datos Opción 2:', cotizacion.opcion2);
             }
             
-            // Mostrar/ocultar tabs
+            // Mostrar/ocultar tabs según si hay opción 2
             const tabsContainer = document.getElementById('tabsOpciones');
             if (tieneOpcion2) {
                 tabsContainer.classList.remove('hidden');
@@ -980,21 +1009,30 @@
             }
         }
 
-        // Funciones auxiliares para botones del modal
+        // Función mejorada para imprimir cotización
         function imprimirCotizacion() {
+            // Agregar clase para impresión
+            const modal = document.getElementById('modalDetalle');
+            modal.classList.add('printing');
+            
+            // Asegurar que todo el contenido sea visible antes de imprimir
+            const scrollContainers = modal.querySelectorAll('.overflow-y-auto');
+            scrollContainers.forEach(container => {
+                container.style.maxHeight = 'none';
+                container.style.overflow = 'visible';
+            });
+            
+            // Imprimir
             window.print();
-        }
-
-        function exportarPDF() {
-            window.print();
-        }
-
-        function abrirWhatsApp() {
-            if (cotizacionActual && cotizacionActual.telefono) {
-                const mensaje = `Hola ${cotizacionActual.nombre}, te contacto por la cotización solar #${cotizacionActual.cotizacionId}`;
-                const telefono = cotizacionActual.telefono.replace(/\D/g, '');
-                window.open(`https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
-            }
+            
+            // Restaurar estilos después de imprimir
+            setTimeout(() => {
+                modal.classList.remove('printing');
+                scrollContainers.forEach(container => {
+                    container.style.maxHeight = '';
+                    container.style.overflow = '';
+                });
+            }, 100);
         }
 
         function cerrarModal() {
