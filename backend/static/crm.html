@@ -16,14 +16,90 @@
             max-height: 600px;
             overflow-y: auto;
         }
+        
+        /* Sistema de Login */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        .login-box h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .login-error {
+            background: #fee;
+            color: #c00;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .login-error.show {
+            display: block;
+        }
+        #crmDashboard {
+            display: none;
+        }
+        #crmDashboard.active {
+            display: block;
+        }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
+    <!-- Login Container -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <h2>🔐 Panel CRM - NASSA Solar</h2>
+            <div class="login-error" id="loginError"></div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
+                    <input type="text" id="username" required autocomplete="username" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                    <input type="password" id="password" required autocomplete="current-password"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Iniciar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CRM Dashboard -->
+    <div id="crmDashboard" class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="bg-blue-600 text-white p-6 rounded-lg shadow-lg mb-8">
-            <h1 class="text-3xl font-bold">📊 Panel CRM - NASSA Solar</h1>
-            <p class="mt-2">Sistema de Gestión de Cotizaciones</p>
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold">📊 Panel CRM - NASSA Solar</h1>
+                    <p class="mt-2">Sistema de Gestión de Cotizaciones</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm"><span id="userName"></span></p>
+                    <button onclick="logout()" class="mt-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded text-sm transition">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
             <div class="mt-4 text-sm">
                 <a href="/" class="text-white hover:underline">← Volver al cotizador</a>
                 <span class="mx-2">|</span>
@@ -277,6 +353,8 @@
             </div>
         </div>
     </div>
+    </div>
+    <!-- Fin CRM Dashboard -->
 
     <!-- Modal de Resultado Cotización - COPIADO DE INDEX.HTML -->
     <div id="modalResultado" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
@@ -348,10 +426,61 @@
 
     <script>
         const API_URL = window.location.origin + '/api';
-        const ADMIN_USER = 'admin';
-        const ADMIN_PASS = 'Lu1sF3rN@ss@';
         
-        const authHeader = 'Basic ' + btoa(ADMIN_USER + ':' + ADMIN_PASS);
+        // Variable global para credenciales (se setea después del login)
+        let authCredentials = null;
+
+        // ===== SISTEMA DE LOGIN =====
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            authCredentials = btoa(`${username}:${password}`);
+            
+            try {
+                // Intentar acceder a un endpoint protegido para validar credenciales
+                const response = await fetch(`${API_URL}/admin/dashboard`, {
+                    headers: {
+                        'Authorization': `Basic ${authCredentials}`
+                    }
+                });
+                
+                if (response.ok) {
+                    // Login exitoso
+                    document.getElementById('userName').textContent = username;
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('crmDashboard').classList.add('active');
+                    cargarDashboard();
+                } else {
+                    showLoginError('Credenciales inválidas');
+                    authCredentials = null;
+                }
+            } catch (error) {
+                showLoginError('Error de conexión al servidor');
+                authCredentials = null;
+            }
+        });
+
+        function logout() {
+            authCredentials = null;
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('crmDashboard').classList.remove('active');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 3000);
+        }
+
+        // Helper para obtener auth header
+        function getAuthHeader() {
+            return { 'Authorization': `Basic ${authCredentials}` };
+        }
 
         // Tab Management
         function cambiarTab(tab) {
@@ -370,9 +499,13 @@
 
         // Cargar Dashboard
         async function cargarDashboard() {
+            if (!authCredentials) {
+                logout();
+                return;
+            }
             try {
                 const response = await fetch(API_URL + '/admin/dashboard', {
-                    headers: { 'Authorization': authHeader }
+                    headers: getAuthHeader()
                 });
                 
                 if (!response.ok) {
@@ -473,7 +606,7 @@
                 params.append('pagina', pagina);
                 
                 const response = await fetch(API_URL + '/admin/cotizaciones/buscar?' + params, {
-                    headers: { 'Authorization': authHeader }
+                    headers: getAuthHeader()
                 });
                 
                 if (!response.ok) throw new Error('Error en búsqueda');
@@ -547,13 +680,22 @@
         async function verDetalle(cotizacionId) {
             try {
                 const response = await fetch(API_URL + `/admin/cotizaciones/${cotizacionId}`, {
-                    headers: { 'Authorization': authHeader }
+                    headers: getAuthHeader()
                 });
                 
                 if (!response.ok) throw new Error('Error obteniendo detalle');
                 
                 const data = await response.json();
-                cotizacionActual = data.cotizacion;
+                
+                // IMPORTANTE: Usar datos_completos que tiene la estructura completa
+                // La estructura de PostgreSQL es diferente a la del frontend
+                if (data.cotizacion.datos_completos) {
+                    cotizacionActual = data.cotizacion.datos_completos;
+                } else {
+                    throw new Error('No hay datos completos disponibles para esta cotización');
+                }
+                
+                console.log('📊 Datos completos cargados:', cotizacionActual);
                 
                 // Usar la misma función del frontend
                 mostrarResultadoCompleto(cotizacionActual);
@@ -645,8 +787,9 @@
                     </p>
                 </div>` : '';
             
-            // Crear tabla de ahorros para los primeros 10 años
-            const tablaAhorros10 = cotizacion.tablaAhorros.slice(0, 10).map(item => `
+            // Crear tabla de ahorros para los primeros 10 años (con validación)
+            const tablaAhorros10 = (cotizacion.tablaAhorros && Array.isArray(cotizacion.tablaAhorros)) 
+                ? cotizacion.tablaAhorros.slice(0, 10).map(item => `
                 <tr class="border-b">
                     <td class="py-2 px-4">${item.año}</td>
                     <td class="py-2 px-4">$${Math.round(item.valorKwhAño).toLocaleString()}</td>
@@ -659,7 +802,8 @@
                     <td class="py-2 px-4">$${Math.round(item.ahorroAcumulado).toLocaleString()}</td>
                     <td class="py-2 px-4 ${item.roi > 0 ? 'text-green-600' : 'text-red-600'}">${item.roi.toFixed(1)}%</td>
                 </tr>
-            `).join('');
+            `).join('')
+                : '<tr><td colspan="10" class="text-center py-4 text-gray-500">No hay datos de tabla de ahorros disponibles</td></tr>';
 
             contenido.innerHTML = `
                 ${mensajeOpcion}
@@ -865,7 +1009,7 @@
         async function cargarTopCiudades() {
             try {
                 const response = await fetch(API_URL + '/admin/reportes/top-ciudades?limit=10', {
-                    headers: { 'Authorization': authHeader }
+                    headers: getAuthHeader()
                 });
                 
                 if (!response.ok) throw new Error('Error cargando reporte');
@@ -898,7 +1042,7 @@
         async function cargarEstadisticas() {
             try {
                 const response = await fetch(API_URL + '/admin/reportes/estadisticas', {
-                    headers: { 'Authorization': authHeader }
+                    headers: getAuthHeader()
                 });
                 
                 if (!response.ok) throw new Error('Error cargando estadísticas');
