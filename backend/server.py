@@ -2265,7 +2265,7 @@ async def crm_panel():
             "static_dir_exists": os.path.exists(STATIC_DIR)
         }
         
-        logger.info(f"📊 Debug CRM: {debug_info}")
+        print(f"📊 Debug CRM: {debug_info}")
         
         if os.path.exists(STATIC_DIR):
             try:
@@ -2274,11 +2274,11 @@ async def crm_panel():
                 debug_info["files_in_static"] = "Error listando archivos"
         
         if os.path.exists(crm_path):
-            logger.info(f"✅ Sirviendo CRM desde: {crm_path}")
+            print(f"✅ Sirviendo CRM desde: {crm_path}")
             return FileResponse(crm_path, media_type="text/html")
         
         # No encontrado
-        logger.error(f"❌ CRM no encontrado: {debug_info}")
+        print(f"❌ CRM no encontrado: {debug_info}")
         return JSONResponse(
             status_code=404,
             content={"error": "CRM no encontrado", "debug": debug_info}
@@ -2290,7 +2290,7 @@ async def crm_panel():
             "type": type(e).__name__,
             "traceback": traceback.format_exc()
         }
-        logger.error(f"❌ Error en /crm: {error_detail}")
+        print(f"❌ Error en /crm: {error_detail}")
         return JSONResponse(
             status_code=500,
             content=error_detail
