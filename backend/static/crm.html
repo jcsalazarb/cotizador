@@ -278,17 +278,70 @@
         </div>
     </div>
 
-    <!-- Modal Detalle Cotización -->
-    <div id="modal-detalle" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold">Detalle de Cotización</h2>
-                    <button onclick="cerrarModal()" class="text-gray-500 hover:text-gray-700 text-3xl font-bold">&times;</button>
+    <!-- Modal de Resultado Cotización - COPIADO DE INDEX.HTML -->
+    <div id="modalResultado" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            <!-- Header del Modal con Logo -->
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-2xl px-4 py-3 no-print flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="/static/images/loggo-Nassa.png" alt="NASSA SOLAR" class="h-10 w-auto">
+                    <div>
+                        <h2 class="text-xl font-bold">🎉 Cotización Técnica Completa</h2>
+                        <p class="text-blue-100 text-xs">Propuesta personalizada de energía solar</p>
+                    </div>
                 </div>
-                <div id="detalle-contenido">
-                    <!-- Dinámico -->
+                <button onclick="cerrarModal()" class="text-white hover:text-gray-200 text-2xl font-bold bg-white/20 hover:bg-white/30 rounded-full w-8 h-8 flex items-center justify-center transition">×</button>
+            </div>
+            
+            <!-- Tabs y Botones Sticky - SIEMPRE VISIBLES -->
+            <div class="sticky top-0 z-20 bg-white shadow-md no-print">
+                <!-- Tabs para opciones (solo visible si hay opción 2) -->
+                <div id="tabsOpciones" class="hidden bg-gray-50 px-3 border-b border-gray-200">
+                    <div class="flex gap-1">
+                        <button id="tabOpcion1" onclick="cambiarOpcion(1)" class="relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10">
+                            <span class="flex items-center gap-1">
+                                <span>⭐</span>
+                                <span>Opción 1 - Ideal</span>
+                            </span>
+                        </button>
+                        <button id="tabOpcion2" onclick="cambiarOpcion(2)" class="relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t">
+                            <span class="flex items-center gap-1">
+                                <span>🔧</span>
+                                <span>Opción 2 - Ajustada</span>
+                            </span>
+                        </button>
+                    </div>
                 </div>
+                
+                <!-- Área de Botones Compacta -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 border-b border-blue-200">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <button onclick="imprimirCotizacion()" class="px-3 py-2 bg-white hover:bg-blue-50 border border-blue-400 text-blue-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
+                            <span>🖨️</span>
+                            <span>Imprimir</span>
+                        </button>
+                        
+                        <button onclick="exportarPDF()" class="px-3 py-2 bg-white hover:bg-red-50 border border-red-400 text-red-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
+                            <span>📄</span>
+                            <span>PDF</span>
+                        </button>
+                        
+                        <button onclick="abrirWhatsApp()" class="px-3 py-2 bg-white hover:bg-green-50 border border-green-500 text-green-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
+                            <span>💬</span>
+                            <span>WhatsApp</span>
+                        </button>
+                        
+                        <button onclick="cerrarModal()" class="px-3 py-2 bg-white hover:bg-gray-50 border border-gray-400 text-gray-600 rounded text-xs font-medium shadow-sm transition flex items-center justify-center gap-1">
+                            <span>✖️</span>
+                            <span>Cerrar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contenido del Resultado - SCROLLABLE -->
+            <div id="contenidoResultado" class="flex-1 overflow-y-auto p-6">
+                <!-- El contenido se genera dinámicamente -->
             </div>
         </div>
     </div>
@@ -487,6 +540,10 @@
         }
 
         // Ver Detalle
+        // Variable global para la cotización actual
+        let cotizacionActual = null;
+        let opcionActiva = 1;
+
         async function verDetalle(cotizacionId) {
             try {
                 const response = await fetch(API_URL + `/admin/cotizaciones/${cotizacionId}`, {
@@ -496,68 +553,10 @@
                 if (!response.ok) throw new Error('Error obteniendo detalle');
                 
                 const data = await response.json();
-                const c = data.cotizacion;
+                cotizacionActual = data.cotizacion;
                 
-                const detalleHTML = `
-                    <div class="space-y-4">
-                        <div class="bg-blue-50 p-4 rounded">
-                            <h3 class="font-bold text-lg mb-2">📋 Información General</h3>
-                            <p><strong>ID:</strong> ${c.id}</p>
-                            <p><strong>Fecha:</strong> ${formatFecha(c.fecha_creacion)}</p>
-                        </div>
-                        
-                        <div class="bg-green-50 p-4 rounded">
-                            <h3 class="font-bold text-lg mb-2">👤 Cliente</h3>
-                            <p><strong>Nombre:</strong> ${c.cliente.nombre}</p>
-                            <p><strong>Email:</strong> ${c.cliente.email}</p>
-                            <p><strong>Teléfono:</strong> ${c.cliente.telefono}</p>
-                            <p><strong>Ciudad:</strong> ${c.cliente.ciudad}</p>
-                            <p><strong>Dirección:</strong> ${c.cliente.direccion || 'N/A'}</p>
-                        </div>
-                        
-                        <div class="bg-yellow-50 p-4 rounded">
-                            <h3 class="font-bold text-lg mb-2">🏠 Sistema</h3>
-                            <p><strong>Tipo Vivienda:</strong> ${c.sistema.tipo_vivienda}</p>
-                            <p><strong>Sistema Eléctrico:</strong> ${c.sistema.sistema_electrico}</p>
-                            <p><strong>Tipo Sistema FV:</strong> ${c.sistema.tipo_sistema_fv}</p>
-                        </div>
-                        
-                        <div class="bg-purple-50 p-4 rounded">
-                            <h3 class="font-bold text-lg mb-2">⚡ Consumo</h3>
-                            <p><strong>Consumo Mensual:</strong> ${c.consumo.consumo_mensual} kWh</p>
-                            <p><strong>Valor Factura:</strong> ${formatCurrency(c.consumo.valor_factura)}</p>
-                            <p><strong>Área Disponible:</strong> ${c.consumo.area_disponible} m²</p>
-                        </div>
-                        
-                        <div class="bg-orange-50 p-4 rounded">
-                            <h3 class="font-bold text-lg mb-2">☀️ Opción 1 - Sistema Ideal</h3>
-                            <p><strong>Paneles:</strong> ${c.opcion1.num_paneles}</p>
-                            <p><strong>Capacidad:</strong> ${c.opcion1.capacidad_instalada.toFixed(2)} kW</p>
-                            <p><strong>Área:</strong> ${c.opcion1.area_requerida.toFixed(2)} m²</p>
-                            <p><strong>Valor:</strong> ${formatCurrency(c.opcion1.valor_total)}</p>
-                            <p><strong>Ahorro Mensual:</strong> ${formatCurrency(c.opcion1.ahorro_mensual)}</p>
-                            <p><strong>Tiempo Retorno:</strong> ${c.opcion1.tiempo_retorno.toFixed(1)} años</p>
-                        </div>
-                        
-                        ${c.opcion2 ? `
-                        <div class="bg-red-50 p-4 rounded">
-                            <h3 class="font-bold text-lg mb-2">🔧 Opción 2 - Ajustada a Área</h3>
-                            <p><strong>Paneles:</strong> ${c.opcion2.num_paneles}</p>
-                            <p><strong>Capacidad:</strong> ${c.opcion2.capacidad_instalada.toFixed(2)} kW</p>
-                            <p><strong>Valor:</strong> ${formatCurrency(c.opcion2.valor_total)}</p>
-                        </div>
-                        ` : ''}
-                        
-                        <div class="bg-gray-50 p-4 rounded">
-                            <h3 class="font-bold text-lg mb-2">📧 Estado</h3>
-                            <p><strong>Email Enviado:</strong> ${c.estado.email_enviado ? '✅ Sí' : '❌ No'}</p>
-                            ${c.estado.fecha_envio_email ? `<p><strong>Fecha Envío:</strong> ${formatFecha(c.estado.fecha_envio_email)}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('detalle-contenido').innerHTML = detalleHTML;
-                document.getElementById('modal-detalle').classList.remove('hidden');
+                // Usar la misma función del frontend
+                mostrarResultadoCompleto(cotizacionActual);
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -565,8 +564,301 @@
             }
         }
 
+        // Función copiada del frontend index.html
+        function mostrarResultadoCompleto(cotizacion) {
+            console.log('📊 Mostrando resultado completo:', cotizacion);
+            
+            // Verificar si hay opción 2
+            const tieneOpcion2 = cotizacion.opcion2 && cotizacion.opcion2.numeroPaneles;
+            
+            console.log(`🔍 ¿Tiene Opción 2?: ${tieneOpcion2}`);
+            if (tieneOpcion2) {
+                console.log('📋 Datos Opción 2:', cotizacion.opcion2);
+            }
+            
+            // Mostrar/ocultar tabs
+            const tabsContainer = document.getElementById('tabsOpciones');
+            if (tieneOpcion2) {
+                tabsContainer.classList.remove('hidden');
+                console.log('✅ Mostrando tabs - Opción 2 disponible');
+            } else {
+                tabsContainer.classList.add('hidden');
+                console.log('ℹ️ Solo hay opción 1 - Tabs ocultos');
+            }
+            
+            // Reset a opción 1 con las nuevas clases compactas
+            opcionActiva = 1;
+            const tab1 = document.getElementById('tabOpcion1');
+            const tab2 = document.getElementById('tabOpcion2');
+            if (tab1 && tab2) {
+                // Tab 1 activo - clases compactas
+                tab1.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10';
+                // Tab 2 inactivo
+                tab2.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t';
+            }
+            
+            // Mostrar opción 1
+            mostrarResultadoOpcion(cotizacion, tieneOpcion2 ? cotizacion : null);
+        }
+
+        // Función para cambiar entre opciones
+        function cambiarOpcion(opcion) {
+            if (!cotizacionActual) return;
+            
+            opcionActiva = opcion;
+            const tab1 = document.getElementById('tabOpcion1');
+            const tab2 = document.getElementById('tabOpcion2');
+            
+            if (opcion === 1) {
+                tab1.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10';
+                tab2.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t';
+                mostrarResultadoOpcion(cotizacionActual, cotizacionActual);
+            } else {
+                tab2.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 bg-white text-blue-600 shadow-sm rounded-t -mb-px border-b-2 border-blue-600 z-10';
+                tab1.className = 'relative px-4 py-2 text-sm font-semibold transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-t';
+                mostrarResultadoOpcion(cotizacionActual.opcion2, cotizacionActual);
+            }
+        }
+
+        // Función para mostrar una opción específica - COPIADA DEL FRONTEND
+        function mostrarResultadoOpcion(opcionData, cotizacionCompleta) {
+            const contenido = document.getElementById('contenidoResultado');
+            
+            if (!contenido) {
+                console.error('❌ No se encontró el elemento contenidoResultado');
+                return;
+            }
+            
+            const cotizacion = opcionData || cotizacionCompleta.opcion2;
+            const esOpcion2 = opcionActiva === 2;
+            
+            console.log('🔍 DEBUG mostrarResultadoOpcion:');
+            console.log('   opcionActiva:', opcionActiva);
+            console.log('   esOpcion2:', esOpcion2);
+            
+            const mensajeOpcion = esOpcion2 ? 
+                `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+                    <p class="text-sm text-yellow-800">
+                        ⚠️ <strong>Opción ajustada a área disponible:</strong> 
+                        Esta propuesta está optimizada para el espacio disponible de ${cotizacion.areaDisponible || cotizacionCompleta?.areaDisponible || 'N/A'} m². 
+                        La generación será menor que la opción ideal, pero se adapta a sus limitaciones de espacio.
+                    </p>
+                </div>` : '';
+            
+            // Crear tabla de ahorros para los primeros 10 años
+            const tablaAhorros10 = cotizacion.tablaAhorros.slice(0, 10).map(item => `
+                <tr class="border-b">
+                    <td class="py-2 px-4">${item.año}</td>
+                    <td class="py-2 px-4">$${Math.round(item.valorKwhAño).toLocaleString()}</td>
+                    <td class="py-2 px-4">${Math.round(item.produccionAnual).toLocaleString()} kWh</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroGeneracion).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroDep || 0).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroDed || 0).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.costoMant || 0).toLocaleString()}</td>
+                    <td class="py-2 px-4 font-bold">$${Math.round(item.ahorroTotalAño).toLocaleString()}</td>
+                    <td class="py-2 px-4">$${Math.round(item.ahorroAcumulado).toLocaleString()}</td>
+                    <td class="py-2 px-4 ${item.roi > 0 ? 'text-green-600' : 'text-red-600'}">${item.roi.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+
+            contenido.innerHTML = `
+                ${mensajeOpcion}
+                <div class="space-y-6">
+                    <!-- Resumen Ejecutivo -->
+                    <div class="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-xl border-l-4 border-blue-500">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">📊 Resumen Ejecutivo</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <div class="text-2xl font-bold text-blue-600">${cotizacion.capacidadInstalada} kW</div>
+                                <div class="text-sm text-gray-600">Capacidad Instalada</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-green-600">${cotizacion.generacionMensual} kWh</div>
+                                <div class="text-sm text-gray-600">Generación Mensual</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-purple-600">$${cotizacion.ahorroAnualEnergia.toLocaleString()}</div>
+                                <div class="text-sm text-gray-600">Ahorro Anual</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-orange-600">${cotizacion.tiempoRetorno} años</div>
+                                <div class="text-sm text-gray-600">Tiempo Retorno</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Variables Solicitadas -->
+                    <div class="bg-purple-50 p-6 rounded-xl border-l-4 border-purple-500">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">🎯 Variables Calculadas (Solicitadas)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div><strong>1. Porcentaje Producción Mensual:</strong> ${cotizacion.porcentajeProduccionMensual}%</div>
+                            <div><strong>2. Ahorro Total Depreciación (3 años):</strong> $${cotizacion.ahorroTotalDepreciacion.toLocaleString()}</div>
+                            <div><strong>3. Ahorro Total Deducción (5 años):</strong> $${cotizacion.ahorroTotalDeduccion.toLocaleString()}</div>
+                            <div><strong>8a. Acum. Generación hasta PayBack:</strong> $${cotizacion.acumxgen.toLocaleString()}</div>
+                            <div><strong>8b. Acum. Deducción hasta PayBack:</strong> $${cotizacion.acumxdeduc.toLocaleString()}</div>
+                            <div><strong>8c. Acum. Depreciación hasta PayBack:</strong> $${cotizacion.acumxdepre.toLocaleString()}</div>
+                        </div>
+                        <div class="mt-4 p-4 bg-yellow-100 rounded-lg">
+                            <div class="text-lg font-bold text-center">
+                                <strong>9. TOTAL ACUM (suma a+b+c):</strong> 
+                                <span class="text-2xl text-green-600">$${cotizacion.TotalAcum.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos del Cliente -->
+                    <div class="bg-gray-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">👤 Información del Cliente</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                            <div><strong>Nombre:</strong> ${cotizacion.nombre}</div>
+                            <div><strong>Teléfono:</strong> ${cotizacion.telefono}</div>
+                            <div><strong>Email:</strong> ${cotizacion.email}</div>
+                            <div><strong>Ciudad:</strong> ${cotizacion.ciudad}</div>
+                            <div><strong>Dirección:</strong> ${cotizacion.direccion}</div>
+                            <div><strong>Tipo Sistema:</strong> ${cotizacion.tipoSistemaFV}</div>
+                            <div><strong>HSP:</strong> ${cotizacion.hspCalculado}</div>
+                            <div><strong>Fecha:</strong> ${cotizacion.fecha} ${cotizacion.hora}</div>
+                            <div><strong>ID:</strong> ${cotizacion.cotizacionId}</div>
+                        </div>
+                    </div>
+
+                    <!-- Dimensionamiento del Sistema -->
+                    <div class="bg-yellow-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">🔧 Dimensionamiento del Sistema</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold mb-2">Equipos Seleccionados:</h4>
+                                <ul class="space-y-1 text-sm">
+                                    <li>• ${cotizacion.numeroPaneles} x ${cotizacion.panelSeleccionado.nombre}</li>
+                                    <li>• ${cotizacion.numeroInversores} x ${cotizacion.inversorSeleccionado.nombre}</li>
+                                    ${cotizacion.bateriaSeleccionada ? `<li>• 1 x ${cotizacion.bateriaSeleccionada.nombre}</li>` : ''}
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">Especificaciones Técnicas:</h4>
+                                <ul class="space-y-1 text-sm">
+                                    <li>• Capacidad: ${cotizacion.capacidadInstalada} kW</li>
+                                    <li>• Generación Anual: ${cotizacion.generacionAnual} kWh</li>
+                                    <li>• Tipo Sistema: ${cotizacion.tipoSistemaFV}</li>
+                                    <li>• Consumo Diurno: ${cotizacion.porcentajeConsumodia}%</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inversión y Beneficios -->
+                    <div class="bg-blue-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">💰 Inversión Total del Sistema</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="text-center">
+                                <div class="text-4xl font-bold text-blue-600 mb-2">$${cotizacion.valorTotalSistema.toLocaleString()}</div>
+                                <div class="text-lg text-gray-700">Valor Total del Sistema</div>
+                                <div class="text-sm text-gray-600 mt-2">Subtotal antes IVA: $${cotizacion.subtotalAntesIVA.toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">Beneficios Tributarios (Base: Subtotal antes IVA):</h4>
+                                <table class="w-full text-sm">
+                                    <tr><td>Deducción Renta Base (50%):</td><td class="text-right">$${cotizacion.deduccionRentaBase.toLocaleString()}</td></tr>
+                                    <tr><td>Deducción Efectiva (35%):</td><td class="text-right text-green-600">$${cotizacion.deduccionRentaEfectiva.toLocaleString()}</td></tr>
+                                    <tr><td>Depreciación Anual (3 años):</td><td class="text-right text-green-600">$${cotizacion.depreciacionAnual.toLocaleString()}</td></tr>
+                                    <tr><td>Ahorro Fiscal Depreciación:</td><td class="text-right text-green-600">$${cotizacion.ahorroAnualDepreciacion.toLocaleString()}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desglose Detallado de Costos -->
+                    ${cotizacion.desgloseCostos ? `
+                    <div class="bg-indigo-50 p-6 rounded-xl border-l-4 border-indigo-500">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">📊 Desglose Detallado de Costos</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span>Paneles:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoPaneles.toLocaleString()}</span></div>
+                                <div class="flex justify-between"><span>Inversores:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoInversores.toLocaleString()}</span></div>
+                                ${cotizacion.desgloseCostos.costoBaterias > 0 ? `<div class="flex justify-between"><span>Baterías:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoBaterias.toLocaleString()}</span></div>` : ''}
+                                <div class="flex justify-between"><span>Soportería:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoSoporteria.toLocaleString()}</span></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span>Instalación:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoInstalacion.toLocaleString()}</span></div>
+                                <div class="flex justify-between"><span>Materiales:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoMateriales.toLocaleString()}</span></div>
+                                ${cotizacion.desgloseCostos.costoLegalizacion > 0 ? `<div class="flex justify-between"><span>Legalización:</span><span class="font-mono">$${cotizacion.desgloseCostos.costoLegalizacion.toLocaleString()}</span></div>` : ''}
+                                <div class="flex justify-between border-t pt-2 mt-2"><span class="font-semibold">IVA (19%):</span><span class="font-mono font-semibold">$${cotizacion.desgloseCostos.ivaTotal.toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t-2 border-indigo-300">
+                            <div class="flex justify-between text-lg font-bold">
+                                <span>TOTAL SISTEMA:</span>
+                                <span class="text-indigo-600 font-mono text-2xl">$${cotizacion.valorTotalSistema.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Tabla Completa de Ahorros -->
+                    <div class="bg-green-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">📈 Tabla Detallada de Ahorros (10 años)</h3>
+                        <div class="mb-4 text-sm text-gray-700 bg-yellow-100 p-3 rounded-lg">
+                            <strong>⚠️ Consideraciones:</strong><br>
+                            • Año 1: Solo 6 meses de inyección | Degradación: -3.5% anual | Inflación kWh: +5.5% anual<br>
+                            • Depreciación: 3 años | Deducción 50%: 5 años | Mantenimiento: incremento anual igual kWh
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="py-2 px-2 text-left">Año</th>
+                                        <th class="py-2 px-2 text-left">Valor kWh</th>
+                                        <th class="py-2 px-2 text-left">Producción</th>
+                                        <th class="py-2 px-2 text-left">Ahorro Gen.</th>
+                                        <th class="py-2 px-2 text-left">Depreciación</th>
+                                        <th class="py-2 px-2 text-left">Deducción</th>
+                                        <th class="py-2 px-2 text-left">Mantenimiento</th>
+                                        <th class="py-2 px-2 text-left">Total Año</th>
+                                        <th class="py-2 px-2 text-left">Acumulado</th>
+                                        <th class="py-2 px-2 text-left">ROI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tablaAhorros10}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Mostrar modal
+            const modal = document.getElementById('modalResultado');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                console.log('✅ Modal mostrado correctamente');
+            }
+        }
+
+        // Funciones auxiliares para botones del modal
+        function imprimirCotizacion() {
+            window.print();
+        }
+
+        function exportarPDF() {
+            window.print();
+        }
+
+        function abrirWhatsApp() {
+            if (cotizacionActual && cotizacionActual.telefono) {
+                const mensaje = `Hola ${cotizacionActual.nombre}, te contacto por la cotización solar #${cotizacionActual.cotizacionId}`;
+                const telefono = cotizacionActual.telefono.replace(/\D/g, '');
+                window.open(`https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+            }
+        }
+
         function cerrarModal() {
-            document.getElementById('modal-detalle').classList.add('hidden');
+            const modal = document.getElementById('modalResultado');
+            if (modal) {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }
         }
 
         // Cargar Top Ciudades
