@@ -60,28 +60,37 @@
         
         /* Estilos de impresión */
         @media print {
+            /* Ocultar todo excepto el modal */
             body * {
                 visibility: hidden;
             }
-            #modalDetalle, #modalDetalle * {
+            #modalResultado, #modalResultado * {
                 visibility: visible;
             }
-            #modalDetalle {
+            #modalResultado {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100%;
+                background: white !important;
             }
+            /* Ocultar elementos que no deben imprimirse */
             .no-print {
                 display: none !important;
+                visibility: hidden !important;
             }
-            .modal-backdrop {
-                display: none !important;
+            .bg-black {
+                background: white !important;
             }
+            .bg-opacity-50 {
+                background: white !important;
+            }
+            /* Ajustar el contenedor del modal */
             .modal-content {
-                box-shadow: none;
+                box-shadow: none !important;
                 max-height: none !important;
                 overflow: visible !important;
+                max-width: 100% !important;
             }
             /* Asegurar que todo el contenido sea visible */
             .overflow-y-auto {
@@ -92,6 +101,14 @@
             body {
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
+            }
+            /* Asegurar que las tablas se vean bien */
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
             }
         }
     </style>
@@ -1011,27 +1028,60 @@
 
         // Función mejorada para imprimir cotización
         function imprimirCotizacion() {
+            console.log('🖨️ Iniciando impresión...');
+            
+            // Obtener el modal correcto
+            const modal = document.getElementById('modalResultado');
+            if (!modal) {
+                console.error('❌ Modal no encontrado');
+                alert('Error: No se puede imprimir. Modal no encontrado.');
+                return;
+            }
+            
+            // Asegurar que el modal esté visible
+            if (modal.classList.contains('hidden')) {
+                console.error('❌ El modal está oculto');
+                alert('Error: Debe abrir la cotización antes de imprimir.');
+                return;
+            }
+            
+            console.log('✅ Modal encontrado, preparando impresión...');
+            
             // Agregar clase para impresión
-            const modal = document.getElementById('modalDetalle');
             modal.classList.add('printing');
             
             // Asegurar que todo el contenido sea visible antes de imprimir
             const scrollContainers = modal.querySelectorAll('.overflow-y-auto');
-            scrollContainers.forEach(container => {
+            const originalStyles = [];
+            
+            scrollContainers.forEach((container, index) => {
+                // Guardar estilos originales
+                originalStyles[index] = {
+                    maxHeight: container.style.maxHeight,
+                    overflow: container.style.overflow
+                };
+                // Expandir para impresión
                 container.style.maxHeight = 'none';
                 container.style.overflow = 'visible';
             });
             
-            // Imprimir
-            window.print();
+            console.log(`📄 Contenedores expandidos: ${scrollContainers.length}`);
             
-            // Restaurar estilos después de imprimir
+            // Pequeño delay para asegurar que los estilos se apliquen
             setTimeout(() => {
-                modal.classList.remove('printing');
-                scrollContainers.forEach(container => {
-                    container.style.maxHeight = '';
-                    container.style.overflow = '';
-                });
+                // Imprimir
+                window.print();
+                console.log('✅ Ventana de impresión abierta');
+                
+                // Restaurar estilos después de imprimir
+                setTimeout(() => {
+                    modal.classList.remove('printing');
+                    scrollContainers.forEach((container, index) => {
+                        container.style.maxHeight = originalStyles[index].maxHeight;
+                        container.style.overflow = originalStyles[index].overflow;
+                    });
+                    console.log('✅ Estilos restaurados');
+                }, 100);
             }, 100);
         }
 
