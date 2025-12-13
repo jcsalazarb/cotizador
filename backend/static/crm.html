@@ -58,57 +58,147 @@
             display: block;
         }
         
-        /* Estilos de impresión */
+        /* Estilos de impresión mejorados */
         @media print {
+            /* Resetear la página para impresión */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
             /* Ocultar todo excepto el modal */
-            body * {
-                visibility: hidden;
+            body > *:not(#modalResultado) {
+                display: none !important;
             }
-            #modalResultado, #modalResultado * {
-                visibility: visible;
-            }
+            
+            /* Hacer visible el modal completo */
             #modalResultado {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+                display: block !important;
+                position: relative !important;
                 background: white !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
             }
+            
+            #modalResultado * {
+                visibility: visible !important;
+            }
+            
             /* Ocultar elementos que no deben imprimirse */
-            .no-print {
+            .no-print,
+            .sticky,
+            button,
+            .bg-gradient-to-r.from-blue-500 {
                 display: none !important;
                 visibility: hidden !important;
             }
-            .bg-black {
-                background: white !important;
-            }
-            .bg-opacity-50 {
-                background: white !important;
-            }
-            /* Ajustar el contenedor del modal */
-            .modal-content {
-                box-shadow: none !important;
-                max-height: none !important;
-                overflow: visible !important;
+            
+            /* Contenedor principal del modal */
+            #modalResultado > div {
                 max-width: 100% !important;
+                max-height: none !important;
+                overflow: visible !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
             }
+            
+            /* Eliminar fondos oscuros */
+            .bg-black,
+            .bg-opacity-50,
+            .fixed,
+            .inset-0 {
+                background: white !important;
+                position: relative !important;
+            }
+            
             /* Asegurar que todo el contenido sea visible */
-            .overflow-y-auto {
+            .overflow-y-auto,
+            .overflow-hidden {
                 overflow: visible !important;
                 max-height: none !important;
+                height: auto !important;
             }
-            /* Mejorar legibilidad en impresión */
-            body {
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
+            
+            /* Contenido del modal */
+            #contenidoResultado {
+                max-height: none !important;
+                overflow: visible !important;
+                height: auto !important;
+                padding: 20px !important;
             }
-            /* Asegurar que las tablas se vean bien */
+            
+            /* Mejorar tablas */
             table {
                 page-break-inside: auto;
+                width: 100%;
             }
+            
             tr {
                 page-break-inside: avoid;
                 page-break-after: auto;
+            }
+            
+            thead {
+                display: table-header-group;
+            }
+            
+            tfoot {
+                display: table-footer-group;
+            }
+            
+            /* Evitar cortes en secciones importantes */
+            .bg-gradient-to-r,
+            .rounded-xl,
+            .shadow-lg {
+                page-break-inside: avoid;
+            }
+            
+            /* Asegurar que los colores se impriman */
+            .bg-blue-50,
+            .bg-green-50,
+            .bg-yellow-50,
+            .bg-purple-50,
+            .text-blue-600,
+            .text-green-600,
+            .border-blue-200 {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* Ajustar tamaños de fuente para mejor legibilidad */
+            body {
+                font-size: 10pt;
+                line-height: 1.3;
+            }
+            
+            h2 {
+                font-size: 14pt;
+                margin-top: 10pt;
+            }
+            
+            h3 {
+                font-size: 12pt;
+            }
+            
+            /* Agregar header de impresión con logo */
+            #modalResultado::before {
+                content: "";
+                display: block;
+                text-align: center;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #3b82f6;
             }
         }
     </style>
@@ -1026,12 +1116,14 @@
             }
         }
 
-        // Función mejorada para imprimir cotización
+        // Función mejorada para imprimir cotización completa
         function imprimirCotizacion() {
             console.log('🖨️ Iniciando impresión...');
             
-            // Obtener el modal correcto
+            // Obtener el modal y el contenedor de contenido
             const modal = document.getElementById('modalResultado');
+            const contenido = document.getElementById('contenidoResultado');
+            
             if (!modal) {
                 console.error('❌ Modal no encontrado');
                 alert('Error: No se puede imprimir. Modal no encontrado.');
@@ -1047,42 +1139,77 @@
             
             console.log('✅ Modal encontrado, preparando impresión...');
             
-            // Agregar clase para impresión
-            modal.classList.add('printing');
+            // Guardar estado original
+            const modalOriginalClass = modal.className;
+            const modalChildClass = modal.children[0].className;
+            const contenidoOriginalStyle = {
+                maxHeight: contenido.style.maxHeight,
+                overflow: contenido.style.overflow,
+                height: contenido.style.height
+            };
             
-            // Asegurar que todo el contenido sea visible antes de imprimir
-            const scrollContainers = modal.querySelectorAll('.overflow-y-auto');
-            const originalStyles = [];
+            // Preparar para impresión: expandir todo el contenido
+            contenido.style.maxHeight = 'none';
+            contenido.style.overflow = 'visible';
+            contenido.style.height = 'auto';
             
-            scrollContainers.forEach((container, index) => {
-                // Guardar estilos originales
-                originalStyles[index] = {
-                    maxHeight: container.style.maxHeight,
-                    overflow: container.style.overflow
-                };
-                // Expandir para impresión
+            // Expandir todos los contenedores con scroll
+            const scrollContainers = modal.querySelectorAll('.overflow-y-auto, .overflow-hidden');
+            const originalStyles = Array.from(scrollContainers).map(container => ({
+                maxHeight: container.style.maxHeight,
+                overflow: container.style.overflow,
+                height: container.style.height
+            }));
+            
+            scrollContainers.forEach(container => {
                 container.style.maxHeight = 'none';
                 container.style.overflow = 'visible';
+                container.style.height = 'auto';
             });
             
+            // Forzar que el modal wrapper también se expanda
+            if (modal.children[0]) {
+                modal.children[0].style.maxHeight = 'none';
+                modal.children[0].style.overflow = 'visible';
+                modal.children[0].style.height = 'auto';
+            }
+            
             console.log(`📄 Contenedores expandidos: ${scrollContainers.length}`);
+            console.log('⏳ Esperando aplicación de estilos...');
             
             // Pequeño delay para asegurar que los estilos se apliquen
             setTimeout(() => {
+                console.log('🖨️ Abriendo ventana de impresión...');
+                
                 // Imprimir
                 window.print();
+                
                 console.log('✅ Ventana de impresión abierta');
                 
-                // Restaurar estilos después de imprimir
+                // Restaurar estilos después de imprimir (o cancelar)
                 setTimeout(() => {
-                    modal.classList.remove('printing');
+                    // Restaurar contenido principal
+                    contenido.style.maxHeight = contenidoOriginalStyle.maxHeight;
+                    contenido.style.overflow = contenidoOriginalStyle.overflow;
+                    contenido.style.height = contenidoOriginalStyle.height;
+                    
+                    // Restaurar contenedores con scroll
                     scrollContainers.forEach((container, index) => {
                         container.style.maxHeight = originalStyles[index].maxHeight;
                         container.style.overflow = originalStyles[index].overflow;
+                        container.style.height = originalStyles[index].height;
                     });
+                    
+                    // Restaurar wrapper del modal
+                    if (modal.children[0]) {
+                        modal.children[0].style.maxHeight = '';
+                        modal.children[0].style.overflow = '';
+                        modal.children[0].style.height = '';
+                    }
+                    
                     console.log('✅ Estilos restaurados');
-                }, 100);
-            }, 100);
+                }, 500);
+            }, 250);
         }
 
         function cerrarModal() {
