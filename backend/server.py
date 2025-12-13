@@ -2251,40 +2251,48 @@ def admin_panel():
 @app.get("/crm", tags=["General"])
 def crm_panel():
     """Servir panel CRM"""
-    # Intentar múltiples ubicaciones
-    possible_paths = [
-        os.path.join(STATIC_DIR, "crm.html"),
-        os.path.join(os.getcwd(), "static", "crm.html"),
-        os.path.join(os.getcwd(), "backend", "static", "crm.html"),
-        "/app/backend/static/crm.html",  # Ruta absoluta en Railway
-    ]
-    
-    for crm_path in possible_paths:
-        logger.info(f"🔍 Probando: {crm_path} - Existe: {os.path.exists(crm_path)}")
-        if os.path.exists(crm_path):
-            logger.info(f"✅ CRM encontrado en: {crm_path}")
-            return FileResponse(crm_path, media_type="text/html")
-    
-    # Si no se encuentra, proporcionar información de debug
-    logger.error(f"❌ crm.html NO encontrado en ninguna ubicación")
-    logger.error(f"📂 APP_DIR: {APP_DIR}")
-    logger.error(f"📁 STATIC_DIR: {STATIC_DIR}")
-    logger.error(f"📍 CWD: {os.getcwd()}")
-    
-    if os.path.exists(STATIC_DIR):
-        archivos = os.listdir(STATIC_DIR)
-        logger.error(f"📋 Archivos en {STATIC_DIR}: {archivos}")
-    
-    raise HTTPException(
-        status_code=404,
-        detail={
-            "error": "Panel CRM no encontrado",
-            "app_dir": APP_DIR,
-            "static_dir": STATIC_DIR,
-            "cwd": os.getcwd(),
-            "paths_tried": possible_paths
-        }
-    )
+    try:
+        # Intentar múltiples ubicaciones
+        possible_paths = [
+            os.path.join(STATIC_DIR, "crm.html"),
+            os.path.join(os.getcwd(), "static", "crm.html"),
+            os.path.join(os.getcwd(), "backend", "static", "crm.html"),
+            "/app/backend/static/crm.html",  # Ruta absoluta en Railway
+        ]
+        
+        for crm_path in possible_paths:
+            try:
+                if os.path.exists(crm_path):
+                    logger.info(f"✅ CRM encontrado en: {crm_path}")
+                    return FileResponse(crm_path, media_type="text/html")
+            except Exception as e:
+                logger.error(f"Error probando {crm_path}: {str(e)}")
+                continue
+        
+        # Si no se encuentra, proporcionar información de debug
+        logger.error(f"❌ crm.html NO encontrado")
+        logger.error(f"📂 APP_DIR: {APP_DIR}")
+        logger.error(f"📁 STATIC_DIR: {STATIC_DIR}")
+        logger.error(f"📍 CWD: {os.getcwd()}")
+        
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "Panel CRM no encontrado",
+                "app_dir": APP_DIR,
+                "static_dir": STATIC_DIR,
+                "cwd": os.getcwd(),
+                "paths_tried": possible_paths,
+                "static_exists": os.path.exists(STATIC_DIR),
+                "files_in_static": os.listdir(STATIC_DIR) if os.path.exists(STATIC_DIR) else []
+            }
+        )
+    except Exception as e:
+        logger.error(f"❌ Error en endpoint /crm: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Error interno", "detail": str(e)}
+        )
 
 @app.get("/health", tags=["General"])
 def health():
