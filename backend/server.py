@@ -2300,6 +2300,26 @@ async def crm_panel():
 def health():
     return {"status": "ok", "timestamp": now_colombia().isoformat()}
 
+@app.get("/debug/files", tags=["General"])
+def debug_files():
+    """Endpoint de debug para ver archivos en static"""
+    try:
+        info = {
+            "app_dir": APP_DIR,
+            "static_dir": STATIC_DIR,
+            "cwd": os.getcwd(),
+            "static_exists": os.path.exists(STATIC_DIR),
+            "files": []
+        }
+        
+        if os.path.exists(STATIC_DIR):
+            info["files"] = os.listdir(STATIC_DIR)
+            info["crm_exists"] = os.path.exists(os.path.join(STATIC_DIR, "crm.html"))
+        
+        return info
+    except Exception as e:
+        return {"error": str(e), "traceback": __import__('traceback').format_exc()}
+
 @app.post("/api/admin/crear-tabla-cotizaciones", tags=["Admin"], dependencies=[Depends(auth_admin)])
 def crear_tabla_cotizaciones_endpoint():
     """
