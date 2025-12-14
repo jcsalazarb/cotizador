@@ -1,15 +1,42 @@
 # NASSA Solar Quotation System - AI Agent Instructions
 
+**Última actualización:** 13 de diciembre de 2025  
+**Estado:** Sistema funcional en producción - Railway  
+**URL:** https://web-production-3749b.up.railway.app
+
 ## Architecture Overview
 
 This is a **solar photovoltaic quotation system** with a Python FastAPI backend and vanilla HTML/JS frontend. The system calculates solar panel installations, generates PowerPoint presentations, converts them to PDF, and emails quotations to customers.
 
-**Tech Stack**: FastAPI + Python-PPTX + LibreOffice (for PDF conversion) + vanilla HTML/CSS/JS
+**Tech Stack**: FastAPI + Python-PPTX + LibreOffice (PDF) + PostgreSQL (Railway) + vanilla HTML/CSS/JS
+
+## Recent Updates (Dec 2025)
+
+### CRM Panel Authentication (COMPLETED)
+- ✅ Login system with HTTP Basic Auth
+- ✅ Dynamic credentials (not hardcoded in JS)
+- ✅ All API calls use `getAuthHeader()`
+- ✅ Dashboard hidden until successful login
+- **File:** `backend/static/crm.html` (~1400 lines)
+
+### Print Functionality (COMPLETED)
+- ✅ Landscape orientation for tables
+- ✅ Complete modal content printed
+- ✅ 7pt font for tables, optimized spacing
+- ✅ Removed PDF and WhatsApp buttons
+- ✅ ID: `modalResultado` (not modalDetalle)
+
+### Pending (HIGH PRIORITY)
+- ⚠️ User management module in `admin.html`
+- ⚠️ PostgreSQL `users` table with roles
+- ⚠️ Migrate from hardcoded credentials to DB
+- ⚠️ Role-based access control (admin, crm_user, viewer)
 
 ## Critical Components
 
 ### Backend (`backend/server.py`)
-- **FastAPI server** on port 5000
+- **FastAPI server** on port 8001 (local) / Railway (production)
+- **Database**: PostgreSQL on Railway (SQLAlchemy models)
 - **Security**: HTTP Basic Auth for admin endpoints, rate limiting (10 req/min), CORS middleware
 - **Core calculation**: `calcular_cotizacion()` - computes solar panel count, costs, ROI, 25-year savings projections
 - **PowerPoint workflow**: Fills `Template-Precottizacion.pptx` → calls LibreOffice CLI → generates PDF → emails both files
@@ -17,6 +44,13 @@ This is a **solar photovoltaic quotation system** with a Python FastAPI backend 
   - Panel count based on HSP (Horas Solar Pico), consumption, panel efficiency (90%)
   - 25-year financial model: depreciation (3 years, 35% tax benefit), rent deductions (5 years, 50% base, 35% effective)
   - Annual degradation (1%), first year only 50% generation, cost/kWh increase (5.5%/year)
+
+### CRM Panel (`backend/static/crm.html`)
+- **Authentication**: Login required before accessing dashboard
+- **Features**: Search, filters, pagination, statistics, reports
+- **Print**: Landscape mode, optimized for full table visibility
+- **Data source**: PostgreSQL via `/api/admin/cotizaciones/{id}`
+- **Important**: Uses `datos_completos` field for full frontend structure
 
 ### Configuration Files
 - `config/equipos.json`: Equipment catalog with prices (panels, inverters, batteries). **Prices are PRIVATE** - admin endpoint only.
@@ -26,7 +60,7 @@ This is a **solar photovoltaic quotation system** with a Python FastAPI backend 
 - **Embedded JavaScript** (no separate `.js` files) - all logic in `<script>` tag at bottom
 - Fetches equipment/cities from API, submits quotation form via POST `/api/cotizar`
 - **Modal CRM**: Stores quotation data in `localStorage` for follow-up calls
-- API base URL: `const API_BASE_URL = 'http://127.0.0.1:5000/api'`
+- API base URL: `const API_BASE_URL = 'http://127.0.0.1:8001/api'` (local) or Railway URL
 
 ## Essential Workflows
 
@@ -37,7 +71,7 @@ This is a **solar photovoltaic quotation system** with a Python FastAPI backend 
 cd backend
 source venv/bin/activate  # Create with: python3 -m venv venv
 pip install -r requirements.txt
-uvicorn server:app --host 0.0.0.0 --port 5000 --reload
+uvicorn server:app --host 0.0.0.0 --port 8001 --reload
 # OR: python server.py
 ```
 
