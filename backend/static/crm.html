@@ -60,6 +60,12 @@
         
         /* Estilos de impresión mejorados */
         @media print {
+            /* Configurar página para orientación horizontal (landscape) */
+            @page {
+                size: letter landscape;
+                margin: 0.5in 0.3in;
+            }
+            
             /* Resetear la página para impresión */
             * {
                 -webkit-print-color-adjust: exact !important;
@@ -135,13 +141,38 @@
                 max-height: none !important;
                 overflow: visible !important;
                 height: auto !important;
-                padding: 20px !important;
+                padding: 10px 15px !important;
             }
             
             /* Mejorar tablas */
             table {
                 page-break-inside: auto;
                 width: 100%;
+                font-size: 8pt !important;
+            }
+            
+            /* Tabla de ahorros: reducir padding y fuente */
+            table th,
+            table td {
+                padding: 4px 3px !important;
+                font-size: 7pt !important;
+                line-height: 1.2 !important;
+                white-space: nowrap;
+            }
+            
+            table th {
+                font-size: 7.5pt !important;
+                font-weight: 600 !important;
+            }
+            
+            /* Números en tablas más compactos */
+            table td {
+                text-align: right;
+            }
+            
+            table td:first-child,
+            table th:first-child {
+                text-align: left;
             }
             
             tr {
@@ -178,17 +209,43 @@
             
             /* Ajustar tamaños de fuente para mejor legibilidad */
             body {
-                font-size: 10pt;
-                line-height: 1.3;
+                font-size: 9pt;
+                line-height: 1.2;
             }
             
             h2 {
-                font-size: 14pt;
-                margin-top: 10pt;
+                font-size: 12pt;
+                margin-top: 8pt;
+                margin-bottom: 6pt;
             }
             
             h3 {
-                font-size: 12pt;
+                font-size: 10pt;
+                margin-top: 6pt;
+                margin-bottom: 4pt;
+            }
+            
+            p {
+                font-size: 9pt;
+                margin-bottom: 4pt;
+            }
+            
+            /* Reducir padding en secciones */
+            .p-6, .px-6, .py-6 {
+                padding: 8px !important;
+            }
+            
+            .p-4, .px-4, .py-4 {
+                padding: 6px !important;
+            }
+            
+            .mb-4, .mt-4 {
+                margin-bottom: 6px !important;
+                margin-top: 6px !important;
+            }
+            
+            .gap-4 {
+                gap: 6px !important;
             }
             
             /* Agregar header de impresión con logo */
