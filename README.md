@@ -1,48 +1,85 @@
 # ☀️ NASSA Solar - Sistema de Cotización Fotovoltaica
 
-Sistema web de cotización automatizada para instalaciones de paneles solares fotovoltaicos en Colombia.
+**Estado:** ✅ Funcional en producción  
+**URL:** https://web-production-3749b.up.railway.app  
+**Última actualización:** 13 de diciembre de 2025
+
+Sistema web de cotización automatizada para instalaciones de paneles solares fotovoltaicos en Colombia. Incluye generación de presentaciones PowerPoint, conversión a PDF, envío por email y panel CRM administrativo.
+
+---
+
+## 📚 Documentación
+
+**Para retomar desarrollo, leer en este orden:**
+
+1. **[QUICK_START.md](QUICK_START.md)** - ⚡ Inicio rápido (5 minutos)
+2. **[ESTADO_PROYECTO.md](ESTADO_PROYECTO.md)** - 📊 Estado completo y contexto
+3. **[TODO.md](TODO.md)** - ✅ Próxima tarea: Gestión de usuarios
+4. **[.github/copilot-instructions.md](.github/copilot-instructions.md)** - 🤖 Contexto para AI
+
+---
 
 ## 🌟 Características
 
-- **Cotización inteligente**: Cálculo automático basado en consumo, ubicación y tipo de sistema
-- **Inversores MICRO y STRING**: Lógica diferenciada para cada tipo
-- **Proyección financiera 25 años**: ROI, depreciación, deducciones fiscales
-- **Generación automática de PDFs**: Presentaciones personalizadas con tablas de ahorro
-- **Envío por email**: PDF + PPTX al cliente y copia a NASSA
-- **Panel administrativo**: Gestión de equipos, precios y parámetros
-- **Base de datos PostgreSQL**: Persistencia y escalabilidad
+### Sistema de Cotización
+- ✅ Cálculo automático basado en consumo, ubicación (HSP) y tipo de sistema
+- ✅ 2 opciones: Ideal y Ajustada a área disponible
+- ✅ Proyección financiera 25 años con ROI, depreciación y deducciones fiscales
+- ✅ Soporte para sistemas: On-grid, Off-grid, Híbridos
+- ✅ Selección de equipos (paneles, inversores, baterías)
+- ✅ Generación automática de PowerPoint personalizado
+- ✅ Conversión PPTX → PDF vía LibreOffice
+- ✅ Envío por email (PDF + PPTX) al cliente y NASSA
+
+### Panel CRM (NUEVO - Dic 2025)
+- ✅ **Sistema de autenticación** con login y logout
+- ✅ Visualización de cotizaciones desde PostgreSQL
+- ✅ Búsqueda con filtros (nombre, email, ciudad, estado)
+- ✅ Paginación de resultados
+- ✅ **Impresión optimizada** en formato landscape
+- ✅ Tabla de ahorros completa visible (7pt fuente)
+- ✅ Estadísticas y reportes
+- ✅ Pestaña Opción 2 condicional (solo si existe)
+
+### Pendiente (Alta Prioridad)
+- ⚠️ Módulo de gestión de usuarios en admin.html
+- ⚠️ Sistema de roles (admin, crm_user, viewer)
+- ⚠️ Migración de credenciales hardcoded a base de datos
+
+---
 
 ## 🏗️ Arquitectura
 
 ### Stack Tecnológico
-- **Backend**: FastAPI 0.104.1 + Python 3.9
-- **ORM**: SQLAlchemy 2.0.23
+- **Backend**: FastAPI + Python-PPTX + LibreOffice
 - **Base de Datos**: PostgreSQL 15 (Railway)
-- **Frontend**: HTML/CSS/JS vanilla
-- **Template Engine**: Python-PPTX
-- **Conversión PDF**: LibreOffice
+- **Frontend**: HTML/CSS/JS vanilla (Tailwind CSS)
 - **Email**: SMTP (Gmail)
-- **Hosting**: Railway (backend) + GitHub Pages (frontend)
+- **Hosting**: Railway (backend + DB)
 
 ### Estructura del Proyecto
 ```
 cotizador/
+├── ESTADO_PROYECTO.md         ⭐ Estado completo
+├── TODO.md                     ⭐ Próxima tarea
+├── QUICK_START.md              ⭐ Inicio rápido
+├── Index.html                  Frontend cotización
 ├── backend/
-│   ├── server.py              # FastAPI application
-│   ├── models.py              # SQLAlchemy models
-│   ├── migrate_to_postgres.py # Migration script
-│   ├── requirements.txt       # Python dependencies
-│   ├── config/                # JSON legacy files (backup)
-│   │   ├── equipos.json
-│   │   ├── ciudades.json
-│   │   └── parametros.json
+│   ├── server.py              FastAPI (5000+ líneas)
+│   ├── requirements.txt       
+│   ├── config/
+│   │   ├── equipos.json       Catálogo equipos (PRECIOS)
+│   │   └── ciudades.json      HSP por ciudad
 │   └── static/
-│       ├── index.html         # Frontend principal
-│       └── admin.html         # Panel administrativo
+│       ├── crm.html           Panel CRM (1400+ líneas)
+│       └── admin.html         Panel Admin
 ├── Template/
 │   └── Template-PreCotizacion.pptx
-└── README.md
+└── .github/
+    └── copilot-instructions.md
 ```
+
+---
 
 ## 🚀 Instalación y Configuración
 
